@@ -47,6 +47,119 @@ MAP_ROWS = [
     "############################",
 ]
 
+MAPS = {
+    "warehouse": MAP_ROWS,
+    "crossfire": [
+        "############################",
+        "#............##............#",
+        "#............##............#",
+        "#..####....................#",
+        "#.................####.....#",
+        "#.....##..............##...#",
+        "#.....##..............##...#",
+        "#..........................#",
+        "#..........###.###.........#",
+        "#..........#.....#.........#",
+        "#..........#.....#.........#",
+        "#..........###.###.........#",
+        "#..........................#",
+        "#...##..............##.....#",
+        "#...##..............##.....#",
+        "#.....####........####.....#",
+        "#..........................#",
+        "#....###............###....#",
+        "#..........................#",
+        "#............##............#",
+        "#............##............#",
+        "############################",
+    ],
+    "split": [
+        "############################",
+        "#..........#....#..........#",
+        "#..........#....#..........#",
+        "#..####....#....#....####..#",
+        "#..........#....#..........#",
+        "#..........#....#..........#",
+        "#..........................#",
+        "#....##..............##....#",
+        "#....##....######....##....#",
+        "#..........................#",
+        "#..##..................##..#",
+        "#..##.....###..###.....##..#",
+        "#..........................#",
+        "#....##....######....##....#",
+        "#....##..............##....#",
+        "#..........................#",
+        "#..........#....#..........#",
+        "#..####....#....#....####..#",
+        "#..........#....#..........#",
+        "#..........#....#..........#",
+        "#..........................#",
+        "############################",
+    ],
+}
+MAP_ORDER = ("warehouse", "crossfire", "split")
+MAP_NAMES = {
+    "warehouse": {"en": "Warehouse", "vi": "Nhà kho"},
+    "crossfire": {"en": "Crossfire Yard", "vi": "Sân giao tranh"},
+    "split": {"en": "Split Ruins", "vi": "Tàn tích chia cắt"},
+}
+MAP_DESCRIPTIONS = {
+    "warehouse": {
+        "en": "Metal floor, storage walls, balanced lanes.",
+        "vi": "Sàn kim loại, tường kho, lối đi cân bằng.",
+    },
+    "crossfire": {
+        "en": "Open combat yard with barricades and fire lanes.",
+        "vi": "Sân giao tranh rộng với chướng ngại và đường bắn chéo.",
+    },
+    "split": {
+        "en": "Mossy ruins split by broken stone passages.",
+        "vi": "Tàn tích phủ rêu với các lối đá bị chia cắt.",
+    },
+}
+MAP_THEMES = {
+    "warehouse": {
+        "bg": (18, 19, 21),
+        "floor_a": (43, 45, 43),
+        "floor_b": (35, 37, 36),
+        "grid": (57, 60, 58),
+        "wall_dark": (30, 27, 31),
+        "wall": (88, 84, 92),
+        "wall_light": (142, 135, 145),
+        "accent": (245, 196, 66),
+        "prop_a": (122, 84, 48),
+        "prop_b": (74, 78, 84),
+        "prop_c": (38, 115, 126),
+    },
+    "crossfire": {
+        "bg": (22, 22, 20),
+        "floor_a": (58, 51, 43),
+        "floor_b": (45, 45, 40),
+        "grid": (74, 66, 54),
+        "wall_dark": (48, 41, 38),
+        "wall": (112, 101, 87),
+        "wall_light": (171, 153, 116),
+        "accent": (229, 91, 58),
+        "prop_a": (202, 162, 74),
+        "prop_b": (79, 67, 56),
+        "prop_c": (146, 56, 48),
+    },
+    "split": {
+        "bg": (14, 22, 19),
+        "floor_a": (36, 52, 43),
+        "floor_b": (30, 44, 37),
+        "grid": (50, 69, 58),
+        "wall_dark": (30, 36, 35),
+        "wall": (72, 86, 82),
+        "wall_light": (119, 137, 112),
+        "accent": (96, 205, 119),
+        "prop_a": (70, 127, 73),
+        "prop_b": (98, 85, 74),
+        "prop_c": (50, 120, 96),
+    },
+}
+
 GRID_W = len(MAP_ROWS[0])
 GRID_H = len(MAP_ROWS)
 WORLD_W = GRID_W * TILE
@@ -61,8 +174,15 @@ WEAPON_MAX_LEVEL = 18
 PLAYER_MAX_LEVEL = 18
 BILE_BOOST_MULTIPLIER = 2.35
 BILE_BOOST_DURATION = 5.5
+TURRET_LIMITS = {
+    "easy": 5,
+    "normal": 4,
+    "hard": 3,
+    "nightmare": 2,
+}
 
-assert all(len(row) == GRID_W for row in MAP_ROWS), "Every map row must have the same width."
+assert all(len(row) == GRID_W for rows in MAPS.values() for row in rows), "Every map row must have the same width."
+assert all(len(rows) == GRID_H for rows in MAPS.values()), "Every map must have the same height."
 
 
 COLORS = {
@@ -83,6 +203,7 @@ COLORS = {
     "blue": (93, 156, 236),
     "cyan": (89, 215, 205),
     "orange": (246, 144, 66),
+    "purple": (166, 116, 224),
 }
 
 TEXT = {
@@ -105,7 +226,13 @@ TEXT = {
         "infinite": "INF",
         "difficulty": "Difficulty",
         "character": "Character",
+        "map": "Map",
         "structures": "Structures",
+        "powerup": "Power-up",
+        "dash": "Dash",
+        "info": "Info",
+        "ready": "Ready",
+        "teleport": "TELEPORT",
         "on": "ON",
         "off": "OFF",
         "wave": "Wave",
@@ -119,46 +246,172 @@ TEXT = {
         "turret": "Turret",
         "fence": "Fence",
         "repair": "Repair",
+        "hp": "HP",
+        "xp": "XP",
+        "level_short": "Lv",
+        "max": "MAX",
+        "free": "FREE",
+        "dmg": "DMG",
+        "rate": "Rate",
+        "range_short": "RNG",
+        "shots": "Shots",
+        "pierce": "Pierce",
+        "armor": "Armor",
+        "magnet": "Magnet",
+        "cost": "Cost",
+        "buffs": "Buffs",
+        "turrets": "Turrets",
+        "close": "close",
+        "cancel_build": "cancel build",
+        "wave_key": "Space wave",
+        "repair_key": "R repair",
+        "build": "Build",
+        "game_over": "GAME OVER",
+        "restart_hint": "Press ENTER to restart",
+        "subtitle": "2D RPG SURVIVAL",
         "start_hint": "Press SPACE to start the next wave",
         "skip_hint": "SPACE skips the countdown",
         "auto_hint": "Auto-fire targets the nearest zombie in range.",
+        "next_wave_in": "Next wave in {seconds}s - press SPACE to skip",
+        "press_space_wave": "Press SPACE to start wave 1",
+        "wave_clear": "Wave clear! Bonus +{reward} gold",
+        "wave_label": "Wave {wave}",
+        "level_up": "LEVEL {level}",
+        "level_message": "Level {level}: {perks}",
+        "turret_limit": "Turret limit {count}/{limit}",
+        "cannot_build_wall": "Cannot build on wall",
+        "tile_occupied": "Tile occupied",
+        "too_close_player": "Too close to player",
+        "not_enough_gold": "Not enough gold",
+        "built": "Built {name}",
+        "no_damaged_structure": "No damaged structure nearby",
+        "move_closer_repair": "Move closer to repair",
+        "need_gold_repair": "Need {cost} gold to repair",
+        "weapon_max": "{weapon} is MAX level",
+        "need_gold": "Need {cost} gold",
+        "weapon_evolved": "Weapon evolved: {weapon}",
+        "weapon_upgraded": "{weapon} upgraded to Lv {level}",
+        "dev_on": "Developer Mode: ON",
+        "dev_off": "Developer Mode: OFF",
+        "build_mode": "Build mode: {name}",
+        "elite_incoming": "Elite zombie incoming!",
+        "boomer_bile": "Boomer bile! Zombies are enraged!",
+        "titan_vault": "Titan vaults the wall!",
+        "titan_charge": "Titan charge!",
+        "titan_roar": "Titan roar summons infected!",
+        "elite_down": "ELITE DOWN",
+        "broken": "BROKEN",
+        "repair_float": "+repair",
+        "perks_base": "Base survivor",
+        "perk_hp": "+HP",
+        "perk_damage": "+6% damage",
+        "perk_fire_rate": "+5% fire rate",
+        "perk_magnet_gold": "+magnet/gold",
+        "perk_armor_regen": "+armor/regen",
+        "perk_armor_magnet": "+armor/magnet",
     },
     "vi": {
         "title": "PIXEL ZOMBIE SIEGE",
-        "start": "BAT DAU",
-        "options": "TUY CHON",
-        "exit": "THOAT",
-        "back": "QUAY LAI",
-        "begin_run": "VAO TRAN",
-        "setup_title": "CHUAN BI",
-        "resume": "TIEP TUC",
-        "main_menu": "MENU CHINH",
-        "paused": "TAM DUNG",
-        "music": "Nhac",
-        "sfx": "Hieu ung",
-        "language": "Ngon ngu",
-        "auto_fire": "Tu dong ban",
-        "dev_mode": "Che do nha phat trien",
-        "infinite": "VO HAN",
-        "difficulty": "Do kho",
-        "character": "Nhan vat",
-        "structures": "Cong trinh",
-        "on": "BAT",
-        "off": "TAT",
-        "wave": "Dot",
-        "gold": "Vang",
-        "kills": "Ha guc",
-        "score": "Diem",
-        "enemies": "Quai",
-        "next_wave": "Dot tiep",
-        "pause": "Dung",
-        "upgrade": "Nang cap",
-        "turret": "Tru sung",
-        "fence": "Hang rao",
-        "repair": "Sua",
-        "start_hint": "Nhan SPACE de bat dau dot tiep theo",
-        "skip_hint": "SPACE bo qua dem nguoc",
-        "auto_hint": "Tu dong ban se ngam zombie gan nhat trong tam.",
+        "start": "BẮT ĐẦU",
+        "options": "TÙY CHỌN",
+        "exit": "THOÁT",
+        "back": "QUAY LẠI",
+        "begin_run": "VÀO TRẬN",
+        "setup_title": "CHUẨN BỊ",
+        "resume": "TIẾP TỤC",
+        "main_menu": "MENU CHÍNH",
+        "paused": "TẠM DỪNG",
+        "music": "Nhạc",
+        "sfx": "Hiệu ứng",
+        "language": "Ngôn ngữ",
+        "auto_fire": "Tự động bắn",
+        "dev_mode": "Chế độ nhà phát triển",
+        "infinite": "VÔ HẠN",
+        "difficulty": "Độ khó",
+        "character": "Nhân vật",
+        "map": "Bản đồ",
+        "structures": "Công trình",
+        "powerup": "Vật phẩm",
+        "dash": "Lướt",
+        "info": "Chỉ số",
+        "ready": "Sẵn sàng",
+        "teleport": "DỊCH CHUYỂN",
+        "on": "BẬT",
+        "off": "TẮT",
+        "wave": "Đợt",
+        "gold": "Vàng",
+        "kills": "Hạ gục",
+        "score": "Điểm",
+        "enemies": "Quái",
+        "next_wave": "Đợt tiếp",
+        "pause": "Dừng",
+        "upgrade": "Nâng cấp",
+        "turret": "Trụ súng",
+        "fence": "Hàng rào",
+        "repair": "Sửa",
+        "hp": "Máu",
+        "xp": "KN",
+        "level_short": "Cấp",
+        "max": "TỐI ĐA",
+        "free": "MIỄN PHÍ",
+        "dmg": "ST",
+        "rate": "Tốc độ",
+        "range_short": "Tầm",
+        "shots": "Đạn",
+        "pierce": "Xuyên",
+        "armor": "Giáp",
+        "magnet": "Hút vàng",
+        "cost": "Giá",
+        "buffs": "Buff",
+        "turrets": "Trụ",
+        "close": "đóng",
+        "cancel_build": "hủy xây",
+        "wave_key": "Space gọi đợt",
+        "repair_key": "R sửa",
+        "build": "Xây",
+        "game_over": "THẤT BẠI",
+        "restart_hint": "Nhấn ENTER để chơi lại",
+        "subtitle": "SINH TỒN RPG 2D",
+        "start_hint": "Nhấn SPACE để bắt đầu đợt tiếp theo",
+        "skip_hint": "SPACE bỏ qua đếm ngược",
+        "auto_hint": "Tự động bắn sẽ ngắm zombie gần nhất trong tầm.",
+        "next_wave_in": "Đợt tiếp sau {seconds}s - nhấn SPACE để bỏ qua",
+        "press_space_wave": "Nhấn SPACE để bắt đầu đợt 1",
+        "wave_clear": "Dọn sạch đợt! Thưởng +{reward} vàng",
+        "wave_label": "Đợt {wave}",
+        "level_up": "LÊN CẤP {level}",
+        "level_message": "Cấp {level}: {perks}",
+        "turret_limit": "Giới hạn trụ {count}/{limit}",
+        "cannot_build_wall": "Không thể xây trên tường",
+        "tile_occupied": "Ô này đã bị chiếm",
+        "too_close_player": "Quá gần người chơi",
+        "not_enough_gold": "Không đủ vàng",
+        "built": "Đã xây {name}",
+        "no_damaged_structure": "Không có công trình hư hại gần đây",
+        "move_closer_repair": "Đến gần hơn để sửa",
+        "need_gold_repair": "Cần {cost} vàng để sửa",
+        "weapon_max": "{weapon} đã đạt cấp tối đa",
+        "need_gold": "Cần {cost} vàng",
+        "weapon_evolved": "Vũ khí tiến hóa: {weapon}",
+        "weapon_upgraded": "{weapon} nâng lên cấp {level}",
+        "dev_on": "Chế độ nhà phát triển: BẬT",
+        "dev_off": "Chế độ nhà phát triển: TẮT",
+        "build_mode": "Chế độ xây: {name}",
+        "elite_incoming": "Zombie tinh anh đang tới!",
+        "boomer_bile": "Dính dịch Boomer! Zombie nổi cuồng!",
+        "titan_vault": "Titan vượt tường!",
+        "titan_charge": "Titan xung phong!",
+        "titan_roar": "Titan gầm gọi thêm quái!",
+        "elite_down": "HẠ TINH ANH",
+        "broken": "BỊ PHÁ",
+        "repair_float": "+sửa",
+        "perks_base": "Người sống sót",
+        "perk_hp": "+Máu",
+        "perk_damage": "+6% sát thương",
+        "perk_fire_rate": "+5% tốc bắn",
+        "perk_magnet_gold": "+hút vàng/vàng",
+        "perk_armor_regen": "+giáp/hồi máu",
+        "perk_armor_magnet": "+giáp/hút vàng",
     },
 }
 
@@ -482,6 +735,84 @@ STRUCTURE_TYPES = {
     },
 }
 
+POWER_UP_TYPES = {
+    "medkit": {
+        "label": "Medkit",
+        "color": (98, 224, 128),
+        "accent": (228, 255, 229),
+        "message": "Medkit +45 HP",
+    },
+    "overdrive": {
+        "label": "Overdrive",
+        "color": (255, 202, 78),
+        "accent": (255, 250, 170),
+        "message": "Overdrive: more damage and fire rate",
+    },
+    "shield": {
+        "label": "Shield",
+        "color": (92, 170, 255),
+        "accent": (192, 232, 255),
+        "message": "Shield: damage reduced",
+    },
+    "haste": {
+        "label": "Haste",
+        "color": (166, 116, 224),
+        "accent": (231, 204, 255),
+        "message": "Haste: faster movement",
+    },
+    "shock": {
+        "label": "Shock Core",
+        "color": (103, 246, 235),
+        "accent": (230, 255, 252),
+        "message": "Shock Core blasts nearby zombies",
+    },
+}
+
+DIFFICULTY_NAMES = {
+    "easy": {"en": "Easy", "vi": "Dễ"},
+    "normal": {"en": "Normal", "vi": "Thường"},
+    "hard": {"en": "Hard", "vi": "Khó"},
+    "nightmare": {"en": "Nightmare", "vi": "Ác mộng"},
+}
+
+CHARACTER_NAMES = {
+    "soldier": {"en": "Soldier", "vi": "Lính"},
+    "scout": {"en": "Scout", "vi": "Trinh sát"},
+    "engineer": {"en": "Engineer", "vi": "Kỹ sư"},
+    "tank": {"en": "Tank", "vi": "Đỡ đòn"},
+}
+
+CHARACTER_DESCRIPTIONS = {
+    "soldier": {"en": "Balanced rifle survivor.", "vi": "Chiến binh cân bằng, dễ làm quen."},
+    "scout": {"en": "Fast, agile, strong pickup control.", "vi": "Nhanh nhẹn, nhặt vàng xa, né vây tốt."},
+    "engineer": {"en": "Cheaper builds and better defense tempo.", "vi": "Xây rẻ hơn, hợp lối chơi phòng thủ."},
+    "tank": {"en": "Slow, armored, survives heavy pressure.", "vi": "Chậm hơn nhưng trâu, chịu áp lực tốt."},
+}
+
+WEAPON_NAMES = {
+    "Pistol": {"en": "Pistol", "vi": "Súng lục"},
+    "Dual Pistols": {"en": "Dual Pistols", "vi": "Song súng"},
+    "SMG": {"en": "SMG", "vi": "Tiểu liên"},
+    "Shotgun": {"en": "Shotgun", "vi": "Súng săn"},
+    "Assault Rifle": {"en": "Assault Rifle", "vi": "Súng trường"},
+    "Combat Shotgun": {"en": "Combat Shotgun", "vi": "Súng săn chiến đấu"},
+    "Laser Rifle": {"en": "Laser Rifle", "vi": "Súng laser"},
+}
+
+POWER_UP_MESSAGES = {
+    "medkit": {"en": "Medkit +45 HP", "vi": "Túi cứu thương +45 máu"},
+    "overdrive": {"en": "Overdrive: more damage and fire rate", "vi": "Quá tải: tăng sát thương và tốc bắn"},
+    "shield": {"en": "Shield: damage reduced", "vi": "Lá chắn: giảm sát thương nhận vào"},
+    "haste": {"en": "Haste: faster movement", "vi": "Tăng tốc: di chuyển nhanh hơn"},
+    "shock": {"en": "Shock Core blasts nearby zombies", "vi": "Lõi điện giật nổ quanh người chơi"},
+}
+
+BUFF_NAMES = {
+    "overdrive": {"en": "OD", "vi": "QT"},
+    "shield": {"en": "SH", "vi": "CK"},
+    "haste": {"en": "HS", "vi": "TC"},
+}
+
 
 def clamp(value, low, high):
     return max(low, min(high, value))
@@ -492,6 +823,19 @@ def dist_point_rect(point, rect):
     cx = clamp(px, rect.left, rect.right)
     cy = clamp(py, rect.top, rect.bottom)
     return math.hypot(px - cx, py - cy)
+
+
+def tile_noise(x, y, salt=0):
+    value = (x * 928371 + y * 689287 + salt * 19349663) & 0xFFFFFFFF
+    value ^= value >> 13
+    value = (value * 1274126177) & 0xFFFFFFFF
+    return value
+
+
+def facing_from_vector(vec):
+    if abs(vec.x) > abs(vec.y):
+        return "right" if vec.x > 0 else "left"
+    return "down" if vec.y >= 0 else "up"
 
 
 def make_pixel_sprite(pattern, palette, scale=2):
@@ -506,6 +850,132 @@ def make_pixel_sprite(pattern, palette, scale=2):
     return sprite
 
 
+def make_ui_font(size, bold=False):
+    for name in ("Cascadia Mono", "Consolas", "Segoe UI", "Arial", "DejaVu Sans"):
+        path = pygame.font.match_font(name, bold=bold)
+        if path:
+            return pygame.font.Font(path, size)
+    return pygame.font.Font(None, size)
+
+
+def pixel_rect(surface, scale, color, x, y, w, h):
+    pygame.draw.rect(surface, color, (x * scale, y * scale, w * scale, h * scale))
+
+
+def make_player_frame(character_id, facing, frame, scale=2):
+    if facing == "left":
+        return pygame.transform.flip(make_player_frame(character_id, "right", frame, scale), True, False)
+
+    palettes = {
+        "soldier": {
+            "body": (55, 128, 178),
+            "trim": (29, 68, 104),
+            "accent": (208, 228, 242),
+            "headgear": (57, 93, 91),
+            "hair": (61, 43, 35),
+            "weapon": (190, 184, 164),
+            "bulk": 0,
+        },
+        "scout": {
+            "body": (72, 168, 112),
+            "trim": (35, 91, 67),
+            "accent": (236, 205, 90),
+            "headgear": (45, 119, 82),
+            "hair": (83, 54, 34),
+            "weapon": (174, 185, 160),
+            "bulk": -1,
+        },
+        "engineer": {
+            "body": (214, 137, 55),
+            "trim": (126, 76, 38),
+            "accent": (246, 218, 82),
+            "headgear": (244, 184, 62),
+            "hair": (83, 49, 34),
+            "weapon": (196, 196, 176),
+            "bulk": 0,
+        },
+        "tank": {
+            "body": (111, 105, 145),
+            "trim": (67, 63, 91),
+            "accent": (201, 202, 220),
+            "headgear": (82, 80, 103),
+            "hair": (45, 37, 34),
+            "weapon": (210, 206, 184),
+            "bulk": 1,
+        },
+    }
+    art = palettes.get(character_id, palettes["soldier"])
+    skin = (226, 170, 124)
+    eye = (35, 32, 30)
+    boot = (29, 30, 34)
+    shadow = (8, 9, 12, 95)
+    step = (-1, 0, 1, 0)[frame % 4]
+    surface = pygame.Surface((18 * scale, 22 * scale), pygame.SRCALPHA)
+    pygame.draw.ellipse(surface, shadow, (3 * scale, 17 * scale, 12 * scale, 4 * scale))
+
+    bulk = art["bulk"]
+    torso_x = 6 - max(0, bulk)
+    torso_w = 6 + max(0, bulk) * 2
+
+    if facing == "right":
+        pixel_rect(surface, scale, art["body"], torso_x, 8, torso_w, 7)
+        pixel_rect(surface, scale, art["trim"], torso_x, 13, torso_w, 2)
+        pixel_rect(surface, scale, art["trim"], 7 + step, 15, 3, 5)
+        pixel_rect(surface, scale, art["body"], 10 - step, 15, 3, 4)
+        pixel_rect(surface, scale, boot, 7 + step, 20, 4, 1)
+        pixel_rect(surface, scale, boot, 10 - step, 19, 4, 2)
+        pixel_rect(surface, scale, skin, 7, 3, 6, 5)
+        pixel_rect(surface, scale, art["hair"], 6, 2, 6, 2)
+        pixel_rect(surface, scale, eye, 12, 5, 1, 1)
+        pixel_rect(surface, scale, art["body"], 5, 9 + (frame % 2), 3, 5)
+        pixel_rect(surface, scale, art["trim"], 12, 9 - (frame % 2), 3, 4)
+        pixel_rect(surface, scale, art["weapon"], 13, 9, 5, 2)
+        pixel_rect(surface, scale, (33, 31, 31), 16, 8, 2, 1)
+    elif facing == "up":
+        pixel_rect(surface, scale, art["body"], torso_x, 8, torso_w, 7)
+        pixel_rect(surface, scale, art["trim"], torso_x + 1, 9, max(2, torso_w - 2), 4)
+        pixel_rect(surface, scale, art["body"], 5, 9 + (frame % 2), 3, 5)
+        pixel_rect(surface, scale, art["body"], 10, 9 - (frame % 2), 3, 5)
+        pixel_rect(surface, scale, art["trim"], 6 + step, 15, 3, 5)
+        pixel_rect(surface, scale, art["trim"], 10 - step, 15, 3, 5)
+        pixel_rect(surface, scale, boot, 6 + step, 20, 4, 1)
+        pixel_rect(surface, scale, boot, 10 - step, 20, 4, 1)
+        pixel_rect(surface, scale, art["hair"], 6, 2, 6, 5)
+        pixel_rect(surface, scale, art["headgear"], 5, 2, 8, 2)
+        pixel_rect(surface, scale, art["weapon"], 4, 7, 2, 8)
+    else:
+        pixel_rect(surface, scale, art["trim"], 6 + step, 15, 3, 5)
+        pixel_rect(surface, scale, art["body"], 10 - step, 15, 3, 5)
+        pixel_rect(surface, scale, boot, 6 + step, 20, 4, 1)
+        pixel_rect(surface, scale, boot, 10 - step, 20, 4, 1)
+        pixel_rect(surface, scale, art["body"], torso_x, 8, torso_w, 7)
+        pixel_rect(surface, scale, art["trim"], torso_x, 13, torso_w, 2)
+        pixel_rect(surface, scale, art["body"], 4, 9 - (frame % 2), 3, 5)
+        pixel_rect(surface, scale, art["body"], 11, 9 + (frame % 2), 3, 5)
+        pixel_rect(surface, scale, skin, 6, 3, 6, 5)
+        pixel_rect(surface, scale, art["hair"], 5, 2, 8, 2)
+        pixel_rect(surface, scale, eye, 7, 5, 1, 1)
+        pixel_rect(surface, scale, eye, 10, 5, 1, 1)
+        pixel_rect(surface, scale, art["weapon"], 11, 10, 6, 2)
+
+    if character_id == "soldier":
+        pixel_rect(surface, scale, art["headgear"], 5, 2, 8, 2)
+        pixel_rect(surface, scale, art["headgear"], 6, 1, 6, 1)
+    elif character_id == "scout":
+        pixel_rect(surface, scale, art["headgear"], 5, 2, 8, 1)
+        pixel_rect(surface, scale, art["accent"], 4, 11, 2, 2)
+    elif character_id == "engineer":
+        pixel_rect(surface, scale, art["headgear"], 5, 1, 8, 2)
+        pixel_rect(surface, scale, art["accent"], 8, 1, 2, 2)
+        pixel_rect(surface, scale, art["accent"], 13, 10, 2, 3)
+    elif character_id == "tank":
+        pixel_rect(surface, scale, art["headgear"], 5, 2, 8, 3)
+        pixel_rect(surface, scale, art["accent"], 3, 9, 2, 6)
+        pixel_rect(surface, scale, art["accent"], 13, 9, 2, 6)
+
+    return surface
+
+
 def build_sprites():
     zombie_pattern = [
         "..hhhh..",
@@ -518,37 +988,12 @@ def build_sprites():
         "..b..b..",
         ".bb..bb.",
     ]
-    player_pattern = [
-        "...hhhh...",
-        "..hFFFFh..",
-        "..hFEEFh..",
-        "...FFFF...",
-        "..bbbbbb..",
-        ".bbBbbBbb.",
-        ".bbBbbBbb.",
-        "..bBbbB...",
-        "..bb..bb..",
-        ".bbb..bbb.",
-    ]
-    player_palettes = {
-        "soldier": ((62, 132, 177), (35, 79, 112)),
-        "scout": ((83, 174, 119), (38, 96, 70)),
-        "engineer": ((218, 151, 64), (132, 82, 36)),
-        "tank": ((125, 116, 151), (74, 66, 93)),
-    }
     sprites = {}
-    for character_id, (body, trim) in player_palettes.items():
-        sprites[f"player_{character_id}"] = make_pixel_sprite(
-            player_pattern,
-            {
-                "h": (66, 45, 38),
-                "F": (225, 170, 124),
-                "E": (36, 32, 30),
-                "b": body,
-                "B": trim,
-            },
-            3,
-        )
+    for character_id in CHARACTERS:
+        for facing in ("down", "up", "right", "left"):
+            for frame in range(4):
+                sprites[f"player_{character_id}_{facing}_{frame}"] = make_player_frame(character_id, facing, frame, 2)
+        sprites[f"player_{character_id}"] = sprites[f"player_{character_id}_down_0"]
     sprites["player"] = sprites["player_soldier"]
     for key, cfg in ZOMBIE_TYPES.items():
         palette = {
@@ -563,8 +1008,10 @@ def build_sprites():
 
 
 class TileMap:
-    def __init__(self, rows):
+    def __init__(self, rows, map_id="warehouse"):
         self.rows = rows
+        self.map_id = map_id if map_id in MAP_THEMES else "warehouse"
+        self.theme = MAP_THEMES[self.map_id]
 
     def in_bounds(self, cell):
         x, y = cell
@@ -613,19 +1060,73 @@ class TileMap:
         return not self.collides_circle(self.cell_center(cell), radius, ())
 
     def draw(self, surface):
-        surface.fill(COLORS["bg"], (0, 0, WORLD_W, WORLD_H))
+        theme = self.theme
+        surface.fill(theme["bg"], (0, 0, WORLD_W, WORLD_H))
         for y, row in enumerate(self.rows):
             for x, value in enumerate(row):
                 rect = pygame.Rect(x * TILE, y * TILE, TILE, TILE)
                 if value == "#":
-                    pygame.draw.rect(surface, COLORS["wall_dark"], rect)
-                    pygame.draw.rect(surface, COLORS["wall"], rect.inflate(-4, -4))
-                    pygame.draw.line(surface, COLORS["wall_light"], rect.topleft, rect.topright, 2)
-                    pygame.draw.line(surface, (30, 27, 32), rect.bottomleft, rect.bottomright, 2)
+                    pygame.draw.rect(surface, theme["wall_dark"], rect)
+                    pygame.draw.rect(surface, theme["wall"], rect.inflate(-4, -4))
+                    pygame.draw.line(surface, theme["wall_light"], rect.topleft, rect.topright, 2)
+                    pygame.draw.line(surface, theme["wall_dark"], rect.bottomleft, rect.bottomright, 2)
+                    self.draw_wall_detail(surface, rect, x, y)
                 else:
-                    color = COLORS["floor_a"] if (x + y) % 2 == 0 else COLORS["floor_b"]
+                    color = theme["floor_a"] if (x + y) % 2 == 0 else theme["floor_b"]
                     pygame.draw.rect(surface, color, rect)
-                    pygame.draw.rect(surface, COLORS["grid"], rect, 1)
+                    self.draw_floor_detail(surface, rect, x, y)
+                    pygame.draw.rect(surface, theme["grid"], rect, 1)
+
+    def draw_wall_detail(self, surface, rect, x, y):
+        theme = self.theme
+        n = tile_noise(x, y, 17)
+        inner = rect.inflate(-6, -6)
+        if self.map_id == "warehouse":
+            pygame.draw.line(surface, theme["wall_dark"], (inner.left, inner.centery), (inner.right, inner.centery), 1)
+            if n % 3 == 0:
+                pygame.draw.line(surface, theme["prop_b"], (inner.centerx, inner.top), (inner.centerx, inner.bottom), 2)
+            if n % 11 == 0:
+                pygame.draw.rect(surface, theme["accent"], (inner.left + 4, inner.top + 5, inner.w - 8, 3))
+        elif self.map_id == "crossfire":
+            pygame.draw.rect(surface, theme["prop_b"], inner, 1)
+            if n % 4 == 0:
+                pygame.draw.line(surface, theme["accent"], (inner.left + 3, inner.bottom - 5), (inner.right - 3, inner.top + 5), 2)
+            if n % 7 == 0:
+                pygame.draw.rect(surface, theme["prop_a"], (inner.left + 5, inner.top + 7, 7, 4))
+        else:
+            pygame.draw.rect(surface, theme["wall_light"], inner, 1)
+            if n % 3 == 0:
+                pygame.draw.circle(surface, theme["prop_a"], (inner.left + 7, inner.top + 8), 3)
+                pygame.draw.circle(surface, theme["prop_c"], (inner.right - 6, inner.bottom - 7), 2)
+            if n % 9 == 0:
+                pygame.draw.line(surface, theme["prop_a"], (inner.left + 3, inner.top + 3), (inner.right - 2, inner.bottom - 4), 2)
+
+    def draw_floor_detail(self, surface, rect, x, y):
+        theme = self.theme
+        n = tile_noise(x, y, 31)
+        if self.map_id == "warehouse":
+            if n % 8 == 0:
+                pygame.draw.rect(surface, theme["prop_b"], (rect.x + 7, rect.y + 7, 18, 2))
+                pygame.draw.rect(surface, theme["prop_b"], (rect.x + 7, rect.y + 21, 18, 2))
+            if n % 23 == 0:
+                pygame.draw.rect(surface, theme["prop_a"], (rect.x + 9, rect.y + 9, 14, 14))
+                pygame.draw.rect(surface, (78, 50, 30), (rect.x + 12, rect.y + 9, 2, 14))
+        elif self.map_id == "crossfire":
+            if n % 6 == 0:
+                pygame.draw.line(surface, theme["prop_b"], (rect.x + 6, rect.y + 25), (rect.x + 25, rect.y + 8), 1)
+            if n % 17 == 0:
+                pygame.draw.circle(surface, theme["prop_c"], rect.center, 5)
+                pygame.draw.circle(surface, theme["floor_b"], rect.center, 3)
+            if n % 29 == 0:
+                pygame.draw.rect(surface, theme["prop_a"], (rect.x + 5, rect.y + 14, 22, 4))
+        else:
+            if n % 5 == 0:
+                pygame.draw.circle(surface, theme["prop_a"], (rect.x + 8, rect.y + 9), 2)
+                pygame.draw.circle(surface, theme["prop_a"], (rect.x + 23, rect.y + 21), 2)
+            if n % 13 == 0:
+                pygame.draw.line(surface, theme["prop_b"], (rect.x + 5, rect.y + 7), (rect.x + 27, rect.y + 24), 1)
+            if n % 31 == 0:
+                pygame.draw.rect(surface, theme["prop_c"], (rect.x + 12, rect.y + 10, 8, 4))
 
 
 def astar(tile_map, start, goal, blocked):
@@ -872,7 +1373,15 @@ class Player:
         self.armor = character["armor"]
         self.build_discount = character["build_discount"]
         self.regen_rate = 0.0
-        self.level_notes = [character["label"]]
+        self.level_notes = []
+        self.buff_timers = {"overdrive": 0.0, "shield": 0.0, "haste": 0.0}
+        self.dash_cooldown = 0.0
+        self.dash_time = 0.0
+        self.dash_dir = Vec2(0, 0)
+        self.last_move_dir = Vec2(0, 1)
+        self.facing = "down"
+        self.anim_time = 0.0
+        self.is_moving = False
 
     def update(self, dt, game):
         keys = pygame.key.get_pressed()
@@ -885,9 +1394,29 @@ class Player:
             move.x -= 1
         if keys[pygame.K_d] or keys[pygame.K_RIGHT]:
             move.x += 1
-        if move.length_squared() > 0:
-            move = move.normalize() * self.speed * dt
-            self.try_move(move, game)
+        for key in self.buff_timers:
+            self.buff_timers[key] = max(0, self.buff_timers[key] - dt)
+        self.dash_cooldown = max(0, self.dash_cooldown - dt)
+        self.dash_time = max(0, self.dash_time - dt)
+
+        moving = False
+        if self.dash_time > 0 and self.dash_dir.length_squared() > 0:
+            self.try_move(self.dash_dir.normalize() * 560 * dt, game)
+            self.last_move_dir = self.dash_dir.normalize()
+            self.facing = facing_from_vector(self.last_move_dir)
+            moving = True
+        elif move.length_squared() > 0:
+            move_dir = move.normalize()
+            self.last_move_dir = move_dir
+            self.facing = facing_from_vector(move_dir)
+            speed = self.speed * (1.35 if self.buff_timers["haste"] > 0 else 1.0)
+            self.try_move(move_dir * speed * dt, game)
+            moving = True
+        self.is_moving = moving
+        if moving:
+            self.anim_time += dt * (14 if self.dash_time > 0 else 9)
+        else:
+            self.anim_time = 0
 
         self.fire_timer = max(0, self.fire_timer - dt)
         self.invuln = max(0, self.invuln - dt)
@@ -927,13 +1456,16 @@ class Player:
         direction = Vec2(mx, my) - self.pos
         if direction.length_squared() <= 1:
             return
+        self.facing = facing_from_vector(direction)
         base_angle = math.atan2(direction.y, direction.x)
-        damage = int(self.weapon.damage * (1 + self.damage_bonus) * game.difficulty_cfg()["player_damage"])
+        overdrive_damage = 1.35 if self.buff_timers["overdrive"] > 0 else 1.0
+        fire_rate_mult = 1 + self.fire_rate_bonus + (0.45 if self.buff_timers["overdrive"] > 0 else 0)
+        damage = int(self.weapon.damage * (1 + self.damage_bonus) * overdrive_damage * game.difficulty_cfg()["player_damage"])
         if self.weapon.style == "laser":
             angle = base_angle + random.uniform(-self.weapon.spread, self.weapon.spread)
             laser_dir = Vec2(math.cos(angle), math.sin(angle))
             game.fire_laser(self.pos + laser_dir * (self.radius + 8), laser_dir, damage, self.weapon.bullet_range, self.weapon.pierce)
-            self.fire_timer = self.weapon.cooldown / (1 + self.fire_rate_bonus)
+            self.fire_timer = self.weapon.cooldown / fire_rate_mult
             return
 
         shots = self.weapon.bullet_count
@@ -964,12 +1496,14 @@ class Player:
             )
             game.add_muzzle_particle(spawn, vel)
         game.play_sound("shoot", 0.34, cooldown=0.045)
-        self.fire_timer = self.weapon.cooldown / (1 + self.fire_rate_bonus)
+        self.fire_timer = self.weapon.cooldown / fire_rate_mult
 
     def take_damage(self, amount, game):
         if self.invuln > 0:
             return
         reduction = min(0.38, self.armor * 0.025)
+        if self.buff_timers["shield"] > 0:
+            reduction = min(0.72, reduction + 0.42)
         amount = max(1, int(round(amount * (1 - reduction))))
         self.hp -= amount
         self.invuln = 0.18
@@ -978,6 +1512,45 @@ class Player:
         if self.hp <= 0:
             self.hp = 0
             game.game_over = True
+
+    def start_dash(self, game):
+        if self.dash_cooldown > 0 or self.dash_time > 0 or game.build_mode is not None:
+            return False
+        direction = Vec2(self.last_move_dir)
+        mouse_world = game.mouse_world()
+        if mouse_world is not None:
+            aim = Vec2(mouse_world) - self.pos
+            if aim.length_squared() > 36:
+                direction = aim.normalize()
+        if direction.length_squared() <= 0:
+            direction = Vec2(0, 1)
+        self.dash_dir = direction.normalize()
+        self.dash_time = 0.18
+        self.dash_cooldown = 2.35
+        self.invuln = max(self.invuln, 0.2)
+        for _ in range(14):
+            game.particles.append(Particle(self.pos, -self.dash_dir.rotate(random.uniform(-34, 34)) * random.uniform(40, 170), COLORS["cyan"], life=0.28, size=3))
+        game.play_sound("dash", 0.46, cooldown=0.12)
+        return True
+
+    def activate_powerup(self, kind, game):
+        if kind == "medkit":
+            heal = min(self.max_hp - self.hp, 45 + game.wave * 3)
+            self.hp = min(self.max_hp, self.hp + heal)
+            game.floating_texts.append(FloatingText(self.pos + Vec2(0, -36), f"+{int(heal)} {game.t('hp')}", COLORS["green"], life=1.0))
+        elif kind == "overdrive":
+            self.buff_timers["overdrive"] = max(self.buff_timers["overdrive"], 7.0)
+        elif kind == "shield":
+            self.buff_timers["shield"] = max(self.buff_timers["shield"], 8.0)
+        elif kind == "haste":
+            self.buff_timers["haste"] = max(self.buff_timers["haste"], 6.0)
+        elif kind == "shock":
+            damage = 52 + game.wave * 7
+            game.damage_zombies_in_radius(self.pos, 128, damage)
+            game.create_shockwave(self.pos, 128, 0, visual_only=True)
+        game.message = game.powerup_message(kind)
+        game.message_timer = 2.0
+        game.play_sound("powerup", 0.58, cooldown=0.08)
 
     def add_xp(self, amount, game):
         if self.level >= PLAYER_MAX_LEVEL:
@@ -988,49 +1561,56 @@ class Player:
             self.xp -= self.next_xp
             self.level += 1
             self.next_xp = int(self.next_xp * 1.25 + 30)
-            perks = self.apply_level_perks()
+            perks = self.apply_level_perks(game)
             game.floating_texts.append(
-                FloatingText(self.pos + Vec2(0, -44), f"LEVEL {self.level}", COLORS["cyan"], life=1.4)
+                FloatingText(self.pos + Vec2(0, -44), game.t("level_up").format(level=self.level), COLORS["cyan"], life=1.4)
             )
-            game.message = f"Level {self.level}: {', '.join(perks)}"
+            game.message = game.t("level_message").format(level=self.level, perks=", ".join(perks))
             game.message_timer = 2.6
         if self.level >= PLAYER_MAX_LEVEL:
             self.xp = min(self.xp, self.next_xp)
 
-    def apply_level_perks(self):
+    def apply_level_perks(self, game):
         perks = []
         self.max_hp += 16
         self.hp = min(self.max_hp, self.hp + 42)
         self.speed += 2.5
-        perks.append("+HP")
+        perks.append(game.t("perk_hp"))
 
         if self.level % 2 == 0:
             self.damage_bonus += 0.06
-            perks.append("+6% damage")
+            perks.append(game.t("perk_damage"))
         if self.level % 3 == 0:
             self.fire_rate_bonus += 0.05
-            perks.append("+5% fire rate")
+            perks.append(game.t("perk_fire_rate"))
         if self.level % 4 == 0:
             self.pickup_radius += 16
             self.gold_bonus += 0.05
-            perks.append("+magnet/gold")
+            perks.append(game.t("perk_magnet_gold"))
         if self.level % 5 == 0:
             self.armor += 2
             self.regen_rate += 0.35
-            perks.append("+armor/regen")
+            perks.append(game.t("perk_armor_regen"))
         if len(perks) == 1:
             self.armor += 1
             self.pickup_radius += 8
-            perks.append("+armor/magnet")
+            perks.append(game.t("perk_armor_magnet"))
 
         self.level_notes = perks[-3:]
         return perks
 
     def draw(self, surface, sprites, aim_pos=None):
-        sprite = sprites.get(f"player_{self.character_id}", sprites["player"])
+        frame = int(self.anim_time) % 4 if self.is_moving else 0
+        sprite = sprites.get(f"player_{self.character_id}_{self.facing}_{frame}", sprites["player"])
         rect = sprite.get_rect(center=(round(self.pos.x), round(self.pos.y)))
         if self.invuln > 0 and int(self.invuln * 40) % 2 == 0:
             return
+        if self.buff_timers["shield"] > 0:
+            pygame.draw.circle(surface, (92, 170, 255), self.pos, self.radius + 10, 2)
+        if self.buff_timers["overdrive"] > 0:
+            pygame.draw.circle(surface, COLORS["gold"], self.pos, self.radius + 7, 1)
+        if self.buff_timers["haste"] > 0:
+            pygame.draw.circle(surface, COLORS["purple"], self.pos, self.radius + 5, 1)
         surface.blit(sprite, rect)
         if aim_pos is not None:
             direction = Vec2(aim_pos) - self.pos
@@ -1256,7 +1836,7 @@ class Structure:
         game.spawn_spark(Vec2(self.rect.center), (210, 92, 73))
         if self.hp <= 0:
             self.alive = False
-            game.floating_texts.append(FloatingText(Vec2(self.rect.center), "BROKEN", COLORS["red"], life=0.9))
+            game.floating_texts.append(FloatingText(Vec2(self.rect.center), game.t("broken"), COLORS["red"], life=0.9))
 
     def repair(self, amount):
         self.hp = min(self.max_hp, self.hp + amount)
@@ -1288,10 +1868,11 @@ class Structure:
 
 
 class Zombie:
-    def __init__(self, kind, pos, wave, difficulty_id="normal"):
+    def __init__(self, kind, pos, wave, difficulty_id="normal", elite=False):
         self.kind = kind
         self.cfg = ZOMBIE_TYPES[kind]
         difficulty = DIFFICULTIES.get(difficulty_id, DIFFICULTIES["normal"])
+        self.elite = elite and kind != "titan"
         self.pos = Vec2(pos)
         hp_scale = 1.0 + max(0, wave - 1) * 0.18
         if kind == "titan":
@@ -1301,6 +1882,12 @@ class Zombie:
         self.radius = self.cfg["radius"]
         self.damage = int(self.cfg["damage"] * (1.0 + max(0, wave - 1) * 0.12) * difficulty["damage"])
         self.speed = self.cfg["speed"] * (1.0 + min(0.95, wave * 0.035)) * difficulty["speed"]
+        if self.elite:
+            self.max_hp = int(self.max_hp * 1.75)
+            self.hp = self.max_hp
+            self.damage = int(self.damage * 1.25)
+            self.speed *= 1.12
+            self.radius += 2
         self.path = []
         self.path_timer = random.uniform(0, 0.35)
         self.attack_timer = random.uniform(0, 0.2)
@@ -1336,11 +1923,19 @@ class Zombie:
     def die(self, game):
         self.alive = False
         reward = int(round((self.cfg["reward"] + random.randint(0, 3 + game.wave)) * game.difficulty_cfg()["reward"]))
+        if self.elite:
+            reward = int(round(reward * 1.65))
         game.drop_gold(self.pos, reward)
         game.player.kills += 1
         game.player.score += reward * 6
-        game.player.add_xp(self.cfg["xp"], game)
+        game.player.add_xp(int(round(self.cfg["xp"] * (1.55 if self.elite else 1.0))), game)
         game.floating_texts.append(FloatingText(self.pos + Vec2(0, -24), f"+{reward}g", COLORS["gold"]))
+        if self.elite:
+            game.floating_texts.append(FloatingText(self.pos + Vec2(0, -42), game.t("elite_down"), COLORS["orange"], life=1.1))
+            if random.random() < 0.62:
+                game.spawn_powerup(self.pos)
+        elif random.random() < min(0.03 + game.wave * 0.006, 0.12):
+            game.spawn_powerup(self.pos)
         if self.kind == "boomer":
             game.create_explosion(self.pos, 105, self.damage + 22, enemy_owned=True)
 
@@ -1466,7 +2061,7 @@ class Zombie:
         self.wall_leap_time = self.wall_leap_duration
         self.wall_leap_timer = random.uniform(6.5, 8.5)
         self.path.clear()
-        game.message = "Titan vaults the wall!"
+        game.message = game.t("titan_vault")
         game.message_timer = 1.4
         game.create_shockwave(self.pos, 62, 0, visual_only=True)
         return True
@@ -1560,7 +2155,7 @@ class Zombie:
         self.charge_hit_player = False
         self.charge_timer = random.uniform(5.4, 7.0)
         self.path.clear()
-        game.message = "Titan charge!"
+        game.message = game.t("titan_charge")
         game.message_timer = 1.2
         game.create_shockwave(self.pos, 54, 0, visual_only=True)
 
@@ -1622,7 +2217,7 @@ class Zombie:
         if hp_pct > self.summon_thresholds[0]:
             return
         self.summon_thresholds.pop(0)
-        game.message = "Titan roar summons infected!"
+        game.message = game.t("titan_roar")
         game.message_timer = 1.6
         game.create_shockwave(self.pos, 120, 0, visual_only=True)
         for kind in ["walker", "walker", "runner", "runner", "spitter"]:
@@ -1766,6 +2361,8 @@ class Zombie:
     def draw(self, surface, sprites):
         sprite = sprites[self.kind]
         rect = sprite.get_rect(center=(round(self.pos.x), round(self.pos.y)))
+        if self.elite:
+            pygame.draw.circle(surface, COLORS["orange"], self.pos, self.radius + 8, 2)
         if self.kind == "stalker":
             ghost = sprite.copy()
             ghost.set_alpha(135 if self.lunge_boost <= 0 else 220)
@@ -1780,7 +2377,7 @@ class Zombie:
         bar = pygame.Rect(0, 0, width, 5)
         bar.center = (round(self.pos.x), round(self.pos.y - self.radius - 12))
         pygame.draw.rect(surface, (45, 28, 30), bar)
-        pygame.draw.rect(surface, COLORS["red"], (bar.x, bar.y, int(bar.w * pct), bar.h))
+        pygame.draw.rect(surface, COLORS["orange"] if self.elite else COLORS["red"], (bar.x, bar.y, int(bar.w * pct), bar.h))
 
 
 class GoldDrop:
@@ -1812,6 +2409,46 @@ class GoldDrop:
         radius = 5 + int(math.sin(pygame.time.get_ticks() * 0.006 + self.pulse) > 0)
         pygame.draw.rect(surface, (144, 92, 32), (self.pos.x - radius, self.pos.y - radius, radius * 2, radius * 2))
         pygame.draw.rect(surface, COLORS["gold"], (self.pos.x - radius + 2, self.pos.y - radius + 2, radius * 2 - 4, radius * 2 - 4))
+
+
+class PowerUpDrop:
+    def __init__(self, pos, kind):
+        self.pos = Vec2(pos) + Vec2(random.uniform(-14, 14), random.uniform(-14, 14))
+        self.kind = kind
+        self.life = 22
+        self.pulse = random.uniform(0, math.tau)
+        self.alive = True
+
+    def update(self, dt, game):
+        self.life -= dt
+        if self.life <= 0:
+            self.alive = False
+            return
+        distance = self.pos.distance_to(game.player.pos)
+        magnet_radius = game.player.pickup_radius * 0.8
+        if distance < magnet_radius:
+            direction = game.player.pos - self.pos
+            if direction.length_squared() > 1:
+                self.pos += direction.normalize() * (magnet_radius * 1.8 - distance) * dt
+        if distance < 22:
+            game.player.activate_powerup(self.kind, game)
+            self.alive = False
+
+    def draw(self, surface):
+        cfg = POWER_UP_TYPES[self.kind]
+        pulse = int(math.sin(pygame.time.get_ticks() * 0.007 + self.pulse) > 0)
+        size = 12 + pulse
+        rect = pygame.Rect(0, 0, size, size)
+        rect.center = (round(self.pos.x), round(self.pos.y))
+        pygame.draw.rect(surface, (24, 29, 34), rect.inflate(6, 6))
+        pygame.draw.rect(surface, cfg["color"], rect)
+        pygame.draw.rect(surface, cfg["accent"], rect.inflate(-6, -6))
+        if self.kind == "medkit":
+            pygame.draw.rect(surface, (230, 65, 72), (rect.centerx - 2, rect.y + 2, 4, size - 4))
+            pygame.draw.rect(surface, (230, 65, 72), (rect.x + 2, rect.centery - 2, size - 4, 4))
+        elif self.kind == "shock":
+            pygame.draw.line(surface, (22, 42, 45), (rect.centerx - 2, rect.y + 1), (rect.x + 4, rect.centery), 2)
+            pygame.draw.line(surface, (22, 42, 45), (rect.x + 4, rect.centery), (rect.centerx + 2, rect.bottom - 1), 2)
 
 
 class Particle:
@@ -1885,12 +2522,13 @@ class Game:
         self.world_rect = pygame.Rect(0, 0, int(WORLD_W * self.world_scale), int(WORLD_H * self.world_scale))
         self.world_rect.center = self.play_rect.center
         self.clock = pygame.time.Clock()
-        self.font = pygame.font.SysFont("consolas", max(18, int(24 * self.ui_scale)))
-        self.small_font = pygame.font.SysFont("consolas", max(14, int(18 * self.ui_scale)))
-        self.tiny_font = pygame.font.SysFont("consolas", max(11, int(14 * self.ui_scale)))
-        self.big_font = pygame.font.SysFont("consolas", max(38, int(64 * self.ui_scale)), bold=True)
-        self.title_font = pygame.font.SysFont("consolas", max(42, int(74 * self.ui_scale)), bold=True)
+        self.font = make_ui_font(max(18, int(24 * self.ui_scale)))
+        self.small_font = make_ui_font(max(14, int(18 * self.ui_scale)))
+        self.tiny_font = make_ui_font(max(11, int(14 * self.ui_scale)))
+        self.big_font = make_ui_font(max(38, int(64 * self.ui_scale)), bold=True)
+        self.title_font = make_ui_font(max(42, int(74 * self.ui_scale)), bold=True)
         self.sprites = build_sprites()
+        self.menu_background = self.load_menu_background()
         self.state = "menu"
         self.paused = False
         self.language = "vi"
@@ -1900,9 +2538,11 @@ class Game:
         self.dev_mode = False
         self.difficulty_id = "normal"
         self.character_id = "soldier"
+        self.map_id = "warehouse"
         self.options_return_state = "menu"
         self.options_return_paused = False
         self.ui_buttons = {}
+        self.info_panel_open = False
         self.headless = headless
         self.audio_enabled = False
         self.sounds = {}
@@ -1911,7 +2551,7 @@ class Game:
         self.reset_gameplay()
 
     def reset_gameplay(self):
-        self.tile_map = TileMap(MAP_ROWS)
+        self.tile_map = TileMap(MAPS.get(self.map_id, MAP_ROWS), self.map_id)
         self.player = Player((WORLD_W / 2, WORLD_H / 2), self.character_id)
         self.zombies = []
         self.bullets = []
@@ -1920,8 +2560,10 @@ class Game:
         self.poison_pools = []
         self.structures = []
         self.gold_drops = []
+        self.powerups = []
         self.particles = []
         self.floating_texts = []
+        self.teleport_player_to_spawn(effect=True)
         self.wave = 0
         self.wave_active = False
         self.wave_break_timer = 0
@@ -1930,7 +2572,7 @@ class Game:
         self.build_mode = None
         self.game_over = False
         self.bile_timer = 0
-        self.message = "Press SPACE to start wave 1"
+        self.message = self.t("press_space_wave")
         self.message_timer = 4
         self.spawn_cells = self.build_spawn_cells()
         self.boss_spawn_cells = self.build_boss_spawn_cells()
@@ -1939,6 +2581,37 @@ class Game:
 
     def t(self, key):
         return TEXT[self.language].get(key, key)
+
+    def localized_name(self, table, key):
+        values = table.get(key, {})
+        return values.get(self.language) or values.get("en") or key
+
+    def difficulty_name(self, difficulty_id=None):
+        return self.localized_name(DIFFICULTY_NAMES, difficulty_id or self.difficulty_id)
+
+    def character_name(self, character_id=None):
+        return self.localized_name(CHARACTER_NAMES, character_id or self.character_id)
+
+    def character_description(self, character_id=None):
+        return self.localized_name(CHARACTER_DESCRIPTIONS, character_id or self.character_id)
+
+    def map_name(self, map_id=None):
+        return self.localized_name(MAP_NAMES, map_id or self.map_id)
+
+    def map_description(self, map_id=None):
+        return self.localized_name(MAP_DESCRIPTIONS, map_id or self.map_id)
+
+    def weapon_name(self, weapon_name):
+        return self.localized_name(WEAPON_NAMES, weapon_name)
+
+    def structure_name(self, kind):
+        return self.t(kind)
+
+    def powerup_message(self, kind):
+        return self.localized_name(POWER_UP_MESSAGES, kind)
+
+    def buff_label(self, kind):
+        return self.localized_name(BUFF_NAMES, kind)
 
     def init_audio(self):
         if self.headless:
@@ -1964,6 +2637,7 @@ class Game:
             "hurt": "cloth3.ogg",
             "wave": "doorOpen_1.ogg",
             "dash": "clothBelt.ogg",
+            "powerup": "handleSmallLeather.ogg",
         }
         for name, filename in sound_files.items():
             path = os.path.join(audio_dir, filename)
@@ -1974,6 +2648,18 @@ class Game:
             except pygame.error:
                 continue
         self.audio_enabled = bool(self.sounds)
+
+    def load_menu_background(self):
+        asset_dir = os.path.join(os.path.dirname(__file__), "assets")
+        for filename in ("menu_background.png", "menu_background.jpg", "menu_background.jpeg", "menu_background.webp"):
+            path = os.path.join(asset_dir, filename)
+            if not os.path.exists(path):
+                continue
+            try:
+                return pygame.image.load(path).convert()
+            except pygame.error:
+                continue
+        return None
 
     def play_sound(self, name, volume=1.0, cooldown=0.0):
         if not self.audio_enabled or self.sfx_volume <= 0:
@@ -2032,6 +2718,15 @@ class Game:
         discount = CHARACTERS.get(self.character_id, CHARACTERS["soldier"])["build_discount"]
         return max(1, int(round(15 * difficulty_cost * (1 - discount))))
 
+    def turret_count(self):
+        return len([s for s in self.structures if s.alive and s.kind == "turret"])
+
+    def turret_limit(self):
+        base = TURRET_LIMITS.get(self.difficulty_id, TURRET_LIMITS["normal"])
+        if self.character_id == "engineer":
+            base += 1
+        return base
+
     def can_afford(self, cost):
         return self.dev_mode or self.player.gold >= cost
 
@@ -2071,6 +2766,128 @@ class Game:
         pygame.draw.rect(self.screen, COLORS["hud_line"], rect, 2, border_radius=8)
         self.draw_text_center(label, rect, text_color, font or self.font)
         self.ui_buttons[key] = rect
+
+    def draw_cover_image(self, image, darken=88):
+        sw, sh = self.screen_w, self.screen_h
+        iw, ih = image.get_size()
+        scale = max(sw / iw, sh / ih)
+        size = (max(1, math.ceil(iw * scale)), max(1, math.ceil(ih * scale)))
+        scaled = pygame.transform.smoothscale(image, size)
+        rect = scaled.get_rect(center=(sw // 2, sh // 2))
+        self.screen.blit(scaled, rect)
+        veil = pygame.Surface((sw, sh), pygame.SRCALPHA)
+        veil.fill((0, 0, 0, darken))
+        self.screen.blit(veil, (0, 0))
+
+    def draw_menu_background(self, map_id=None, use_menu_art=False):
+        if use_menu_art and self.menu_background is not None:
+            self.draw_cover_image(self.menu_background, darken=88)
+            return
+        map_id = map_id or self.map_id
+        theme = MAP_THEMES.get(map_id, MAP_THEMES["warehouse"])
+        sw, sh, s = self.screen_w, self.screen_h, self.ui_scale
+        self.screen.fill(theme["bg"])
+        grid = max(30, int(42 * s))
+        for y in range(0, sh, grid):
+            pygame.draw.line(self.screen, theme["grid"], (0, y), (sw, y), 1)
+        for x in range(0, sw, grid):
+            pygame.draw.line(self.screen, theme["grid"], (x, 0), (x, sh), 1)
+
+        horizon = int(sh * 0.64)
+        pygame.draw.rect(self.screen, (10, 12, 15), (0, horizon, sw, sh - horizon))
+        for i in range(-2, sw // grid + 4):
+            x = i * grid + int((pygame.time.get_ticks() * 0.012) % grid)
+            pygame.draw.line(self.screen, theme["grid"], (x, horizon), (x - int(170 * s), sh), 1)
+        for i in range(7):
+            y = horizon + int((i + 1) * (sh - horizon) / 8)
+            pygame.draw.line(self.screen, theme["grid"], (0, y), (sw, y), 1)
+
+        for i in range(32):
+            n = tile_noise(i, len(map_id), 77)
+            x = int((n % max(1, sw)))
+            y = int((n >> 8) % max(1, sh))
+            if map_id == "warehouse":
+                color = theme["prop_b"] if i % 3 else theme["accent"]
+                pygame.draw.rect(self.screen, color, (x, y, int(18 * s), max(2, int(4 * s))))
+            elif map_id == "crossfire":
+                color = theme["accent"] if i % 2 else theme["prop_a"]
+                pygame.draw.line(self.screen, color, (x, y), (x + int(26 * s), y + int(10 * s)), 2)
+            else:
+                color = theme["prop_a"] if i % 2 else theme["prop_c"]
+                pygame.draw.circle(self.screen, color, (x, y), max(2, int(3 * s)))
+
+        veil = pygame.Surface((sw, sh), pygame.SRCALPHA)
+        veil.fill((0, 0, 0, 82))
+        self.screen.blit(veil, (0, 0))
+
+    def draw_select_card(self, key, rect, title, subtitle="", *, active=False, accent=None):
+        accent = accent or COLORS["cyan"]
+        mouse = pygame.mouse.get_pos()
+        hover = rect.collidepoint(mouse)
+        fill = (48, 67, 68) if active else ((42, 46, 54) if hover else (27, 30, 37))
+        pygame.draw.rect(self.screen, fill, rect, border_radius=8)
+        pygame.draw.rect(self.screen, accent if active else COLORS["hud_line"], rect, 2, border_radius=8)
+        title = self.fit_text(title, self.small_font, rect.w - 18)
+        self.draw_text_center(title, pygame.Rect(rect.x + 8, rect.y + 8, rect.w - 16, max(22, int(26 * self.ui_scale))), COLORS["text"], self.small_font)
+        if subtitle:
+            subtitle = self.fit_text(subtitle, self.tiny_font, rect.w - 18)
+            self.draw_text_center(subtitle, pygame.Rect(rect.x + 8, rect.bottom - max(30, int(34 * self.ui_scale)), rect.w - 16, max(20, int(24 * self.ui_scale))), accent if active else COLORS["muted"], self.tiny_font)
+        self.ui_buttons[key] = rect
+
+    def fit_text(self, text, font, max_width):
+        if font.size(text)[0] <= max_width:
+            return text
+        trimmed = text
+        while len(trimmed) > 4 and font.size(trimmed + "...")[0] > max_width:
+            trimmed = trimmed[:-1].rstrip()
+        return trimmed + "..."
+
+    def draw_map_preview(self, rect, map_id, title=True):
+        theme = MAP_THEMES.get(map_id, MAP_THEMES["warehouse"])
+        pygame.draw.rect(self.screen, (19, 22, 27), rect, border_radius=8)
+        pygame.draw.rect(self.screen, theme["accent"], rect, 2, border_radius=8)
+        label_h = max(34, int(42 * self.ui_scale)) if title else 0
+        inner = pygame.Rect(rect.x + 16, rect.y + 14 + label_h, rect.w - 32, rect.h - 28 - label_h)
+        if title:
+            self.draw_text_center(self.map_name(map_id), pygame.Rect(rect.x + 12, rect.y + 8, rect.w - 24, label_h - 4), theme["accent"], self.font)
+        rows = MAPS.get(map_id, MAP_ROWS)
+        cell = max(2, int(min(inner.w / GRID_W, inner.h / GRID_H)))
+        map_w, map_h = GRID_W * cell, GRID_H * cell
+        ox = inner.centerx - map_w // 2
+        oy = inner.centery - map_h // 2
+        preview_rect = pygame.Rect(ox, oy, map_w, map_h)
+        pygame.draw.rect(self.screen, theme["bg"], preview_rect)
+        for y, row in enumerate(rows):
+            for x, value in enumerate(row):
+                tile = pygame.Rect(ox + x * cell, oy + y * cell, cell, cell)
+                if value == "#":
+                    pygame.draw.rect(self.screen, theme["wall"], tile)
+                    if cell >= 5:
+                        pygame.draw.rect(self.screen, theme["wall_light"], tile.inflate(-cell // 2, -cell // 2))
+                else:
+                    color = theme["floor_a"] if (x + y) % 2 == 0 else theme["floor_b"]
+                    pygame.draw.rect(self.screen, color, tile)
+                    if cell >= 5 and tile_noise(x, y, 5) % 19 == 0:
+                        pygame.draw.rect(self.screen, theme["prop_a"], tile.inflate(-cell // 2, -cell // 2))
+        pygame.draw.rect(self.screen, theme["grid"], preview_rect, 1)
+
+    def draw_character_preview(self, rect, character_id):
+        pygame.draw.rect(self.screen, (19, 22, 27), rect, border_radius=8)
+        pygame.draw.rect(self.screen, COLORS["cyan"], rect, 2, border_radius=8)
+        ticks = pygame.time.get_ticks()
+        facing = ("down", "right", "up", "left")[(ticks // 1100) % 4]
+        frame = (ticks // 150) % 4
+        sprite = self.sprites.get(f"player_{character_id}_{facing}_{frame}", self.sprites["player"])
+        scale = max(2, int(min((rect.w * 0.48) / sprite.get_width(), (rect.h * 0.5) / sprite.get_height())))
+        preview = pygame.transform.scale(sprite, (sprite.get_width() * scale, sprite.get_height() * scale))
+        preview_rect = preview.get_rect(center=(rect.centerx, rect.y + int(rect.h * 0.36)))
+        pygame.draw.ellipse(self.screen, (8, 10, 13), (preview_rect.centerx - preview_rect.w // 2, preview_rect.bottom - 18, preview_rect.w, 22))
+        self.screen.blit(preview, preview_rect)
+        self.draw_text_center(self.character_name(character_id), pygame.Rect(rect.x + 12, rect.y + int(rect.h * 0.62), rect.w - 24, 34), COLORS["gold"], self.font)
+        self.draw_text_center(self.fit_text(self.character_description(character_id), self.tiny_font, rect.w - 44), pygame.Rect(rect.x + 18, rect.y + int(rect.h * 0.72), rect.w - 36, 30), COLORS["muted"], self.tiny_font)
+        cfg = CHARACTERS.get(character_id, CHARACTERS["soldier"])
+        stat = f"{self.t('hp')} {cfg['hp']} | {self.t('armor')} {cfg['armor']} | {self.t('magnet')} {cfg['pickup_radius']}"
+        self.draw_text_center(stat, pygame.Rect(rect.x + 18, rect.bottom - 44, rect.w - 36, 28), COLORS["cyan"], self.tiny_font)
 
     def screen_to_world(self, pos):
         if not self.world_rect.collidepoint(pos):
@@ -2112,7 +2929,7 @@ class Game:
 
     def apply_bile(self, pos):
         self.bile_timer = BILE_BOOST_DURATION
-        self.message = "Boomer bile! Zombies are enraged!"
+        self.message = self.t("boomer_bile")
         self.message_timer = 2.0
         self.create_bile_splash(pos, 82)
         self.play_sound("poison", 0.55, cooldown=0.25)
@@ -2165,7 +2982,7 @@ class Game:
 
     def build_spawn_cells(self):
         cells = []
-        for y, row in enumerate(MAP_ROWS):
+        for y, row in enumerate(self.tile_map.rows):
             for x, value in enumerate(row):
                 if value == "#":
                     continue
@@ -2176,12 +2993,67 @@ class Game:
     def build_boss_spawn_cells(self):
         radius = ZOMBIE_TYPES["titan"]["radius"]
         cells = []
-        for y, row in enumerate(MAP_ROWS):
+        for y, row in enumerate(self.tile_map.rows):
             for x, value in enumerate(row):
                 cell = (x, y)
                 if value != "#" and self.tile_map.is_clear_for_radius(cell, radius):
                     cells.append(cell)
         return cells
+
+    def find_player_spawn_cell(self):
+        center_cell = (GRID_W // 2, GRID_H // 2)
+        center_pos = Vec2(WORLD_W / 2, WORLD_H / 2)
+        best_open = None
+        best_open_score = 1_000_000
+        best_fallback = None
+        best_fallback_score = 1_000_000
+
+        for y, row in enumerate(self.tile_map.rows):
+            for x, value in enumerate(row):
+                cell = (x, y)
+                if value == "#" or not self.tile_map.is_clear_for_radius(cell, self.player.radius + 4):
+                    continue
+
+                immediate_walls = 0
+                near_walls = 0
+                open_count = 0
+                for dy in range(-2, 3):
+                    for dx in range(-2, 3):
+                        if dx == 0 and dy == 0:
+                            continue
+                        near = (x + dx, y + dy)
+                        blocked = not self.tile_map.in_bounds(near) or self.tile_map.is_wall(near)
+                        if blocked:
+                            near_walls += 1
+                            if max(abs(dx), abs(dy)) <= 1:
+                                immediate_walls += 1
+                        else:
+                            open_count += 1
+
+                border = min(x, y, GRID_W - 1 - x, GRID_H - 1 - y)
+                distance = self.tile_map.cell_center(cell).distance_to(center_pos) / TILE
+                score = distance + near_walls * 4 + immediate_walls * 18 - open_count * 0.45 + max(0, 4 - border) * 8
+
+                if immediate_walls == 0 and open_count >= 18 and score < best_open_score:
+                    best_open = cell
+                    best_open_score = score
+                if score < best_fallback_score:
+                    best_fallback = cell
+                    best_fallback_score = score
+
+        return best_open or best_fallback or nearest_clear_cell(self.tile_map, center_cell, self.player.radius, max_distance=GRID_W)
+
+    def teleport_player_to_spawn(self, effect=False):
+        cell = self.find_player_spawn_cell()
+        if cell is None:
+            return
+        self.player.pos = self.tile_map.cell_center(cell)
+        self.player.last_move_dir = Vec2(0, 1)
+        self.player.facing = "down"
+        self.player.anim_time = 0
+        self.player.is_moving = False
+        if effect:
+            self.create_teleport_effect(self.player.pos)
 
     def blocked_cells(self):
         return {structure.cell for structure in self.structures if structure.alive}
@@ -2201,9 +3073,11 @@ class Game:
         random.shuffle(self.spawn_queue)
         self.spawn_timer = 0.4
         self.wave_active = True
-        self.message = f"Wave {self.wave}"
+        self.message = self.t("wave_label").format(wave=self.wave)
         self.message_timer = 2.0
         self.play_sound("wave", 0.42, cooldown=0.5)
+        if self.wave == 1 or random.random() < 0.72:
+            self.spawn_powerup()
 
     def make_wave(self, wave):
         queue = ["walker"] * self.scaled_wave_count(7 + wave * 4)
@@ -2238,7 +3112,11 @@ class Game:
             candidates = [fallback]
         cell = random.choice(candidates[: max(4, len(candidates) // 3)])
         pos = self.tile_map.cell_center(cell)
-        self.zombies.append(Zombie(kind, pos, self.wave, self.difficulty_id))
+        elite = kind != "titan" and random.random() < self.elite_chance()
+        self.zombies.append(Zombie(kind, pos, self.wave, self.difficulty_id, elite=elite))
+        if elite and random.random() < 0.28:
+            self.message = self.t("elite_incoming")
+            self.message_timer = 1.4
 
     def spawn_minion_near(self, kind, pos):
         radius = ZOMBIE_TYPES[kind]["radius"]
@@ -2271,29 +3149,66 @@ class Game:
             remaining -= amount
             self.gold_drops.append(GoldDrop(pos, amount))
 
+    def random_floor_position(self, min_player_distance=120):
+        for _ in range(80):
+            cell = random.choice(self.spawn_cells or [(GRID_W // 2, GRID_H // 2)])
+            if self.tile_map.is_wall(cell):
+                continue
+            pos = self.tile_map.cell_center(cell)
+            if pos.distance_to(self.player.pos) < min_player_distance:
+                continue
+            return pos
+        return Vec2(WORLD_W / 2, WORLD_H / 2)
+
+    def spawn_powerup(self, pos=None, kind=None):
+        if kind is None:
+            weights = ["medkit", "overdrive", "shield", "haste", "shock"]
+            if self.player.hp < self.player.max_hp * 0.55:
+                weights += ["medkit", "medkit"]
+            kind = random.choice(weights)
+        if pos is None:
+            pos = self.random_floor_position()
+        self.powerups.append(PowerUpDrop(pos, kind))
+
+    def elite_chance(self):
+        if self.wave < 3:
+            return 0.0
+        base = min(0.08 + self.wave * 0.008, 0.24)
+        if self.difficulty_id == "easy":
+            base -= 0.035
+        elif self.difficulty_id == "hard":
+            base += 0.035
+        elif self.difficulty_id == "nightmare":
+            base += 0.065
+        return clamp(base, 0, 0.32)
+
     def place_structure(self, kind, cell):
+        if kind == "turret" and self.turret_count() >= self.turret_limit():
+            self.message = self.t("turret_limit").format(count=self.turret_count(), limit=self.turret_limit())
+            self.message_timer = 1.5
+            return False
         if cell[0] >= GRID_W or cell[1] >= GRID_H or not self.tile_map.in_bounds(cell):
             return False
         if self.tile_map.is_wall(cell):
-            self.message = "Cannot build on wall"
+            self.message = self.t("cannot_build_wall")
             self.message_timer = 1.4
             return False
         if cell in self.blocked_cells():
-            self.message = "Tile occupied"
+            self.message = self.t("tile_occupied")
             self.message_timer = 1.4
             return False
         if self.tile_map.cell_center(cell).distance_to(self.player.pos) < 40:
-            self.message = "Too close to player"
+            self.message = self.t("too_close_player")
             self.message_timer = 1.4
             return False
         cost = self.structure_cost(kind)
         if not self.can_afford(cost):
-            self.message = "Not enough gold"
+            self.message = self.t("not_enough_gold")
             self.message_timer = 1.4
             return False
         self.spend_gold(cost)
         self.structures.append(Structure(kind, cell, self.structure_stats(kind)))
-        self.message = f"Built {STRUCTURE_TYPES[kind]['label']}"
+        self.message = self.t("built").format(name=self.structure_name(kind))
         self.message_timer = 1.2
         self.play_sound("build", 0.55, cooldown=0.12)
         return True
@@ -2301,33 +3216,33 @@ class Game:
     def repair_nearest(self):
         damaged = [s for s in self.structures if s.alive and s.hp < s.max_hp]
         if not damaged:
-            self.message = "No damaged structure nearby"
+            self.message = self.t("no_damaged_structure")
             self.message_timer = 1.3
             return
         nearest = min(damaged, key=lambda s: Vec2(s.rect.center).distance_squared_to(self.player.pos))
         if Vec2(nearest.rect.center).distance_to(self.player.pos) > 90:
-            self.message = "Move closer to repair"
+            self.message = self.t("move_closer_repair")
             self.message_timer = 1.3
             return
         cost = self.repair_cost()
         if not self.can_afford(cost):
-            self.message = f"Need {cost} gold to repair"
+            self.message = self.t("need_gold_repair").format(cost=cost)
             self.message_timer = 1.3
             return
         self.spend_gold(cost)
         repair_amount = int(round(70 * self.structure_balance_cfg()["repair_amount"]))
         nearest.repair(repair_amount)
-        self.floating_texts.append(FloatingText(Vec2(nearest.rect.center), "+repair", COLORS["green"]))
+        self.floating_texts.append(FloatingText(Vec2(nearest.rect.center), self.t("repair_float"), COLORS["green"]))
         self.play_sound("build", 0.42, cooldown=0.12)
 
     def upgrade_weapon(self):
         if self.player.weapon.is_maxed:
-            self.message = f"{self.player.weapon.tier_name} is MAX level"
+            self.message = self.t("weapon_max").format(weapon=self.weapon_name(self.player.weapon.tier_name))
             self.message_timer = 1.4
             return
         cost = self.player.weapon.upgrade_cost
         if not self.can_afford(cost):
-            self.message = f"Need {cost} gold"
+            self.message = self.t("need_gold").format(cost=cost)
             self.message_timer = 1.3
             return
         self.spend_gold(cost)
@@ -2335,9 +3250,9 @@ class Game:
         self.player.weapon.upgrade()
         new_name = self.player.weapon.tier_name
         if new_name != old_name:
-            self.message = f"Weapon evolved: {new_name}"
+            self.message = self.t("weapon_evolved").format(weapon=self.weapon_name(new_name))
         else:
-            self.message = f"{new_name} upgraded to Lv {self.player.weapon.level}"
+            self.message = self.t("weapon_upgraded").format(weapon=self.weapon_name(new_name), level=self.player.weapon.level)
         self.message_timer = 1.8
         self.play_sound("upgrade", 0.62, cooldown=0.12)
 
@@ -2389,6 +3304,26 @@ class Game:
                 scale = 1 - distance / radius
                 structure.take_damage(max(6, int(damage * scale)), self)
 
+    def create_teleport_effect(self, pos):
+        pos = Vec2(pos)
+        theme = MAP_THEMES.get(self.map_id, MAP_THEMES["warehouse"])
+        colors = (COLORS["cyan"], theme["accent"], COLORS["blue"], COLORS["gold"])
+        for i in range(42):
+            angle = i / 42 * math.tau
+            direction = Vec2(math.cos(angle), math.sin(angle))
+            start = pos + direction * random.uniform(4, 18)
+            velocity = direction * random.uniform(70, 230) + Vec2(0, random.uniform(-90, 20))
+            self.particles.append(Particle(start, velocity, random.choice(colors), life=random.uniform(0.34, 0.72), size=random.randint(2, 5)))
+        for _ in range(18):
+            angle = random.uniform(0, math.tau)
+            radius = random.uniform(6, 30)
+            start = pos + Vec2(math.cos(angle), math.sin(angle)) * radius
+            velocity = Vec2(0, -random.uniform(80, 180)).rotate(random.uniform(-18, 18))
+            self.particles.append(Particle(start, velocity, random.choice(colors), life=random.uniform(0.28, 0.55), size=3))
+        self.create_shockwave(pos, 70, 0, visual_only=True)
+        self.floating_texts.append(FloatingText(pos + Vec2(0, -48), self.t("teleport"), theme["accent"], life=1.0))
+        self.play_sound("dash", 0.34, cooldown=0.12)
+
     def add_muzzle_particle(self, pos, vel):
         for _ in range(4):
             direction = vel.normalize().rotate(random.uniform(-26, 26))
@@ -2424,21 +3359,25 @@ class Game:
                     self.paused = not self.paused
                 elif event.key == pygame.K_f:
                     self.auto_fire = not self.auto_fire
+                elif not self.paused and event.key in (pygame.K_LSHIFT, pygame.K_RSHIFT):
+                    self.player.start_dash(self)
                 elif event.key == pygame.K_F10:
                     self.dev_mode = not self.dev_mode
-                    self.message = "Developer Mode: ON" if self.dev_mode else "Developer Mode: OFF"
+                    self.message = self.t("dev_on") if self.dev_mode else self.t("dev_off")
                     self.message_timer = 1.5
                 elif not self.paused and event.key == pygame.K_SPACE:
                     self.start_wave()
+                elif not self.paused and event.key == pygame.K_i:
+                    self.info_panel_open = not self.info_panel_open
                 elif not self.paused and event.key == pygame.K_1:
                     self.upgrade_weapon()
                 elif not self.paused and event.key == pygame.K_2:
                     self.build_mode = "turret"
-                    self.message = "Build mode: Turret"
+                    self.message = self.t("build_mode").format(name=self.structure_name("turret"))
                     self.message_timer = 1.0
                 elif not self.paused and event.key == pygame.K_3:
                     self.build_mode = "fence"
-                    self.message = "Build mode: Fence"
+                    self.message = self.t("build_mode").format(name=self.structure_name("fence"))
                     self.message_timer = 1.0
                 elif event.key == pygame.K_b:
                     self.build_mode = None
@@ -2497,6 +3436,11 @@ class Game:
                 if character_id in CHARACTERS:
                     self.character_id = character_id
                     return True
+            if action.startswith("map_"):
+                map_id = action.removeprefix("map_")
+                if map_id in MAPS:
+                    self.map_id = map_id
+                    return True
         elif self.state == "options":
             if action == "options_back":
                 self.close_options()
@@ -2529,14 +3473,18 @@ class Game:
                 self.upgrade_weapon()
             elif not self.paused and action == "hotbar_turret":
                 self.build_mode = "turret"
-                self.message = "Build mode: Turret"
+                self.message = self.t("build_mode").format(name=self.structure_name("turret"))
                 self.message_timer = 1.0
             elif not self.paused and action == "hotbar_fence":
                 self.build_mode = "fence"
-                self.message = "Build mode: Fence"
+                self.message = self.t("build_mode").format(name=self.structure_name("fence"))
                 self.message_timer = 1.0
+            elif not self.paused and action == "hotbar_dash":
+                self.player.start_dash(self)
             elif not self.paused and action == "auto_toggle_game":
                 self.auto_fire = not self.auto_fire
+            elif not self.paused and action == "info_toggle":
+                self.info_panel_open = not self.info_panel_open
             else:
                 return False
             return True
@@ -2559,7 +3507,7 @@ class Game:
                 self.wave_break_timer = WAVE_BREAK_SECONDS
                 reward = int(round((25 + self.wave * 7) * self.difficulty_cfg()["reward"]))
                 self.player.gold += reward
-                self.message = f"Wave clear! Bonus +{reward} gold"
+                self.message = self.t("wave_clear").format(reward=reward)
                 self.message_timer = 3.0
         elif self.wave > 0 and self.wave_break_timer > 0:
             self.wave_break_timer -= dt
@@ -2581,6 +3529,8 @@ class Game:
             pool.update(dt, self)
         for gold in self.gold_drops:
             gold.update(dt, self)
+        for powerup in self.powerups:
+            powerup.update(dt, self)
         for particle in self.particles:
             particle.update(dt)
         for floating in self.floating_texts:
@@ -2593,6 +3543,7 @@ class Game:
         self.poison_pools = [p for p in self.poison_pools if p.alive]
         self.structures = [s for s in self.structures if s.alive]
         self.gold_drops = [g for g in self.gold_drops if g.alive]
+        self.powerups = [p for p in self.powerups if p.alive]
         self.particles = [p for p in self.particles if p.alive]
         self.floating_texts = [f for f in self.floating_texts if f.alive]
 
@@ -2608,6 +3559,8 @@ class Game:
             pool.draw(world)
         for gold in self.gold_drops:
             gold.draw(world)
+        for powerup in self.powerups:
+            powerup.draw(world)
         for structure in self.structures:
             structure.draw(world)
         for bullet in self.bullets:
@@ -2641,6 +3594,7 @@ class Game:
             and cell not in self.blocked_cells()
             and self.tile_map.cell_center(cell).distance_to(self.player.pos) >= 40
             and self.can_afford(self.structure_cost(self.build_mode))
+            and (self.build_mode != "turret" or self.turret_count() < self.turret_limit())
         )
         overlay = pygame.Surface((TILE, TILE), pygame.SRCALPHA)
         overlay.fill((82, 215, 126, 120) if valid else (230, 70, 70, 130))
@@ -2682,11 +3636,11 @@ class Game:
         bar_w = min(int(540 * s), max(240, int(sw * 0.42)))
         hp_rect = pygame.Rect(sw // 2 - bar_w // 2, top.bottom + max(8, int(12 * s)), bar_w, max(14, int(22 * s)))
         xp_rect = pygame.Rect(hp_rect.x, hp_rect.bottom + max(6, int(10 * s)), bar_w, max(10, int(16 * s)))
-        self.draw_text("HP", hp_rect.x - 44, hp_rect.y - 3, COLORS["text"], self.small_font)
+        self.draw_text(self.t("hp"), hp_rect.x - 54, hp_rect.y - 3, COLORS["text"], self.small_font)
         self.draw_bar(self.screen, hp_rect, self.player.hp / self.player.max_hp, COLORS["green"])
-        self.draw_text("XP", xp_rect.x - 44, xp_rect.y - 4, COLORS["text"], self.small_font)
+        self.draw_text(self.t("xp"), xp_rect.x - 54, xp_rect.y - 4, COLORS["text"], self.small_font)
         self.draw_bar(self.screen, xp_rect, self.player.xp / self.player.next_xp, COLORS["cyan"], (32, 39, 48))
-        self.draw_text(f"Lv {self.player.level}", hp_rect.right + 18, hp_rect.y - 2, COLORS["cyan"], self.small_font)
+        self.draw_text(f"{self.t('level_short')} {self.player.level}", hp_rect.right + 18, hp_rect.y - 2, COLORS["cyan"], self.small_font)
 
         pause_rect = pygame.Rect(sw - self.margin - int(132 * s), hp_rect.y, int(132 * s), max(38, int(46 * s)))
         self.draw_button("pause_toggle", pause_rect, self.t("pause"), font=self.small_font)
@@ -2696,50 +3650,29 @@ class Game:
         pygame.draw.line(self.screen, COLORS["hud_line"], (0, panel.y), (sw, panel.y), 2)
 
         weapon = self.player.weapon
-        weapon_damage = int(weapon.damage * (1 + self.player.damage_bonus) * self.difficulty_cfg()["player_damage"])
-        fire_rate = (1 + self.player.fire_rate_bonus) / weapon.cooldown
-        slot_w = int(188 * s)
+        slot_w = int(154 * s)
         slot_h = min(int(104 * s), self.bottom_ui_h - max(22, int(42 * s)))
-        gap = max(8, int(18 * s))
-        total_w = slot_w * 4 + gap * 3
+        gap = max(8, int(14 * s))
+        total_w = slot_w * 6 + gap * 5
         if total_w > sw - self.margin * 2:
-            slot_w = max(118, int((sw - self.margin * 2 - gap * 3) / 4))
-            total_w = slot_w * 4 + gap * 3
+            slot_w = max(96, int((sw - self.margin * 2 - gap * 5) / 6))
+            total_w = slot_w * 6 + gap * 5
         start_x = sw // 2 - total_w // 2
         y = panel.y + max(10, (self.bottom_ui_h - slot_h) // 2)
 
-        if start_x > 330 * s:
-            self.draw_text(f"{weapon.tier_name} Lv {weapon.level}", self.margin + 18, panel.y + int(20 * s), COLORS["cyan"], self.font)
-            self.draw_text(
-                f"DMG {weapon_damage} | Shots {weapon.bullet_count} | Pierce {weapon.pierce} | Rate {fire_rate:.1f}/s",
-                self.margin + 18,
-                panel.y + int(56 * s),
-                COLORS["muted"],
-                self.small_font,
-            )
-            self.draw_text(
-                f"{CHARACTERS[self.player.character_id]['label']} | {DIFFICULTIES[self.difficulty_id]['label']} | Armor {self.player.armor} | Range {weapon.bullet_range}",
-                self.margin + 18,
-                panel.y + int(86 * s),
-                COLORS["muted"],
-                self.small_font,
-            )
-
-        upgrade_value = "MAX" if weapon.is_maxed else ("FREE" if self.dev_mode else f"{weapon.upgrade_cost}g")
+        upgrade_value = self.t("max") if weapon.is_maxed else (self.t("free") if self.dev_mode else f"{weapon.upgrade_cost}g")
         self.draw_hotbar_slot("hotbar_upgrade", pygame.Rect(start_x, y, slot_w, slot_h), "1", self.t("upgrade"), upgrade_value, COLORS["gold"], active=weapon.is_maxed)
-        turret_value = "FREE" if self.dev_mode else f"{self.structure_cost('turret')}g"
-        fence_value = "FREE" if self.dev_mode else f"{self.structure_cost('fence')}g"
+        turret_cost = self.t("free") if self.dev_mode else f"{self.structure_cost('turret')}g"
+        turret_value = f"{turret_cost} {self.turret_count()}/{self.turret_limit()}"
+        fence_value = self.t("free") if self.dev_mode else f"{self.structure_cost('fence')}g"
         self.draw_hotbar_slot("hotbar_turret", pygame.Rect(start_x + (slot_w + gap), y, slot_w, slot_h), "2", self.t("turret"), turret_value, COLORS["cyan"], active=self.build_mode == "turret")
         self.draw_hotbar_slot("hotbar_fence", pygame.Rect(start_x + (slot_w + gap) * 2, y, slot_w, slot_h), "3", self.t("fence"), fence_value, COLORS["orange"], active=self.build_mode == "fence")
+        dash_value = self.t("ready") if self.player.dash_cooldown <= 0 else f"{self.player.dash_cooldown:.1f}s"
+        self.draw_hotbar_slot("hotbar_dash", pygame.Rect(start_x + (slot_w + gap) * 3, y, slot_w, slot_h), "Sh", self.t("dash"), dash_value, COLORS["purple"], active=self.player.dash_time > 0)
         auto_text = self.t("on") if self.auto_fire else self.t("off")
-        self.draw_hotbar_slot("auto_toggle_game", pygame.Rect(start_x + (slot_w + gap) * 3, y, slot_w, slot_h), "F", self.t("auto_fire"), auto_text, COLORS["green"], active=self.auto_fire)
-
-        mode = self.build_mode.upper() if self.build_mode else self.t("off")
-        if sw - (start_x + total_w) > 320 * s:
-            right_x = sw - int(520 * s)
-            self.draw_text(f"Build: {mode}", right_x, panel.y + int(26 * s), COLORS["orange"] if self.build_mode else COLORS["muted"], self.small_font)
-            self.draw_text("WASD | Mouse aim | Space wave | P pause", right_x, panel.y + int(64 * s), COLORS["muted"], self.small_font)
-            self.draw_text(self.t("auto_hint"), right_x, panel.y + int(96 * s), COLORS["muted"], self.tiny_font)
+        self.draw_hotbar_slot("auto_toggle_game", pygame.Rect(start_x + (slot_w + gap) * 4, y, slot_w, slot_h), "F", self.t("auto_fire"), auto_text, COLORS["green"], active=self.auto_fire)
+        info_text = self.t("on") if self.info_panel_open else self.t("off")
+        self.draw_hotbar_slot("info_toggle", pygame.Rect(start_x + (slot_w + gap) * 5, y, slot_w, slot_h), "I", self.t("info"), info_text, COLORS["blue"], active=self.info_panel_open)
 
     def draw_hotbar_slot(self, key, rect, number, label, value, accent, active=False):
         mouse = pygame.mouse.get_pos()
@@ -2754,8 +3687,46 @@ class Game:
         self.draw_text_center(value, pygame.Rect(rect.x + 8, rect.y + 76, rect.w - 16, 22), accent, self.small_font)
         self.ui_buttons[key] = rect
 
+    def draw_info_panel(self):
+        if not self.info_panel_open or self.state != "playing" or self.game_over:
+            return
+        sw, sh, s = self.screen_w, self.screen_h, self.ui_scale
+        panel_w = min(int(520 * s), sw - self.margin * 2)
+        panel_h = max(260, int(300 * s))
+        panel = pygame.Rect(sw - panel_w - self.margin, self.top_ui_h + int(18 * s), panel_w, panel_h)
+        self.draw_panel(panel, alpha=232)
+
+        weapon = self.player.weapon
+        overdrive_mult = 1.35 if self.player.buff_timers["overdrive"] > 0 else 1.0
+        weapon_damage = int(weapon.damage * (1 + self.player.damage_bonus) * overdrive_mult * self.difficulty_cfg()["player_damage"])
+        fire_rate = (1 + self.player.fire_rate_bonus + (0.45 if self.player.buff_timers["overdrive"] > 0 else 0)) / weapon.cooldown
+        turret = self.structure_stats("turret")
+        fence = self.structure_stats("fence")
+        buffs = [
+            f"{self.buff_label(key)} {math.ceil(value)}s"
+            for key, value in self.player.buff_timers.items()
+            if value > 0
+        ]
+        dash = self.t("ready") if self.player.dash_cooldown <= 0 else f"{self.player.dash_cooldown:.1f}s"
+        lines = [
+            (self.t("info"), COLORS["gold"], self.font),
+            (f"{self.character_name()} | {self.difficulty_name()} | {self.t('level_short')} {self.player.level}", COLORS["cyan"], self.small_font),
+            (f"{self.weapon_name(weapon.tier_name)} {self.t('level_short')} {weapon.level}: {self.t('dmg')} {weapon_damage} | {self.t('rate')} {fire_rate:.1f}/s | {self.t('range_short')} {weapon.bullet_range}", COLORS["text"], self.small_font),
+            (f"{self.t('shots')} {weapon.bullet_count} | {self.t('pierce')} {weapon.pierce} | {self.t('armor')} {self.player.armor} | {self.t('magnet')} {int(self.player.pickup_radius)}", COLORS["muted"], self.small_font),
+            (f"{self.t('turrets')} {self.turret_count()}/{self.turret_limit()} | {self.t('cost')} {self.structure_cost('turret')}g | {self.t('hp')} {turret['hp']} | {self.t('dmg')} {turret['damage']}", COLORS["cyan"], self.small_font),
+            (f"{self.t('fence')} {self.t('cost')} {self.structure_cost('fence')}g | {self.t('hp')} {fence['hp']} | {self.t('repair')} {self.repair_cost()}g", COLORS["orange"], self.small_font),
+            (f"{self.t('dash')}: {dash} | {self.t('buffs')}: {', '.join(buffs) if buffs else '-'}", COLORS["purple"], self.small_font),
+            (f"{self.t('wave_key')} | {self.t('repair_key')} | B {self.t('cancel_build')} | I {self.t('close')}", COLORS["muted"], self.tiny_font),
+        ]
+        x = panel.x + int(24 * s)
+        y = panel.y + int(20 * s)
+        for text, color, font in lines:
+            self.draw_text(text, x, y, color, font)
+            y += max(26, int((30 if font is self.tiny_font else 36) * s))
+
     def draw_overlay(self):
         sw, sh = self.screen_w, self.screen_h
+        self.draw_info_panel()
         if self.message_timer > 0 and self.message:
             image = self.font.render(self.message, True, COLORS["text"])
             rect = image.get_rect(center=(sw // 2, self.top_ui_h + 20))
@@ -2765,7 +3736,7 @@ class Game:
             self.screen.blit(image, rect)
         if not self.wave_active and not self.spawn_queue and not self.game_over:
             if self.wave > 0 and self.wave_break_timer > 0:
-                hint = f"Next wave in {math.ceil(self.wave_break_timer)}s - press SPACE to skip"
+                hint = self.t("next_wave_in").format(seconds=math.ceil(self.wave_break_timer))
             else:
                 hint = self.t("start_hint")
             image = self.font.render(hint, True, COLORS["gold"])
@@ -2775,10 +3746,10 @@ class Game:
             veil = pygame.Surface((sw, sh), pygame.SRCALPHA)
             veil.fill((0, 0, 0, 165))
             self.screen.blit(veil, (0, 0))
-            title = self.big_font.render("GAME OVER", True, COLORS["red"])
+            title = self.big_font.render(self.t("game_over"), True, COLORS["red"])
             title_rect = title.get_rect(center=(sw // 2, sh // 2 - int(38 * self.ui_scale)))
             self.screen.blit(title, title_rect)
-            sub = self.font.render("Press ENTER to restart", True, COLORS["text"])
+            sub = self.font.render(self.t("restart_hint"), True, COLORS["text"])
             self.screen.blit(sub, sub.get_rect(center=(sw // 2, sh // 2 + int(28 * self.ui_scale))))
         if self.paused:
             self.draw_pause_overlay()
@@ -2802,87 +3773,126 @@ class Game:
 
     def draw_menu(self):
         sw, sh, s = self.screen_w, self.screen_h, self.ui_scale
-        self.screen.fill((12, 14, 18))
-        grid = max(32, int(48 * s))
-        for y in range(0, sh, grid):
-            pygame.draw.line(self.screen, (24, 28, 34), (0, y), (sw, y), 1)
-        for x in range(0, sw, grid):
-            pygame.draw.line(self.screen, (24, 28, 34), (x, 0), (x, sh), 1)
+        self.draw_menu_background("crossfire", use_menu_art=True)
         title_rect = pygame.Rect(0, int(170 * s), sw, int(110 * s))
         self.draw_text_center(self.t("title"), title_rect, COLORS["gold"], self.title_font)
-        self.draw_text_center("2D RPG SURVIVAL", pygame.Rect(0, int(282 * s), sw, int(40 * s)), COLORS["cyan"], self.font)
+        self.draw_text_center(self.t("subtitle"), pygame.Rect(0, int(282 * s), sw, int(40 * s)), COLORS["cyan"], self.font)
         button_w = min(int(340 * s), sw - self.margin * 2)
         button_h = max(48, int(66 * s))
         bx = sw // 2 - button_w // 2
         y0 = int(390 * s)
         step = int(88 * s)
+        menu_panel = pygame.Rect(bx - int(36 * s), y0 - int(34 * s), button_w + int(72 * s), step * 2 + button_h + int(68 * s))
+        self.draw_panel(menu_panel, alpha=178)
         self.draw_button("menu_start", pygame.Rect(bx, y0, button_w, button_h), self.t("start"), font=self.font)
         self.draw_button("menu_options", pygame.Rect(bx, y0 + step, button_w, button_h), self.t("options"), font=self.font)
         self.draw_button("menu_exit", pygame.Rect(bx, y0 + step * 2, button_w, button_h), self.t("exit"), font=self.font)
 
     def draw_setup(self):
         sw, sh, s = self.screen_w, self.screen_h, self.ui_scale
-        self.screen.fill((12, 14, 18))
-        grid = max(32, int(48 * s))
-        for y in range(0, sh, grid):
-            pygame.draw.line(self.screen, (24, 28, 34), (0, y), (sw, y), 1)
-        for x in range(0, sw, grid):
-            pygame.draw.line(self.screen, (24, 28, 34), (x, 0), (x, sh), 1)
+        self.draw_menu_background(self.map_id)
 
-        self.draw_text_center(self.t("setup_title"), pygame.Rect(0, int(112 * s), sw, int(88 * s)), COLORS["gold"], self.big_font)
-        self.draw_text_center(self.t("title"), pygame.Rect(0, int(196 * s), sw, int(40 * s)), COLORS["cyan"], self.font)
+        self.draw_text_center(self.t("setup_title"), pygame.Rect(0, int(54 * s), sw, int(82 * s)), COLORS["gold"], self.big_font)
+        self.draw_text_center(self.t("title"), pygame.Rect(0, int(132 * s), sw, int(38 * s)), COLORS["cyan"], self.font)
 
-        box_w = min(int(940 * s), sw - self.margin * 2)
-        box_h = min(int(640 * s), sh - int(280 * s))
-        box = pygame.Rect(sw // 2 - box_w // 2, int(285 * s), box_w, box_h)
-        self.draw_panel(box, alpha=224)
+        box_w = min(int(1540 * s), sw - self.margin * 2)
+        box_h = min(int(790 * s), sh - int(190 * s))
+        box = pygame.Rect(sw // 2 - box_w // 2, int(190 * s), box_w, box_h)
+        self.draw_panel(box, alpha=220)
 
-        option_h = max(38, int(48 * s))
-        gap = max(8, int(12 * s))
-        row_w = min(int(780 * s), box.w - int(96 * s))
-        item_w = int((row_w - gap * 3) / 4)
-        row_x = box.centerx - row_w // 2
-        y = box.y + int(64 * s)
+        pad = max(16, int(28 * s))
+        gap = max(12, int(20 * s))
+        bottom_h = max(56, int(74 * s))
+        content_top = box.y + pad
+        content_bottom = box.bottom - bottom_h - pad
+        left_w = min(int(360 * s), max(230, int(box.w * 0.27)))
+        right_w = min(int(460 * s), max(280, int(box.w * 0.32)))
+        center_w = box.w - pad * 2 - left_w - right_w - gap * 2
+        left = pygame.Rect(box.x + pad, content_top, left_w, content_bottom - content_top)
+        center = pygame.Rect(left.right + gap, content_top, center_w, content_bottom - content_top)
+        right = pygame.Rect(center.right + gap, content_top, right_w, content_bottom - content_top)
 
-        self.draw_text_center(self.t("difficulty"), pygame.Rect(box.x, y - int(38 * s), box.w, int(28 * s)), COLORS["cyan"], self.small_font)
+        self.draw_character_preview(left, self.character_id)
+
+        map_preview = pygame.Rect(right.x, right.y, right.w, int(right.h * 0.58))
+        self.draw_map_preview(map_preview, self.map_id)
+        desc = pygame.Rect(right.x, map_preview.bottom + int(14 * s), right.w, right.bottom - map_preview.bottom - int(14 * s))
+        self.draw_panel(desc, color=(20, 24, 29), alpha=225)
+        self.draw_text_center(self.fit_text(self.map_description(self.map_id), self.tiny_font, desc.w - 40), pygame.Rect(desc.x + 16, desc.y + int(18 * s), desc.w - 32, int(42 * s)), COLORS["text"], self.tiny_font)
+        difficulty_line = f"{self.t('difficulty')}: {self.difficulty_name()}  |  {self.t('turrets')}: {self.turret_limit()}"
+        self.draw_text_center(difficulty_line, pygame.Rect(desc.x + 16, desc.y + int(70 * s), desc.w - 32, int(30 * s)), COLORS["gold"], self.small_font)
+        self.draw_text_center(
+            f"{self.t('hp')} {CHARACTERS[self.character_id]['hp']} | {self.t('armor')} {CHARACTERS[self.character_id]['armor']} | {self.t('cost')} {self.structure_cost('turret')}g",
+            pygame.Rect(desc.x + 16, desc.y + int(112 * s), desc.w - 32, int(30 * s)),
+            COLORS["cyan"],
+            self.tiny_font,
+        )
+
+        option_h = max(42, int(54 * s))
+        y = center.y + int(10 * s)
+        self.draw_text_center(self.t("difficulty"), pygame.Rect(center.x, y, center.w, int(30 * s)), COLORS["cyan"], self.small_font)
+        y += int(36 * s)
+        item_w = int((center.w - gap * 3) / 4)
         for index, difficulty_id in enumerate(DIFFICULTIES):
-            rect = pygame.Rect(row_x + index * (item_w + gap), y, item_w, option_h)
-            self.draw_button(
+            rect = pygame.Rect(center.x + index * (item_w + gap), y, item_w, option_h)
+            self.draw_select_card(
                 f"difficulty_{difficulty_id}",
                 rect,
-                DIFFICULTIES[difficulty_id]["label"],
+                self.difficulty_name(difficulty_id),
                 active=self.difficulty_id == difficulty_id,
-                font=self.small_font,
+                accent=COLORS["gold"],
             )
 
-        y += option_h + int(78 * s)
-        self.draw_text_center(self.t("character"), pygame.Rect(box.x, y - int(38 * s), box.w, int(28 * s)), COLORS["cyan"], self.small_font)
+        y += option_h + int(44 * s)
+        self.draw_text_center(self.t("character"), pygame.Rect(center.x, y, center.w, int(30 * s)), COLORS["cyan"], self.small_font)
+        y += int(36 * s)
+        card_w = int((center.w - gap) / 2)
+        card_h = max(58, int(82 * s))
         for index, character_id in enumerate(CHARACTERS):
-            rect = pygame.Rect(row_x + index * (item_w + gap), y, item_w, option_h)
-            self.draw_button(
+            cx = center.x + (index % 2) * (card_w + gap)
+            cy = y + (index // 2) * (card_h + int(12 * s))
+            rect = pygame.Rect(cx, cy, card_w, card_h)
+            self.draw_select_card(
                 f"character_{character_id}",
                 rect,
-                CHARACTERS[character_id]["label"],
+                self.character_name(character_id),
+                self.character_description(character_id),
                 active=self.character_id == character_id,
-                font=self.small_font,
+                accent=COLORS["cyan"],
             )
 
-        y += option_h + int(70 * s)
+        y += card_h * 2 + int(48 * s)
+        self.draw_text_center(self.t("map"), pygame.Rect(center.x, y, center.w, int(30 * s)), COLORS["cyan"], self.small_font)
+        y += int(36 * s)
+        map_count = len(MAP_ORDER)
+        map_item_w = int((center.w - gap * (map_count - 1)) / map_count)
+        map_card_h = max(58, int(76 * s))
+        for index, map_id in enumerate(MAP_ORDER):
+            rect = pygame.Rect(center.x + index * (map_item_w + gap), y, map_item_w, map_card_h)
+            self.draw_select_card(
+                f"map_{map_id}",
+                rect,
+                self.map_name(map_id),
+                self.map_description(map_id),
+                active=self.map_id == map_id,
+                accent=MAP_THEMES[map_id]["accent"],
+            )
+
+        y += map_card_h + int(30 * s)
         turret = self.structure_stats("turret")
         fence = self.structure_stats("fence")
-        summary_w = min(int(650 * s), box.w - int(96 * s))
-        summary = pygame.Rect(box.centerx - summary_w // 2, y, summary_w, max(86, int(104 * s)))
+        summary = pygame.Rect(center.x, y, center.w, min(max(86, int(104 * s)), center.bottom - y))
         pygame.draw.rect(self.screen, (28, 32, 39), summary, border_radius=8)
         pygame.draw.rect(self.screen, COLORS["hud_line"], summary, 1, border_radius=8)
         self.draw_text_center(self.t("structures"), pygame.Rect(summary.x, summary.y + int(8 * s), summary.w, int(28 * s)), COLORS["gold"], self.small_font)
         self.draw_text_center(
-            f"Turret {self.structure_cost('turret')}g | HP {turret['hp']} | DMG {turret['damage']} | RNG {turret['range']}",
+            f"{self.t('turret')} {self.structure_cost('turret')}g | {self.t('hp')} {turret['hp']} | {self.t('dmg')} {turret['damage']} | {self.t('range_short')} {turret['range']}",
             pygame.Rect(summary.x, summary.y + int(38 * s), summary.w, int(26 * s)),
             COLORS["text"],
             self.small_font,
         )
         self.draw_text_center(
-            f"Fence {self.structure_cost('fence')}g | HP {fence['hp']} | Repair {self.repair_cost()}g",
+            f"{self.t('fence')} {self.structure_cost('fence')}g | {self.t('hp')} {fence['hp']} | {self.t('repair')} {self.repair_cost()}g",
             pygame.Rect(summary.x, summary.y + int(66 * s), summary.w, int(26 * s)),
             COLORS["muted"],
             self.small_font,
@@ -2890,7 +3900,7 @@ class Game:
 
         button_w = min(int(280 * s), box.w - int(120 * s))
         button_h = max(46, int(58 * s))
-        bottom_y = box.bottom - int(86 * s)
+        bottom_y = box.bottom - pad - button_h
         total_w = button_w * 2 + int(24 * s)
         left_x = box.centerx - total_w // 2
         self.draw_button("setup_back", pygame.Rect(left_x, bottom_y, button_w, button_h), self.t("back"), font=self.font)
@@ -2909,7 +3919,7 @@ class Game:
         y += int(95 * s)
         self.draw_option_row(box, y, self.t("sfx"), f"{self.sfx_volume}%", "sfx_down", "sfx_up")
         y += int(105 * s)
-        lang_label = "Tieng Viet" if self.language == "vi" else "English"
+        lang_label = "Tiếng Việt" if self.language == "vi" else "English"
         self.draw_text(self.t("language"), box.x + int(82 * s), y + int(14 * s), COLORS["text"], self.font)
         self.draw_button("lang_toggle", pygame.Rect(box.right - int(330 * s), y, int(210 * s), max(42, int(54 * s))), lang_label, active=True, font=self.small_font)
         y += int(95 * s)
