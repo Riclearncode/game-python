@@ -1,0 +1,25 @@
+OpenGameArt CC0 audio used in Pixel Zombie Siege
+
+1. Monster Sound Effects Pack
+Source: https://opengameart.org/content/monster-sound-effects-pack
+Author: Ogrebane
+License: CC0
+Included files:
+- monster_groan.wav from monster-1.wav
+- monster_attack.wav from monster-4.wav
+- monster_death.wav from monster-8.wav
+- monster_titan.wav from monster-6.wav
+
+2. 8bit SFX
+Source: https://opengameart.org/content/8bit-sfx
+Author: celestialghost8
+License: CC0
+Included files:
+- 8bit_confirm.wav from 1.wav
+
+3. Chunky Explosion
+Source: https://opengameart.org/content/chunky-explosion
+Author: Joth
+License: CC0
+Included files:
+- chunky_explosion.mp3

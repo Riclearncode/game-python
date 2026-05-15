@@ -1,10 +1,13 @@
 import argparse
+from collections import deque
 import heapq
 import math
 import os
 import random
 import sys
 from dataclasses import dataclass
+
+from ui_manager import UIManager
 
 
 if "--smoke" in sys.argv:
@@ -22,6 +25,8 @@ except ModuleNotFoundError as exc:
 Vec2 = pygame.math.Vector2
 
 TILE = 32
+PLAYER_HEAL_COOLDOWN = 24.0
+PLAYER_HEAL_RATIO = 0.34
 MAP_ROWS = [
     "############################",
     "#..........................#",
@@ -180,6 +185,27 @@ TURRET_LIMITS = {
     "hard": 3,
     "nightmare": 2,
 }
+TITAN_LEAP_COOLDOWNS = {
+    "easy": 20.0,
+    "normal": 16.0,
+    "hard": 14.0,
+    "nightmare": 12.0,
+}
+TITAN_STUCK_LEAP_SECONDS = {
+    "easy": 5.0,
+    "normal": 4.2,
+    "hard": 3.6,
+    "nightmare": 3.0,
+}
+TITAN_LEAP_MIN_PLAYER_DISTANCE = 120
+FENCE_TIER_STATS = {
+    1: {"hp": 300, "slow": 0.80, "damage_reduction": 0.0, "spike_damage": 0, "electric_cooldown": 0.0, "titan_guard": False},
+    2: {"hp": 430, "slow": 0.72, "damage_reduction": 0.08, "spike_damage": 0, "electric_cooldown": 0.0, "titan_guard": False},
+    3: {"hp": 560, "slow": 0.66, "damage_reduction": 0.12, "spike_damage": 7, "electric_cooldown": 0.0, "titan_guard": False},
+    4: {"hp": 700, "slow": 0.60, "damage_reduction": 0.16, "spike_damage": 10, "electric_cooldown": 0.0, "titan_guard": True},
+    5: {"hp": 840, "slow": 0.56, "damage_reduction": 0.20, "spike_damage": 13, "electric_cooldown": 6.0, "titan_guard": True},
+}
+MAX_FENCE_LEVEL = max(FENCE_TIER_STATS)
 
 assert all(len(row) == GRID_W for rows in MAPS.values() for row in rows), "Every map row must have the same width."
 assert all(len(rows) == GRID_H for rows in MAPS.values()), "Every map must have the same height."
@@ -214,6 +240,10 @@ TEXT = {
         "exit": "EXIT",
         "back": "BACK",
         "begin_run": "BEGIN RUN",
+        "next": "NEXT",
+        "select_difficulty": "Choose difficulty",
+        "select_map": "Choose map",
+        "select_character": "Choose character",
         "setup_title": "MISSION SETUP",
         "resume": "RESUME",
         "main_menu": "MAIN MENU",
@@ -230,8 +260,10 @@ TEXT = {
         "structures": "Structures",
         "powerup": "Power-up",
         "dash": "Dash",
+        "heal": "Heal",
         "info": "Info",
         "ready": "Ready",
+        "full": "Full",
         "teleport": "TELEPORT",
         "on": "ON",
         "off": "OFF",
@@ -256,6 +288,10 @@ TEXT = {
         "range_short": "RNG",
         "shots": "Shots",
         "pierce": "Pierce",
+        "ammo": "Ammo",
+        "reload": "Reload",
+        "reload_action": "Reload",
+        "reloading": "Reloading",
         "armor": "Armor",
         "magnet": "Magnet",
         "cost": "Cost",
@@ -264,7 +300,7 @@ TEXT = {
         "close": "close",
         "cancel_build": "cancel build",
         "wave_key": "Space wave",
-        "repair_key": "R repair",
+        "repair_key": "E repair",
         "build": "Build",
         "game_over": "GAME OVER",
         "restart_hint": "Press ENTER to restart",
@@ -276,6 +312,8 @@ TEXT = {
         "press_space_wave": "Press SPACE to start wave 1",
         "wave_clear": "Wave clear! Bonus +{reward} gold",
         "wave_label": "Wave {wave}",
+        "wave_start_banner": "WAVE {wave} START",
+        "titan_approaching": "TITAN APPROACHING!",
         "level_up": "LEVEL {level}",
         "level_message": "Level {level}: {perks}",
         "turret_limit": "Turret limit {count}/{limit}",
@@ -289,6 +327,12 @@ TEXT = {
         "need_gold_repair": "Need {cost} gold to repair",
         "weapon_max": "{weapon} is MAX level",
         "need_gold": "Need {cost} gold",
+        "heal_ready_message": "Med injector ready",
+        "heal_used": "Healed +{amount} HP",
+        "heal_full": "HP is already full",
+        "heal_cooldown": "Heal cooldown {seconds:.1f}s",
+        "reload_full": "Magazine is already full",
+        "reload_started": "Reloading",
         "weapon_evolved": "Weapon evolved: {weapon}",
         "weapon_upgraded": "{weapon} upgraded to Lv {level}",
         "dev_on": "Developer Mode: ON",
@@ -302,6 +346,12 @@ TEXT = {
         "elite_down": "ELITE DOWN",
         "broken": "BROKEN",
         "repair_float": "+repair",
+        "fence_level": "Fence Lv {level}",
+        "fence_upgrade": "Upgrade fence",
+        "fence_upgraded": "Fence upgraded to Lv {level}",
+        "fence_max": "Fence already at max tech",
+        "need_gold_fence_upgrade": "Need {cost} gold to upgrade fence",
+        "move_closer_fence": "Move closer to a fence",
         "perks_base": "Base survivor",
         "perk_hp": "+HP",
         "perk_damage": "+6% damage",
@@ -317,6 +367,10 @@ TEXT = {
         "exit": "THOÁT",
         "back": "QUAY LẠI",
         "begin_run": "VÀO TRẬN",
+        "next": "TIẾP",
+        "select_difficulty": "Chọn độ khó",
+        "select_map": "Chọn bản đồ",
+        "select_character": "Chọn nhân vật",
         "setup_title": "CHUẨN BỊ",
         "resume": "TIẾP TỤC",
         "main_menu": "MENU CHÍNH",
@@ -333,8 +387,10 @@ TEXT = {
         "structures": "Công trình",
         "powerup": "Vật phẩm",
         "dash": "Lướt",
+        "heal": "Hồi máu",
         "info": "Chỉ số",
         "ready": "Sẵn sàng",
+        "full": "Đầy",
         "teleport": "DỊCH CHUYỂN",
         "on": "BẬT",
         "off": "TẮT",
@@ -359,6 +415,10 @@ TEXT = {
         "range_short": "Tầm",
         "shots": "Đạn",
         "pierce": "Xuyên",
+        "ammo": "Đạn",
+        "reload": "Nạp",
+        "reload_action": "Nạp đạn",
+        "reloading": "Đang nạp",
         "armor": "Giáp",
         "magnet": "Hút vàng",
         "cost": "Giá",
@@ -367,7 +427,7 @@ TEXT = {
         "close": "đóng",
         "cancel_build": "hủy xây",
         "wave_key": "Space gọi đợt",
-        "repair_key": "R sửa",
+        "repair_key": "E sửa",
         "build": "Xây",
         "game_over": "THẤT BẠI",
         "restart_hint": "Nhấn ENTER để chơi lại",
@@ -379,6 +439,8 @@ TEXT = {
         "press_space_wave": "Nhấn SPACE để bắt đầu đợt 1",
         "wave_clear": "Dọn sạch đợt! Thưởng +{reward} vàng",
         "wave_label": "Đợt {wave}",
+        "wave_start_banner": "ĐỢT {wave} BẮT ĐẦU",
+        "titan_approaching": "TITAN ĐANG TỚI!",
         "level_up": "LÊN CẤP {level}",
         "level_message": "Cấp {level}: {perks}",
         "turret_limit": "Giới hạn trụ {count}/{limit}",
@@ -392,6 +454,12 @@ TEXT = {
         "need_gold_repair": "Cần {cost} vàng để sửa",
         "weapon_max": "{weapon} đã đạt cấp tối đa",
         "need_gold": "Cần {cost} vàng",
+        "heal_ready_message": "Ống tiêm hồi máu đã sẵn sàng",
+        "heal_used": "Hồi +{amount} máu",
+        "heal_full": "Máu đã đầy",
+        "heal_cooldown": "Hồi máu còn {seconds:.1f}s",
+        "reload_full": "Băng đạn đã đầy",
+        "reload_started": "Đang nạp đạn",
         "weapon_evolved": "Vũ khí tiến hóa: {weapon}",
         "weapon_upgraded": "{weapon} nâng lên cấp {level}",
         "dev_on": "Chế độ nhà phát triển: BẬT",
@@ -405,6 +473,12 @@ TEXT = {
         "elite_down": "HẠ TINH ANH",
         "broken": "BỊ PHÁ",
         "repair_float": "+sửa",
+        "fence_level": "Hàng rào cấp {level}",
+        "fence_upgrade": "Nâng hàng rào",
+        "fence_upgraded": "Hàng rào lên cấp {level}",
+        "fence_max": "Hàng rào đã đạt cấp tối đa",
+        "need_gold_fence_upgrade": "Cần {cost} vàng để nâng hàng rào",
+        "move_closer_fence": "Đến gần hàng rào hơn",
         "perks_base": "Người sống sót",
         "perk_hp": "+Máu",
         "perk_damage": "+6% sát thương",
@@ -457,6 +531,7 @@ DIFFICULTIES = {
 STRUCTURE_DIFFICULTY_BALANCE = {
     "easy": {
         "hp": 0.88,
+        "fence_hp": 1.08,
         "turret_damage": 0.9,
         "turret_range": 0.94,
         "turret_cooldown": 1.08,
@@ -466,6 +541,7 @@ STRUCTURE_DIFFICULTY_BALANCE = {
     },
     "normal": {
         "hp": 1.0,
+        "fence_hp": 1.12,
         "turret_damage": 1.0,
         "turret_range": 1.0,
         "turret_cooldown": 1.0,
@@ -475,6 +551,7 @@ STRUCTURE_DIFFICULTY_BALANCE = {
     },
     "hard": {
         "hp": 1.24,
+        "fence_hp": 1.22,
         "turret_damage": 1.15,
         "turret_range": 1.04,
         "turret_cooldown": 0.93,
@@ -484,6 +561,7 @@ STRUCTURE_DIFFICULTY_BALANCE = {
     },
     "nightmare": {
         "hp": 1.55,
+        "fence_hp": 1.35,
         "turret_damage": 1.32,
         "turret_range": 1.08,
         "turret_cooldown": 0.86,
@@ -625,9 +703,13 @@ ZOMBIE_TYPES = {
 WEAPON_TIERS = [
     {
         "min_level": 1,
-        "name": "Pistol",
+        "name": "Glock 17",
         "damage": 18,
-        "cooldown": 0.32,
+        "cooldown": 0.30,
+        "min_cooldown": 0.26,
+        "magazine": 17,
+        "ammo_per_shot": 1,
+        "reload_time": 1.12,
         "bullet_speed": 560,
         "range": 330,
         "spread": 0.035,
@@ -638,9 +720,13 @@ WEAPON_TIERS = [
     },
     {
         "min_level": 3,
-        "name": "Dual Pistols",
+        "name": "Dual Beretta 92FS",
         "damage": 16,
-        "cooldown": 0.20,
+        "cooldown": 0.24,
+        "min_cooldown": 0.20,
+        "magazine": 30,
+        "ammo_per_shot": 2,
+        "reload_time": 1.42,
         "bullet_speed": 585,
         "range": 330,
         "spread": 0.085,
@@ -651,9 +737,13 @@ WEAPON_TIERS = [
     },
     {
         "min_level": 5,
-        "name": "SMG",
+        "name": "HK MP5",
         "damage": 13,
-        "cooldown": 0.085,
+        "cooldown": 0.105,
+        "min_cooldown": 0.09,
+        "magazine": 30,
+        "ammo_per_shot": 1,
+        "reload_time": 1.55,
         "bullet_speed": 610,
         "range": 300,
         "spread": 0.11,
@@ -664,9 +754,13 @@ WEAPON_TIERS = [
     },
     {
         "min_level": 7,
-        "name": "Shotgun",
+        "name": "Mossberg 500",
         "damage": 15,
-        "cooldown": 0.46,
+        "cooldown": 0.58,
+        "min_cooldown": 0.50,
+        "magazine": 6,
+        "ammo_per_shot": 1,
+        "reload_time": 1.65,
         "bullet_speed": 535,
         "range": 255,
         "spread": 0.34,
@@ -677,9 +771,13 @@ WEAPON_TIERS = [
     },
     {
         "min_level": 10,
-        "name": "Assault Rifle",
+        "name": "M4A1 Carbine",
         "damage": 28,
-        "cooldown": 0.14,
+        "cooldown": 0.16,
+        "min_cooldown": 0.135,
+        "magazine": 30,
+        "ammo_per_shot": 1,
+        "reload_time": 1.75,
         "bullet_speed": 690,
         "range": 430,
         "spread": 0.045,
@@ -690,9 +788,13 @@ WEAPON_TIERS = [
     },
     {
         "min_level": 13,
-        "name": "Combat Shotgun",
+        "name": "Benelli M4",
         "damage": 22,
-        "cooldown": 0.36,
+        "cooldown": 0.48,
+        "min_cooldown": 0.42,
+        "magazine": 7,
+        "ammo_per_shot": 1,
+        "reload_time": 1.70,
         "bullet_speed": 610,
         "range": 300,
         "spread": 0.28,
@@ -703,11 +805,15 @@ WEAPON_TIERS = [
     },
     {
         "min_level": 16,
-        "name": "Laser Rifle",
-        "damage": 50,
-        "cooldown": 0.19,
+        "name": "XM-LAS Prototype",
+        "damage": 54,
+        "cooldown": 0.42,
+        "min_cooldown": 0.36,
+        "magazine": 6,
+        "ammo_per_shot": 1,
+        "reload_time": 2.20,
         "bullet_speed": 790,
-        "range": 520,
+        "range": 500,
         "spread": 0.012,
         "shots": 1,
         "pierce": 5,
@@ -728,7 +834,7 @@ STRUCTURE_TYPES = {
     "fence": {
         "label": "Fence",
         "cost": 45,
-        "hp": 260,
+        "hp": 420,
         "range": 0,
         "damage": 0,
         "cooldown": 0,
@@ -790,13 +896,124 @@ CHARACTER_DESCRIPTIONS = {
 }
 
 WEAPON_NAMES = {
-    "Pistol": {"en": "Pistol", "vi": "Súng lục"},
-    "Dual Pistols": {"en": "Dual Pistols", "vi": "Song súng"},
-    "SMG": {"en": "SMG", "vi": "Tiểu liên"},
-    "Shotgun": {"en": "Shotgun", "vi": "Súng săn"},
-    "Assault Rifle": {"en": "Assault Rifle", "vi": "Súng trường"},
-    "Combat Shotgun": {"en": "Combat Shotgun", "vi": "Súng săn chiến đấu"},
-    "Laser Rifle": {"en": "Laser Rifle", "vi": "Súng laser"},
+    "Glock 17": {"en": "Glock 17", "vi": "Glock 17"},
+    "Dual Beretta 92FS": {"en": "Dual Beretta 92FS", "vi": "Song Beretta 92FS"},
+    "HK MP5": {"en": "HK MP5", "vi": "HK MP5"},
+    "Mossberg 500": {"en": "Mossberg 500", "vi": "Mossberg 500"},
+    "M4A1 Carbine": {"en": "M4A1 Carbine", "vi": "M4A1 Carbine"},
+    "Benelli M4": {"en": "Benelli M4", "vi": "Benelli M4"},
+    "XM-LAS Prototype": {"en": "XM-LAS Prototype", "vi": "XM-LAS thử nghiệm"},
+}
+
+WEAPON_VISUALS = {
+    "Glock 17": {
+        "body": 13,
+        "barrel": 6,
+        "stock": 0,
+        "height": 6,
+        "barrel_width": 3,
+        "grip": 8,
+        "hand_forward": 7,
+        "color": (66, 68, 73),
+        "accent": (144, 148, 150),
+        "detail": (30, 31, 35),
+        "muzzle": (215, 205, 176),
+        "kind": "pistol",
+    },
+    "Dual Beretta 92FS": {
+        "body": 13,
+        "barrel": 7,
+        "stock": 0,
+        "height": 6,
+        "barrel_width": 3,
+        "grip": 8,
+        "hand_forward": 7,
+        "color": (76, 78, 84),
+        "accent": (180, 182, 178),
+        "detail": (35, 36, 40),
+        "muzzle": (226, 214, 184),
+        "kind": "dual_pistol",
+    },
+    "HK MP5": {
+        "body": 18,
+        "barrel": 8,
+        "stock": 8,
+        "height": 8,
+        "barrel_width": 4,
+        "grip": 10,
+        "hand_forward": 8,
+        "color": (46, 49, 55),
+        "accent": (105, 109, 116),
+        "detail": (25, 27, 31),
+        "muzzle": (190, 185, 170),
+        "kind": "smg",
+    },
+    "Mossberg 500": {
+        "body": 18,
+        "barrel": 18,
+        "stock": 10,
+        "height": 7,
+        "barrel_width": 4,
+        "grip": 9,
+        "hand_forward": 8,
+        "color": (65, 68, 72),
+        "accent": (119, 76, 43),
+        "detail": (38, 39, 42),
+        "muzzle": (220, 210, 184),
+        "kind": "pump_shotgun",
+    },
+    "M4A1 Carbine": {
+        "body": 20,
+        "barrel": 15,
+        "stock": 11,
+        "height": 8,
+        "barrel_width": 4,
+        "grip": 11,
+        "hand_forward": 9,
+        "color": (58, 62, 66),
+        "accent": (103, 112, 105),
+        "detail": (28, 31, 34),
+        "muzzle": (224, 211, 178),
+        "kind": "rifle",
+    },
+    "Benelli M4": {
+        "body": 19,
+        "barrel": 18,
+        "stock": 10,
+        "height": 8,
+        "barrel_width": 4,
+        "grip": 10,
+        "hand_forward": 9,
+        "color": (55, 58, 62),
+        "accent": (95, 100, 103),
+        "detail": (27, 29, 32),
+        "muzzle": (228, 216, 184),
+        "kind": "semi_shotgun",
+    },
+    "XM-LAS Prototype": {
+        "body": 22,
+        "barrel": 18,
+        "stock": 8,
+        "height": 10,
+        "barrel_width": 5,
+        "grip": 10,
+        "hand_forward": 9,
+        "color": (62, 66, 82),
+        "accent": (80, 225, 245),
+        "detail": (24, 28, 44),
+        "muzzle": (160, 245, 255),
+        "kind": "laser",
+    },
+}
+
+WEAPON_AUDIO = {
+    "Glock 17": {"sound": "gun_glock17", "volume": 0.64, "cooldown": 0.035},
+    "Dual Beretta 92FS": {"sound": "gun_dual_beretta", "volume": 0.62, "cooldown": 0.055},
+    "HK MP5": {"sound": "gun_mp5", "volume": 0.50, "cooldown": 0.025},
+    "Mossberg 500": {"sound": "gun_mossberg500", "volume": 0.78, "cooldown": 0.11},
+    "M4A1 Carbine": {"sound": "gun_m4a1", "volume": 0.70, "cooldown": 0.035},
+    "Benelli M4": {"sound": "gun_benelli_m4", "volume": 0.76, "cooldown": 0.09},
+    "XM-LAS Prototype": {"sound": "gun_xm_las", "volume": 0.56, "cooldown": 0.08},
 }
 
 POWER_UP_MESSAGES = {
@@ -862,132 +1079,313 @@ def pixel_rect(surface, scale, color, x, y, w, h):
     pygame.draw.rect(surface, color, (x * scale, y * scale, w * scale, h * scale))
 
 
+def pixel_poly(surface, scale, color, points):
+    pygame.draw.polygon(surface, color, [(x * scale, y * scale) for x, y in points])
+
+
+def pixel_circle(surface, scale, color, x, y, radius):
+    pygame.draw.circle(surface, color, (round(x * scale), round(y * scale)), max(1, round(radius * scale)))
+
+
+def outline_rect(surface, scale, color, outline, x, y, w, h):
+    pixel_rect(surface, scale, outline, x - 1, y - 1, w + 2, h + 2)
+    pixel_rect(surface, scale, color, x, y, w, h)
+
+
+def weapon_lower_perp(direction):
+    perp = Vec2(-direction.y, direction.x)
+    if perp.length_squared() <= 0:
+        return Vec2(0, 1)
+    perp = perp.normalize()
+    if perp.y < -0.05 or (abs(perp.y) <= 0.05 and perp.x < 0):
+        perp = -perp
+    return perp
+
+
+def weapon_point(base, direction, lower, forward, side):
+    return Vec2(base) + direction * forward + lower * side
+
+
+def draw_weapon_rect(surface, base, direction, lower, forward, side, length, width, color, outline=(18, 18, 22)):
+    center = weapon_point(base, direction, lower, forward + length / 2, side)
+    half_len = direction * (length / 2)
+    half_w = lower * (width / 2)
+    points = [
+        center - half_len - half_w,
+        center + half_len - half_w,
+        center + half_len + half_w,
+        center - half_len + half_w,
+    ]
+    if outline:
+        outline_points = []
+        outline_w = lower * ((width + 3) / 2)
+        outline_points.extend(
+            [
+                center - half_len - outline_w,
+                center + half_len - outline_w,
+                center + half_len + outline_w,
+                center - half_len + outline_w,
+            ]
+        )
+        pygame.draw.polygon(surface, outline, [(round(p.x), round(p.y)) for p in outline_points])
+    pygame.draw.polygon(surface, color, [(round(p.x), round(p.y)) for p in points])
+
+
+def draw_weapon_poly(surface, points, color, outline=(18, 18, 22)):
+    int_points = [(round(p.x), round(p.y)) for p in points]
+    if outline:
+        pygame.draw.polygon(surface, outline, int_points)
+        pygame.draw.lines(surface, outline, True, int_points, 3)
+    pygame.draw.polygon(surface, color, int_points)
+
+
+def draw_weapon_circle(surface, pos, radius, color, outline=(18, 18, 22)):
+    center = (round(pos.x), round(pos.y))
+    if outline:
+        pygame.draw.circle(surface, outline, center, radius + 1)
+    pygame.draw.circle(surface, color, center, radius)
+
+
 def make_player_frame(character_id, facing, frame, scale=2):
     if facing == "left":
         return pygame.transform.flip(make_player_frame(character_id, "right", frame, scale), True, False)
 
-    palettes = {
+    styles = {
         "soldier": {
-            "body": (55, 128, 178),
-            "trim": (29, 68, 104),
-            "accent": (208, 228, 242),
-            "headgear": (57, 93, 91),
-            "hair": (61, 43, 35),
-            "weapon": (190, 184, 164),
+            "coat": (49, 78, 115),
+            "cloth": (21, 45, 70),
+            "armor": (118, 89, 59),
+            "accent": (214, 58, 61),
+            "hair": (218, 232, 218),
+            "trim": (236, 236, 210),
             "bulk": 0,
+            "cape": True,
         },
         "scout": {
-            "body": (72, 168, 112),
-            "trim": (35, 91, 67),
-            "accent": (236, 205, 90),
-            "headgear": (45, 119, 82),
-            "hair": (83, 54, 34),
-            "weapon": (174, 185, 160),
-            "bulk": -1,
+            "coat": (44, 73, 103),
+            "cloth": (147, 126, 77),
+            "armor": (83, 71, 61),
+            "accent": (34, 163, 197),
+            "hair": (28, 42, 65),
+            "trim": (224, 225, 214),
+            "bulk": 0,
+            "cape": True,
         },
         "engineer": {
-            "body": (214, 137, 55),
-            "trim": (126, 76, 38),
-            "accent": (246, 218, 82),
-            "headgear": (244, 184, 62),
-            "hair": (83, 49, 34),
-            "weapon": (196, 196, 176),
-            "bulk": 0,
+            "coat": (47, 49, 52),
+            "cloth": (111, 36, 42),
+            "armor": (111, 113, 115),
+            "accent": (204, 46, 51),
+            "hair": (32, 54, 73),
+            "trim": (222, 224, 214),
+            "bulk": 1,
+            "cape": True,
         },
         "tank": {
-            "body": (111, 105, 145),
-            "trim": (67, 63, 91),
-            "accent": (201, 202, 220),
-            "headgear": (82, 80, 103),
-            "hair": (45, 37, 34),
-            "weapon": (210, 206, 184),
-            "bulk": 1,
+            "coat": (38, 83, 92),
+            "cloth": (26, 40, 70),
+            "armor": (92, 85, 70),
+            "accent": (214, 44, 58),
+            "hair": (238, 226, 166),
+            "trim": (53, 200, 205),
+            "bulk": 3,
+            "cape": False,
         },
     }
-    art = palettes.get(character_id, palettes["soldier"])
-    skin = (226, 170, 124)
-    eye = (35, 32, 30)
-    boot = (29, 30, 34)
-    shadow = (8, 9, 12, 95)
+    art = styles.get(character_id, styles["soldier"])
+    skin = (226, 168, 122)
+    outline = (24, 23, 25)
+    boot = (33, 30, 33)
+    eye = (31, 27, 25)
     step = (-1, 0, 1, 0)[frame % 4]
-    surface = pygame.Surface((18 * scale, 22 * scale), pygame.SRCALPHA)
-    pygame.draw.ellipse(surface, shadow, (3 * scale, 17 * scale, 12 * scale, 4 * scale))
+    bob = -1 if frame % 2 else 0
+    surface = pygame.Surface((26 * scale, 32 * scale), pygame.SRCALPHA)
+    pygame.draw.ellipse(surface, (0, 0, 0, 110), (5 * scale, 25 * scale, 16 * scale, 5 * scale))
 
     bulk = art["bulk"]
-    torso_x = 6 - max(0, bulk)
-    torso_w = 6 + max(0, bulk) * 2
+    torso_x = 9 - min(2, bulk)
+    torso_w = 8 + bulk
+    shoulder_w = 3 + max(0, bulk // 2)
+    head_y = 5 + bob
+    torso_y = 12 + bob
+
+    if art["cape"]:
+        if facing == "right":
+            pixel_poly(surface, scale, outline, [(8, 11), (2, 13), (4, 25), (10, 23)])
+            pixel_poly(surface, scale, art["cloth"], [(8, 12), (3, 14), (5, 24), (10, 22)])
+        elif facing == "up":
+            pixel_poly(surface, scale, outline, [(8, 12), (18, 12), (20, 26), (6, 26)])
+            pixel_poly(surface, scale, art["cloth"], [(9, 13), (17, 13), (19, 25), (7, 25)])
+        else:
+            pixel_poly(surface, scale, outline, [(7, 12), (19, 12), (17, 26), (9, 26)])
+            pixel_poly(surface, scale, art["cloth"], [(8, 13), (18, 13), (16, 25), (10, 25)])
+
+    # Legs and boots first so coat/armor sits on top.
+    outline_rect(surface, scale, art["cloth"], outline, 9 + step, 22, 4, 6)
+    outline_rect(surface, scale, art["coat"], outline, 14 - step, 22, 4, 6)
+    pixel_rect(surface, scale, boot, 8 + step, 28, 6, 2)
+    pixel_rect(surface, scale, boot, 14 - step, 28, 6, 2)
 
     if facing == "right":
-        pixel_rect(surface, scale, art["body"], torso_x, 8, torso_w, 7)
-        pixel_rect(surface, scale, art["trim"], torso_x, 13, torso_w, 2)
-        pixel_rect(surface, scale, art["trim"], 7 + step, 15, 3, 5)
-        pixel_rect(surface, scale, art["body"], 10 - step, 15, 3, 4)
-        pixel_rect(surface, scale, boot, 7 + step, 20, 4, 1)
-        pixel_rect(surface, scale, boot, 10 - step, 19, 4, 2)
-        pixel_rect(surface, scale, skin, 7, 3, 6, 5)
-        pixel_rect(surface, scale, art["hair"], 6, 2, 6, 2)
-        pixel_rect(surface, scale, eye, 12, 5, 1, 1)
-        pixel_rect(surface, scale, art["body"], 5, 9 + (frame % 2), 3, 5)
-        pixel_rect(surface, scale, art["trim"], 12, 9 - (frame % 2), 3, 4)
-        pixel_rect(surface, scale, art["weapon"], 13, 9, 5, 2)
-        pixel_rect(surface, scale, (33, 31, 31), 16, 8, 2, 1)
+        pixel_poly(surface, scale, outline, [(torso_x - 1, torso_y), (torso_x + torso_w + 1, torso_y), (torso_x + torso_w, 22), (torso_x, 22)])
+        pixel_poly(surface, scale, art["coat"], [(torso_x, torso_y), (torso_x + torso_w, torso_y), (torso_x + torso_w - 1, 21), (torso_x + 1, 21)])
+        outline_rect(surface, scale, art["armor"], outline, torso_x - shoulder_w, torso_y + 1, shoulder_w, 4)
+        outline_rect(surface, scale, art["armor"], outline, torso_x + torso_w - 1, torso_y + 1, shoulder_w, 4)
+        outline_rect(surface, scale, art["coat"], outline, 6, torso_y + 4 + (frame % 2), 4, 6)
+        outline_rect(surface, scale, art["trim"], outline, 16, torso_y + 3 - (frame % 2), 4, 5)
+        outline_rect(surface, scale, skin, outline, 10, head_y, 7, 6)
+        pixel_rect(surface, scale, eye, 16, head_y + 3, 1, 1)
+        pixel_rect(surface, scale, art["hair"], 9, head_y - 1, 8, 2)
+        pixel_rect(surface, scale, art["hair"], 10, head_y - 2, 6, 1)
     elif facing == "up":
-        pixel_rect(surface, scale, art["body"], torso_x, 8, torso_w, 7)
-        pixel_rect(surface, scale, art["trim"], torso_x + 1, 9, max(2, torso_w - 2), 4)
-        pixel_rect(surface, scale, art["body"], 5, 9 + (frame % 2), 3, 5)
-        pixel_rect(surface, scale, art["body"], 10, 9 - (frame % 2), 3, 5)
-        pixel_rect(surface, scale, art["trim"], 6 + step, 15, 3, 5)
-        pixel_rect(surface, scale, art["trim"], 10 - step, 15, 3, 5)
-        pixel_rect(surface, scale, boot, 6 + step, 20, 4, 1)
-        pixel_rect(surface, scale, boot, 10 - step, 20, 4, 1)
-        pixel_rect(surface, scale, art["hair"], 6, 2, 6, 5)
-        pixel_rect(surface, scale, art["headgear"], 5, 2, 8, 2)
-        pixel_rect(surface, scale, art["weapon"], 4, 7, 2, 8)
+        pixel_poly(surface, scale, outline, [(torso_x - 1, torso_y), (torso_x + torso_w + 1, torso_y), (torso_x + torso_w, 22), (torso_x, 22)])
+        pixel_poly(surface, scale, art["coat"], [(torso_x, torso_y), (torso_x + torso_w, torso_y), (torso_x + torso_w - 1, 21), (torso_x + 1, 21)])
+        outline_rect(surface, scale, art["armor"], outline, torso_x - shoulder_w, torso_y + 1, shoulder_w, 5)
+        outline_rect(surface, scale, art["armor"], outline, torso_x + torso_w, torso_y + 1, shoulder_w, 5)
+        outline_rect(surface, scale, art["coat"], outline, 6, torso_y + 3 + (frame % 2), 4, 6)
+        outline_rect(surface, scale, art["coat"], outline, 17, torso_y + 3 - (frame % 2), 4, 6)
+        pixel_rect(surface, scale, art["hair"], 9, head_y - 1, 9, 6)
+        pixel_rect(surface, scale, art["armor"], 8, head_y - 1, 11, 2)
     else:
-        pixel_rect(surface, scale, art["trim"], 6 + step, 15, 3, 5)
-        pixel_rect(surface, scale, art["body"], 10 - step, 15, 3, 5)
-        pixel_rect(surface, scale, boot, 6 + step, 20, 4, 1)
-        pixel_rect(surface, scale, boot, 10 - step, 20, 4, 1)
-        pixel_rect(surface, scale, art["body"], torso_x, 8, torso_w, 7)
-        pixel_rect(surface, scale, art["trim"], torso_x, 13, torso_w, 2)
-        pixel_rect(surface, scale, art["body"], 4, 9 - (frame % 2), 3, 5)
-        pixel_rect(surface, scale, art["body"], 11, 9 + (frame % 2), 3, 5)
-        pixel_rect(surface, scale, skin, 6, 3, 6, 5)
-        pixel_rect(surface, scale, art["hair"], 5, 2, 8, 2)
-        pixel_rect(surface, scale, eye, 7, 5, 1, 1)
-        pixel_rect(surface, scale, eye, 10, 5, 1, 1)
-        pixel_rect(surface, scale, art["weapon"], 11, 10, 6, 2)
+        pixel_poly(surface, scale, outline, [(torso_x - 1, torso_y), (torso_x + torso_w + 1, torso_y), (torso_x + torso_w, 22), (torso_x, 22)])
+        pixel_poly(surface, scale, art["coat"], [(torso_x, torso_y), (torso_x + torso_w, torso_y), (torso_x + torso_w - 1, 21), (torso_x + 1, 21)])
+        outline_rect(surface, scale, art["armor"], outline, torso_x - shoulder_w, torso_y + 1, shoulder_w, 5)
+        outline_rect(surface, scale, art["armor"], outline, torso_x + torso_w, torso_y + 1, shoulder_w, 5)
+        outline_rect(surface, scale, art["coat"], outline, 5, torso_y + 3 - (frame % 2), 4, 6)
+        outline_rect(surface, scale, art["trim"], outline, 17, torso_y + 3 + (frame % 2), 4, 6)
+        outline_rect(surface, scale, skin, outline, 10, head_y, 7, 6)
+        pixel_rect(surface, scale, eye, 11, head_y + 3, 1, 1)
+        pixel_rect(surface, scale, eye, 15, head_y + 3, 1, 1)
+        pixel_rect(surface, scale, art["hair"], 9, head_y - 1, 9, 2)
+        pixel_rect(surface, scale, art["hair"], 10, head_y - 2, 7, 1)
 
+    # Class-specific readable details inspired by the reference silhouettes.
     if character_id == "soldier":
-        pixel_rect(surface, scale, art["headgear"], 5, 2, 8, 2)
-        pixel_rect(surface, scale, art["headgear"], 6, 1, 6, 1)
+        pixel_rect(surface, scale, art["trim"], 11, torso_y + 1, 4, 1)
+        pixel_rect(surface, scale, art["accent"], 12, head_y - 3, 3, 2)
+        pixel_rect(surface, scale, art["accent"], 15, head_y - 4, 2, 2)
     elif character_id == "scout":
-        pixel_rect(surface, scale, art["headgear"], 5, 2, 8, 1)
-        pixel_rect(surface, scale, art["accent"], 4, 11, 2, 2)
+        pixel_poly(surface, scale, art["accent"], [(16, head_y), (24, head_y - 3), (19, head_y + 5)])
+        pixel_rect(surface, scale, art["trim"], 11, torso_y + 1, 5, 1)
     elif character_id == "engineer":
-        pixel_rect(surface, scale, art["headgear"], 5, 1, 8, 2)
-        pixel_rect(surface, scale, art["accent"], 8, 1, 2, 2)
-        pixel_rect(surface, scale, art["accent"], 13, 10, 2, 3)
+        pixel_rect(surface, scale, art["accent"], 9, 21, 8, 2)
     elif character_id == "tank":
-        pixel_rect(surface, scale, art["headgear"], 5, 2, 8, 3)
-        pixel_rect(surface, scale, art["accent"], 3, 9, 2, 6)
-        pixel_rect(surface, scale, art["accent"], 13, 9, 2, 6)
+        outline_rect(surface, scale, art["armor"], outline, 5, torso_y - 1, 5, 8)
+        outline_rect(surface, scale, art["armor"], outline, 17, torso_y - 1, 5, 8)
+        pixel_rect(surface, scale, art["trim"], 12, torso_y + 2, 4, 2)
 
     return surface
 
 
+def make_zombie_frame(kind, facing, frame, scale=2):
+    if facing == "left":
+        return pygame.transform.flip(make_zombie_frame(kind, "right", frame, scale), True, False)
+
+    cfg = ZOMBIE_TYPES[kind]
+    outline = (20, 22, 20)
+    rot = (58, 48, 48)
+    eye = (238, 239, 117)
+    step = (-1, 0, 1, 0)[frame % 4]
+    bob = -1 if frame % 2 else 0
+
+    if kind == "titan":
+        surface = pygame.Surface((42 * scale, 38 * scale), pygame.SRCALPHA)
+        pygame.draw.ellipse(surface, (0, 0, 0, 135), (5 * scale, 30 * scale, 32 * scale, 6 * scale))
+        body = cfg["color"]
+        accent = cfg["accent"]
+        armor = (82, 75, 72)
+        skin_dark = (62, 53, 55)
+        head_x = 18
+        head_y = 5 + bob
+        torso_y = 13 + bob
+        pixel_poly(surface, scale, outline, [(7, torso_y + 2), (35, torso_y + 1), (38, 26), (31, 32), (11, 32), (4, 25)])
+        pixel_poly(surface, scale, body, [(8, torso_y + 3), (34, torso_y + 2), (36, 25), (30, 30), (12, 30), (6, 24)])
+        outline_rect(surface, scale, armor, outline, 5, torso_y + 2, 8, 12)
+        outline_rect(surface, scale, armor, outline, 30, torso_y + 1, 8, 13)
+        outline_rect(surface, scale, skin_dark, outline, 16, head_y, 10, 9)
+        pixel_rect(surface, scale, eye, 18, head_y + 3, 2, 2)
+        pixel_rect(surface, scale, eye, 23, head_y + 3, 2, 2)
+        pixel_rect(surface, scale, (24, 17, 15), 19, head_y + 7, 6, 2)
+        pixel_rect(surface, scale, accent, 20, head_y + 8, 1, 2)
+        pixel_rect(surface, scale, accent, 24, head_y + 8, 1, 2)
+        pixel_poly(surface, scale, outline, [(15, head_y + 1), (12, head_y - 3), (18, head_y)])
+        pixel_poly(surface, scale, outline, [(26, head_y + 1), (31, head_y - 3), (24, head_y)])
+        pixel_rect(surface, scale, (42, 38, 44), 11, torso_y + 4, 22, 2)
+        for cx in (12, 17, 22, 27):
+            pixel_rect(surface, scale, (121, 116, 122), cx, torso_y + 3, 2, 3)
+        outline_rect(surface, scale, body, outline, 9 + step, 28, 8, 6)
+        outline_rect(surface, scale, body, outline, 25 - step, 28, 8, 6)
+        pixel_rect(surface, scale, accent, 15, torso_y + 12, 4, 3)
+        pixel_rect(surface, scale, accent, 27, torso_y + 10, 3, 3)
+        return surface
+
+    surface = pygame.Surface((24 * scale, 28 * scale), pygame.SRCALPHA)
+    pygame.draw.ellipse(surface, (0, 0, 0, 112), (5 * scale, 22 * scale, 14 * scale, 4 * scale))
+    body = cfg["color"]
+    accent = cfg["accent"]
+    head = (68, 77, 62) if kind != "boomer" else (112, 103, 51)
+    cloth = {
+        "walker": (43, 73, 73),
+        "runner": (113, 50, 45),
+        "spitter": (46, 94, 61),
+        "boomer": (113, 89, 43),
+        "stalker": (72, 69, 116),
+    }.get(kind, body)
+    lean = 2 if kind == "runner" else 0
+    torso_x = 9 + lean
+    torso_y = 10 + bob
+
+    if facing == "right":
+        pixel_poly(surface, scale, outline, [(torso_x - 1, torso_y), (torso_x + 8, torso_y + 1), (torso_x + 9, 20), (torso_x + 1, 21)])
+        pixel_poly(surface, scale, body, [(torso_x, torso_y + 1), (torso_x + 7, torso_y + 2), (torso_x + 8, 19), (torso_x + 2, 20)])
+        outline_rect(surface, scale, head, outline, torso_x + 1, 4 + bob, 6, 5)
+        pixel_rect(surface, scale, eye, torso_x + 6, 6 + bob, 1, 1)
+        outline_rect(surface, scale, body, outline, torso_x - 4, 12 + (frame % 2), 4, 6)
+        outline_rect(surface, scale, body, outline, torso_x + 8, 11 - (frame % 2), 5, 5)
+        pixel_rect(surface, scale, cloth, torso_x, 16, 8, 2)
+    elif facing == "up":
+        pixel_poly(surface, scale, outline, [(8, torso_y), (17, torso_y), (16, 21), (9, 21)])
+        pixel_poly(surface, scale, body, [(9, torso_y + 1), (16, torso_y + 1), (15, 20), (10, 20)])
+        pixel_rect(surface, scale, head, 9, 4 + bob, 7, 5)
+        pixel_rect(surface, scale, cloth, 8, 15, 9, 2)
+        outline_rect(surface, scale, body, outline, 5, 12 + (frame % 2), 4, 6)
+        outline_rect(surface, scale, body, outline, 16, 12 - (frame % 2), 4, 6)
+    else:
+        pixel_poly(surface, scale, outline, [(8, torso_y), (17, torso_y), (16, 21), (9, 21)])
+        pixel_poly(surface, scale, body, [(9, torso_y + 1), (16, torso_y + 1), (15, 20), (10, 20)])
+        outline_rect(surface, scale, head, outline, 9, 4 + bob, 7, 5)
+        pixel_rect(surface, scale, eye, 10, 6 + bob, 1, 1)
+        pixel_rect(surface, scale, eye, 15, 6 + bob, 1, 1)
+        pixel_rect(surface, scale, (37, 23, 22), 11, 8 + bob, 5, 1)
+        outline_rect(surface, scale, body, outline, 5, 12 - (frame % 2), 4, 6)
+        outline_rect(surface, scale, body, outline, 16, 12 + (frame % 2), 4, 6)
+        pixel_rect(surface, scale, cloth, 8, 15, 9, 2)
+
+    outline_rect(surface, scale, body, outline, 8 + step, 20, 4, 5)
+    outline_rect(surface, scale, body, outline, 14 - step, 20, 4, 5)
+    pixel_rect(surface, scale, rot, 7 + step, 25, 5, 2)
+    pixel_rect(surface, scale, rot, 14 - step, 25, 5, 2)
+
+    if kind == "runner":
+        pixel_poly(surface, scale, accent, [(10, torso_y), (18, torso_y + 2), (16, torso_y + 5), (9, torso_y + 3)])
+        pixel_rect(surface, scale, (229, 93, 76), 6, 12 + frame % 2, 3, 2)
+    elif kind == "spitter":
+        pixel_circle(surface, scale, (70, 244, 90), 15, 13 + bob, 3)
+        pixel_rect(surface, scale, (145, 255, 116), 18, 8 + (frame % 2), 2, 2)
+        pixel_rect(surface, scale, (99, 226, 73), 20, 10 + (frame % 2), 2, 1)
+    elif kind == "boomer":
+        pixel_circle(surface, scale, (204, 181, 70), 13, 15 + bob, 5)
+        pixel_rect(surface, scale, (136, 255, 75), 15, 12 + (frame % 2), 2, 2)
+        pixel_rect(surface, scale, (86, 142, 54), 11, 18, 6, 1)
+    elif kind == "stalker":
+        pixel_poly(surface, scale, (122, 111, 176), [(8, 9), (18, 9), (20, 22), (6, 22)])
+        pixel_rect(surface, scale, (213, 205, 255), 13, 5 + bob, 2, 1)
+    else:
+        pixel_rect(surface, scale, accent, 10, 14, 6, 2)
+    return surface
+
+
 def build_sprites():
-    zombie_pattern = [
-        "..hhhh..",
-        ".hbbbbh.",
-        "hbeeeebh",
-        "hbebebbh",
-        ".bbbbbb.",
-        ".bbaabb.",
-        ".baaabb.",
-        "..b..b..",
-        ".bb..bb.",
-    ]
     sprites = {}
     for character_id in CHARACTERS:
         for facing in ("down", "up", "right", "left"):
@@ -995,15 +1393,11 @@ def build_sprites():
                 sprites[f"player_{character_id}_{facing}_{frame}"] = make_player_frame(character_id, facing, frame, 2)
         sprites[f"player_{character_id}"] = sprites[f"player_{character_id}_down_0"]
     sprites["player"] = sprites["player_soldier"]
-    for key, cfg in ZOMBIE_TYPES.items():
-        palette = {
-            "h": (46, 41, 45),
-            "b": cfg["color"],
-            "a": cfg["accent"],
-            "e": (240, 231, 126),
-        }
-        scale = 5 if key == "titan" else 3
-        sprites[key] = make_pixel_sprite(zombie_pattern, palette, scale)
+    for key in ZOMBIE_TYPES:
+        for facing in ("down", "up", "right", "left"):
+            for frame in range(4):
+                sprites[f"zombie_{key}_{facing}_{frame}"] = make_zombie_frame(key, facing, frame, 2)
+        sprites[key] = sprites[f"zombie_{key}_down_0"]
     return sprites
 
 
@@ -1129,77 +1523,43 @@ class TileMap:
                 pygame.draw.rect(surface, theme["prop_c"], (rect.x + 12, rect.y + 10, 8, 4))
 
 
-def astar(tile_map, start, goal, blocked):
-    if tile_map.is_wall(goal):
-        return []
-
-    blocked = set(blocked)
-    blocked.discard(start)
-    blocked.discard(goal)
-    neighbors = [(1, 0), (-1, 0), (0, 1), (0, -1)]
-
-    open_heap = []
-    heapq.heappush(open_heap, (0, start))
-    came_from = {}
-    g_score = {start: 0}
-    closed = set()
-
-    def heuristic(a, b):
-        return abs(a[0] - b[0]) + abs(a[1] - b[1])
-
-    while open_heap:
-        _, current = heapq.heappop(open_heap)
-        if current == goal:
-            path = []
-            while current != start:
-                path.append(current)
-                current = came_from[current]
-            path.reverse()
-            return path
-
-        if current in closed:
-            continue
-        closed.add(current)
-
-        for dx, dy in neighbors:
-            nxt = (current[0] + dx, current[1] + dy)
-            if not tile_map.in_bounds(nxt) or tile_map.is_wall(nxt) or nxt in blocked:
-                continue
-            tentative = g_score[current] + 1
-            if tentative < g_score.get(nxt, 1_000_000):
-                came_from[nxt] = current
-                g_score[nxt] = tentative
-                f_score = tentative + heuristic(nxt, goal)
-                heapq.heappush(open_heap, (f_score, nxt))
-    return []
+ORTHO_NEIGHBORS = [(1, 0), (-1, 0), (0, 1), (0, -1)]
+DIAGONAL_NEIGHBORS = ORTHO_NEIGHBORS + [(1, 1), (1, -1), (-1, 1), (-1, -1)]
 
 
-def astar_clearance(tile_map, start, goal, radius, blocked=()):
+def astar_heuristic(a, b, allow_diagonal=False):
+    dx = abs(a[0] - b[0])
+    dy = abs(a[1] - b[1])
+    if not allow_diagonal:
+        return dx + dy
+    return max(dx, dy) + (math.sqrt(2) - 1) * min(dx, dy)
+
+
+def find_path(tile_map, start, goal, blocked=(), allow_diagonal=False, weight=1.0, radius=0, max_nodes=900):
     blocked = set(blocked)
     blocked.discard(start)
     blocked.discard(goal)
 
     def passable(cell):
-        return (
-            tile_map.in_bounds(cell)
-            and cell not in blocked
-            and tile_map.is_clear_for_radius(cell, radius)
-        )
+        if not tile_map.in_bounds(cell) or cell in blocked:
+            return False
+        if radius > 0:
+            return tile_map.is_clear_for_radius(cell, radius)
+        return not tile_map.is_wall(cell)
 
     if not passable(start) or not passable(goal):
         return []
 
-    neighbors = [(1, 0), (-1, 0), (0, 1), (0, -1)]
-    open_heap = [(0, start)]
+    neighbors = DIAGONAL_NEIGHBORS if allow_diagonal else ORTHO_NEIGHBORS
+    open_heap = [(0, 0, start)]
     came_from = {}
-    g_score = {start: 0}
+    g_score = {start: 0.0}
     closed = set()
+    counter = 0
+    visited = 0
 
-    def heuristic(a, b):
-        return abs(a[0] - b[0]) + abs(a[1] - b[1])
-
-    while open_heap:
-        _, current = heapq.heappop(open_heap)
+    while open_heap and visited < max_nodes:
+        _, _, current = heapq.heappop(open_heap)
         if current == goal:
             path = []
             while current != start:
@@ -1210,17 +1570,89 @@ def astar_clearance(tile_map, start, goal, radius, blocked=()):
         if current in closed:
             continue
         closed.add(current)
+        visited += 1
 
         for dx, dy in neighbors:
             nxt = (current[0] + dx, current[1] + dy)
             if not passable(nxt):
                 continue
-            tentative = g_score[current] + 1
+            if dx and dy and (not passable((current[0] + dx, current[1])) or not passable((current[0], current[1] + dy))):
+                continue
+            move_cost = math.sqrt(2) if dx and dy else 1.0
+            tentative = g_score[current] + move_cost
             if tentative < g_score.get(nxt, 1_000_000):
                 came_from[nxt] = current
                 g_score[nxt] = tentative
-                heapq.heappush(open_heap, (tentative + heuristic(nxt, goal), nxt))
+                counter += 1
+                f_score = tentative + astar_heuristic(nxt, goal, allow_diagonal) * weight
+                heapq.heappush(open_heap, (f_score, counter, nxt))
     return []
+
+
+def has_cell_line(tile_map, start, goal, blocked=(), radius=0):
+    blocked = set(blocked)
+    start_pos = tile_map.cell_center(start)
+    end_pos = tile_map.cell_center(goal)
+    distance = start_pos.distance_to(end_pos)
+    steps = max(1, int(distance // 10))
+    for i in range(1, steps + 1):
+        pos = start_pos.lerp(end_pos, i / steps)
+        cell = tile_map.world_to_cell(pos)
+        if cell in blocked:
+            return False
+        if radius > 0:
+            if not tile_map.is_clear_for_radius(cell, radius):
+                return False
+        elif tile_map.is_wall(cell):
+            return False
+    return True
+
+
+def smooth_path(tile_map, start, path, blocked=(), radius=0, lookahead=6):
+    if len(path) <= 2:
+        return path
+    smoothed = []
+    anchor = start
+    index = 0
+    while index < len(path):
+        best = index
+        limit = min(len(path) - 1, index + lookahead)
+        for j in range(limit, index - 1, -1):
+            if has_cell_line(tile_map, anchor, path[j], blocked, radius):
+                best = j
+                break
+        smoothed.append(path[best])
+        anchor = path[best]
+        index = best + 1
+    return smoothed
+
+
+def astar(tile_map, start, goal, blocked):
+    return find_path(tile_map, start, goal, blocked, allow_diagonal=False, weight=1.0, radius=0, max_nodes=900)
+
+
+def astar_clearance(tile_map, start, goal, radius, blocked=()):
+    return find_path(tile_map, start, goal, blocked, allow_diagonal=True, weight=1.05, radius=radius, max_nodes=1200)
+
+
+def build_distance_field(tile_map, goals, blocked=()):
+    blocked = set(blocked)
+    distances = {}
+    queue = deque()
+    for goal in goals:
+        if not tile_map.in_bounds(goal) or tile_map.is_wall(goal):
+            continue
+        distances[goal] = 0
+        queue.append(goal)
+    while queue:
+        current = queue.popleft()
+        for dx, dy in ORTHO_NEIGHBORS:
+            nxt = (current[0] + dx, current[1] + dy)
+            if nxt in distances or nxt in blocked or not tile_map.in_bounds(nxt) or tile_map.is_wall(nxt):
+                continue
+            distances[nxt] = distances[current] + 1
+            queue.append(nxt)
+    return distances
 
 
 def nearest_clear_cell(tile_map, origin, radius, max_distance=12, prefer_pos=None):
@@ -1267,6 +1699,12 @@ def has_wall_line(tile_map, a, b):
 @dataclass
 class Weapon:
     level: int = 1
+    ammo: int = 0
+    reload_timer: float = 0.0
+
+    def __post_init__(self):
+        if self.ammo <= 0:
+            self.ammo = self.magazine_size
 
     @property
     def upgrade_cost(self):
@@ -1304,7 +1742,23 @@ class Weapon:
     @property
     def cooldown(self):
         tier = self.tier
-        return max(0.055, tier["cooldown"] * (0.97 ** self.tier_rank))
+        return max(tier.get("min_cooldown", 0.075), tier["cooldown"] * (0.985 ** self.tier_rank))
+
+    @property
+    def magazine_size(self):
+        return self.tier["magazine"]
+
+    @property
+    def ammo_per_shot(self):
+        return self.tier.get("ammo_per_shot", 1)
+
+    @property
+    def reload_time(self):
+        return max(0.8, self.tier["reload_time"] - self.tier_rank * 0.04)
+
+    @property
+    def is_reloading(self):
+        return self.reload_timer > 0
 
     @property
     def bullet_speed(self):
@@ -1341,10 +1795,33 @@ class Weapon:
     def style(self):
         return self.tier["style"]
 
+    def update(self, dt):
+        if self.reload_timer <= 0:
+            return
+        self.reload_timer = max(0, self.reload_timer - dt)
+        if self.reload_timer <= 0:
+            self.ammo = self.magazine_size
+
+    def start_reload(self):
+        if self.reload_timer > 0 or self.ammo >= self.magazine_size:
+            return False
+        self.reload_timer = self.reload_time
+        return True
+
+    def spend_ammo(self):
+        if self.reload_timer > 0 or self.ammo < self.ammo_per_shot:
+            return False
+        self.ammo -= self.ammo_per_shot
+        return True
+
     def upgrade(self):
         if self.is_maxed:
             return False
+        old_name = self.tier_name
         self.level += 1
+        if self.tier_name != old_name:
+            self.ammo = self.magazine_size
+            self.reload_timer = 0
         return True
 
 
@@ -1375,9 +1852,12 @@ class Player:
         self.regen_rate = 0.0
         self.level_notes = []
         self.buff_timers = {"overdrive": 0.0, "shield": 0.0, "haste": 0.0}
+        self.heal_cooldown = 0.0
         self.dash_cooldown = 0.0
         self.dash_time = 0.0
         self.dash_dir = Vec2(0, 0)
+        self.aim_dir = Vec2(0, 1)
+        self.muzzle_flash_timer = 0.0
         self.last_move_dir = Vec2(0, 1)
         self.facing = "down"
         self.anim_time = 0.0
@@ -1396,6 +1876,7 @@ class Player:
             move.x += 1
         for key in self.buff_timers:
             self.buff_timers[key] = max(0, self.buff_timers[key] - dt)
+        self.heal_cooldown = max(0, self.heal_cooldown - dt)
         self.dash_cooldown = max(0, self.dash_cooldown - dt)
         self.dash_time = max(0, self.dash_time - dt)
 
@@ -1418,7 +1899,9 @@ class Player:
         else:
             self.anim_time = 0
 
+        self.weapon.update(dt)
         self.fire_timer = max(0, self.fire_timer - dt)
+        self.muzzle_flash_timer = max(0, self.muzzle_flash_timer - dt)
         self.invuln = max(0, self.invuln - dt)
         if self.regen_rate > 0 and self.hp < self.max_hp:
             self.hp = min(self.max_hp, self.hp + self.regen_rate * dt)
@@ -1436,6 +1919,8 @@ class Player:
 
     def try_move(self, delta, game):
         blockers = [s for s in game.structures if s.alive]
+        if self.dash_time > 0:
+            blockers = [s for s in blockers if s.kind != "fence" or s.level >= 4]
         new_pos = self.pos + delta
         if not game.tile_map.collides_circle(new_pos, self.radius, blockers):
             self.pos = new_pos
@@ -1450,22 +1935,34 @@ class Player:
     def shoot_at(self, world_pos, game):
         if self.fire_timer > 0:
             return
+        if self.weapon.is_reloading:
+            return
         mx, my = world_pos
         if not (0 <= mx < WORLD_W and 0 <= my < WORLD_H):
             return
         direction = Vec2(mx, my) - self.pos
         if direction.length_squared() <= 1:
             return
+        self.aim_dir = direction.normalize()
         self.facing = facing_from_vector(direction)
         base_angle = math.atan2(direction.y, direction.x)
         overdrive_damage = 1.35 if self.buff_timers["overdrive"] > 0 else 1.0
         fire_rate_mult = 1 + self.fire_rate_bonus + (0.45 if self.buff_timers["overdrive"] > 0 else 0)
         damage = int(self.weapon.damage * (1 + self.damage_bonus) * overdrive_damage * game.difficulty_cfg()["player_damage"])
+        if not self.weapon.spend_ammo():
+            if self.weapon.start_reload():
+                game.play_sound("reload", 0.42, cooldown=0.12)
+            return
         if self.weapon.style == "laser":
             angle = base_angle + random.uniform(-self.weapon.spread, self.weapon.spread)
             laser_dir = Vec2(math.cos(angle), math.sin(angle))
             game.fire_laser(self.pos + laser_dir * (self.radius + 8), laser_dir, damage, self.weapon.bullet_range, self.weapon.pierce)
+            game.play_weapon_sound()
+            self.muzzle_flash_timer = 0.11
             self.fire_timer = self.weapon.cooldown / fire_rate_mult
+            if self.weapon.ammo <= 0:
+                self.weapon.start_reload()
+                game.play_sound("reload", 0.38, cooldown=0.16)
             return
 
         shots = self.weapon.bullet_count
@@ -1495,8 +1992,12 @@ class Player:
                 )
             )
             game.add_muzzle_particle(spawn, vel)
-        game.play_sound("shoot", 0.34, cooldown=0.045)
+        self.muzzle_flash_timer = 0.06
+        game.play_weapon_sound()
         self.fire_timer = self.weapon.cooldown / fire_rate_mult
+        if self.weapon.ammo <= 0:
+            self.weapon.start_reload()
+            game.play_sound("reload", 0.38, cooldown=0.16)
 
     def take_damage(self, amount, game):
         if self.invuln > 0:
@@ -1567,6 +2068,7 @@ class Player:
             )
             game.message = game.t("level_message").format(level=self.level, perks=", ".join(perks))
             game.message_timer = 2.6
+            game.create_level_up_effect(self.pos, self.level)
         if self.level >= PLAYER_MAX_LEVEL:
             self.xp = min(self.xp, self.next_xp)
 
@@ -1599,6 +2101,132 @@ class Player:
         self.level_notes = perks[-3:]
         return perks
 
+    def weapon_aim_direction(self, aim_pos):
+        if self.muzzle_flash_timer > 0 and self.aim_dir.length_squared() > 0:
+            return self.aim_dir.normalize()
+        if aim_pos is not None:
+            direction = Vec2(aim_pos) - self.pos
+            if direction.length_squared() > 4:
+                return direction.normalize()
+        if self.aim_dir.length_squared() > 0:
+            return self.aim_dir.normalize()
+        if self.last_move_dir.length_squared() > 0:
+            return self.last_move_dir.normalize()
+        return Vec2(0, 1)
+
+    def draw_weapon_model(self, surface, base, direction, profile, compact=False):
+        direction = Vec2(direction)
+        if direction.length_squared() <= 0:
+            return
+        direction = direction.normalize()
+        lower = weapon_lower_perp(direction)
+        scale = 0.88 if compact else 1.0
+        body = profile["body"] * scale
+        barrel = profile["barrel"] * scale
+        stock = profile["stock"] * scale
+        height = profile["height"] * scale
+        barrel_width = max(2.0, profile["barrel_width"] * scale)
+        grip = profile["grip"] * scale
+        kind = profile["kind"]
+        color = profile["color"]
+        accent = profile["accent"]
+        detail = profile["detail"]
+        muzzle = profile["muzzle"]
+        outline = (16, 16, 20)
+
+        if stock > 0:
+            draw_weapon_rect(surface, base, direction, lower, -stock + 1, 0, stock + 2, max(4, height * 0.65), detail, outline)
+            if kind in ("pump_shotgun", "rifle"):
+                draw_weapon_rect(surface, base, direction, lower, -stock + 2, height * 0.28, stock * 0.65, 3, accent, None)
+
+        draw_weapon_rect(surface, base, direction, lower, body - 1, -height * 0.08, barrel, barrel_width, detail, outline)
+        draw_weapon_rect(surface, base, direction, lower, body + barrel - 1, -height * 0.08, 4, barrel_width + 1, muzzle, outline)
+        draw_weapon_rect(surface, base, direction, lower, 0, 0, body, height, color, outline)
+        draw_weapon_rect(surface, base, direction, lower, 2, -height * 0.28, body * 0.56, max(2, height * 0.24), accent, None)
+
+        if kind in ("smg", "rifle", "laser"):
+            draw_weapon_rect(surface, base, direction, lower, body * 0.12, -height * 0.72, body * 0.36, 2, detail, outline)
+
+        grip_forward = 3 if kind in ("pistol", "dual_pistol") else body * 0.23
+        grip_width = 5 if kind in ("pistol", "dual_pistol") else 6
+        grip_points = [
+            weapon_point(base, direction, lower, grip_forward, height * 0.36),
+            weapon_point(base, direction, lower, grip_forward + grip_width, height * 0.30),
+            weapon_point(base, direction, lower, grip_forward + grip_width * 0.82, height * 0.40 + grip),
+            weapon_point(base, direction, lower, grip_forward + 1, height * 0.44 + grip * 0.86),
+        ]
+        draw_weapon_poly(surface, grip_points, detail, outline)
+
+        if kind == "smg":
+            mag_points = [
+                weapon_point(base, direction, lower, body * 0.50, height * 0.45),
+                weapon_point(base, direction, lower, body * 0.70, height * 0.45),
+                weapon_point(base, direction, lower, body * 0.77, height * 1.55),
+                weapon_point(base, direction, lower, body * 0.56, height * 1.42),
+            ]
+            draw_weapon_poly(surface, mag_points, detail, outline)
+            draw_weapon_rect(surface, base, direction, lower, body + 1, height * 0.50, 6, 4, accent, outline)
+        elif kind == "rifle":
+            mag_points = [
+                weapon_point(base, direction, lower, body * 0.48, height * 0.44),
+                weapon_point(base, direction, lower, body * 0.70, height * 0.44),
+                weapon_point(base, direction, lower, body * 0.75, height * 1.70),
+                weapon_point(base, direction, lower, body * 0.52, height * 1.62),
+            ]
+            draw_weapon_poly(surface, mag_points, detail, outline)
+            draw_weapon_rect(surface, base, direction, lower, body + 4, -height * 0.05, 9, height * 0.70, accent, outline)
+        elif kind == "pump_shotgun":
+            draw_weapon_rect(surface, base, direction, lower, body + 1, height * 0.56, barrel - 2, 3, detail, outline)
+            draw_weapon_rect(surface, base, direction, lower, body + 4, height * 0.72, 10, 5, accent, outline)
+        elif kind == "semi_shotgun":
+            draw_weapon_rect(surface, base, direction, lower, body + 1, height * 0.55, barrel - 1, 3, accent, outline)
+            draw_weapon_rect(surface, base, direction, lower, body + 7, height * 0.62, 8, 4, detail, outline)
+        elif kind == "laser":
+            glow_core = weapon_point(base, direction, lower, body * 0.55, 0)
+            draw_weapon_circle(surface, glow_core, 6, (28, 93, 113), outline)
+            draw_weapon_circle(surface, glow_core, 3, accent, None)
+            draw_weapon_rect(surface, base, direction, lower, body + 3, -height * 0.12, barrel * 0.65, 2, accent, None)
+
+        if self.muzzle_flash_timer > 0 and not self.weapon.is_reloading:
+            side = Vec2(-direction.y, direction.x)
+            if side.length_squared() <= 0:
+                side = Vec2(0, 1)
+            side = side.normalize()
+            muzzle_pos = weapon_point(base, direction, lower, body + barrel + 4, -height * 0.08)
+            if kind == "laser":
+                pygame.draw.circle(surface, (80, 230, 255), (round(muzzle_pos.x), round(muzzle_pos.y)), 7)
+                pygame.draw.line(surface, (195, 255, 255), muzzle_pos, muzzle_pos + direction * 15, 3)
+            else:
+                flash = [
+                    muzzle_pos + direction * 10,
+                    muzzle_pos - direction * 2 + side * 5,
+                    muzzle_pos - direction * 2 - side * 5,
+                ]
+                draw_weapon_poly(surface, flash, (255, 204, 84), None)
+                pygame.draw.line(surface, (255, 244, 172), muzzle_pos, muzzle_pos + direction * 8, 2)
+
+        skin = (226, 168, 122)
+        main_hand = weapon_point(base, direction, lower, 4, height * 0.55)
+        draw_weapon_circle(surface, main_hand, 3 if compact else 4, skin, outline)
+        if kind not in ("pistol", "dual_pistol"):
+            support_forward = min(body + barrel - 6, body + 8)
+            support_hand = weapon_point(base, direction, lower, support_forward, height * 0.52)
+            draw_weapon_circle(surface, support_hand, 3, skin, outline)
+
+    def draw_held_weapon(self, surface, aim_pos=None):
+        profile = WEAPON_VISUALS.get(self.weapon.tier_name, WEAPON_VISUALS["Glock 17"])
+        direction = self.weapon_aim_direction(aim_pos)
+        hand_base = self.pos + direction * profile.get("hand_forward", 8) + Vec2(0, -4)
+        if profile["kind"] == "dual_pistol":
+            side_axis = Vec2(-direction.y, direction.x)
+            if side_axis.length_squared() <= 0:
+                side_axis = Vec2(0, 1)
+            side_axis = side_axis.normalize()
+            for offset in (-5, 5):
+                self.draw_weapon_model(surface, hand_base + side_axis * offset, direction, profile, compact=True)
+            return
+        self.draw_weapon_model(surface, hand_base, direction, profile)
+
     def draw(self, surface, sprites, aim_pos=None):
         frame = int(self.anim_time) % 4 if self.is_moving else 0
         sprite = sprites.get(f"player_{self.character_id}_{self.facing}_{frame}", sprites["player"])
@@ -1612,14 +2240,7 @@ class Player:
         if self.buff_timers["haste"] > 0:
             pygame.draw.circle(surface, COLORS["purple"], self.pos, self.radius + 5, 1)
         surface.blit(sprite, rect)
-        if aim_pos is not None:
-            direction = Vec2(aim_pos) - self.pos
-            if direction.length_squared() > 4:
-                direction = direction.normalize()
-                start = self.pos + direction * 10
-                end = self.pos + direction * 23
-                pygame.draw.line(surface, (35, 34, 35), start, end, 6)
-                pygame.draw.line(surface, (190, 184, 164), start, end, 3)
+        self.draw_held_weapon(surface, aim_pos)
 
 
 class Bullet:
@@ -1802,12 +2423,20 @@ class Structure:
         }
         self.max_hp = self.stats["hp"]
         self.hp = self.max_hp
+        self.level = self.stats.get("level", 0)
+        self.electric_timer = 0.0
+        self.titan_guard_ready = bool(self.stats.get("titan_guard", False))
         self.fire_timer = random.uniform(0, 0.2)
         self.rect = pygame.Rect(cell[0] * TILE + 4, cell[1] * TILE + 4, TILE - 8, TILE - 8)
         self.alive = True
 
     def update(self, dt, game):
-        if not self.alive or self.kind != "turret":
+        if not self.alive:
+            return
+        if self.kind == "fence":
+            self.electric_timer = max(0, self.electric_timer - dt)
+            return
+        if self.kind != "turret":
             return
         self.fire_timer = max(0, self.fire_timer - dt)
         if self.fire_timer > 0:
@@ -1832,6 +2461,8 @@ class Structure:
         self.fire_timer = self.stats["cooldown"]
 
     def take_damage(self, amount, game):
+        if self.kind == "fence":
+            amount = max(1, int(round(amount * (1 - self.stats.get("damage_reduction", 0.0)))))
         self.hp -= amount
         game.spawn_spark(Vec2(self.rect.center), (210, 92, 73))
         if self.hp <= 0:
@@ -1840,6 +2471,32 @@ class Structure:
 
     def repair(self, amount):
         self.hp = min(self.max_hp, self.hp + amount)
+
+    def upgrade_to(self, stats):
+        old_pct = self.hp / max(1, self.max_hp)
+        self.stats = stats
+        self.level = stats.get("level", self.level)
+        self.max_hp = stats["hp"]
+        self.hp = min(self.max_hp, max(self.hp, int(self.max_hp * old_pct) + int(self.max_hp * 0.22)))
+        self.titan_guard_ready = bool(stats.get("titan_guard", False))
+        self.electric_timer = 0.0
+
+    def on_zombie_attack(self, zombie, game):
+        if self.kind != "fence" or not zombie.alive:
+            return
+        spike = self.stats.get("spike_damage", 0)
+        if spike > 0 and zombie.kind != "titan":
+            zombie.take_damage(spike, game)
+            game.spawn_spark(Vec2(self.rect.center), COLORS["orange"])
+        cooldown = self.stats.get("electric_cooldown", 0.0)
+        if cooldown > 0 and self.electric_timer <= 0:
+            self.electric_timer = cooldown
+            game.create_shockwave(Vec2(self.rect.center), 58, 0, visual_only=True)
+            for other in game.zombies:
+                if other.alive and other.kind != "titan" and other.pos.distance_to(Vec2(self.rect.center)) < 70:
+                    other.stun_timer = max(other.stun_timer, 0.45)
+                    other.flash = max(other.flash, 0.12)
+            game.play_sound("laser", 0.28, cooldown=0.18)
 
     def draw(self, surface):
         if self.kind == "turret":
@@ -1850,8 +2507,13 @@ class Structure:
             pygame.draw.circle(surface, (45, 49, 55), center, 8)
             pygame.draw.rect(surface, COLORS["cyan"], (center.x - 4, center.y - 15, 8, 18))
         else:
-            pygame.draw.rect(surface, (112, 82, 54), self.rect)
-            pygame.draw.rect(surface, (165, 120, 72), self.rect.inflate(-5, -5))
+            level = max(1, self.level)
+            base_color = (112, 82, 54) if level < 4 else (93, 92, 88)
+            inner_color = (165, 120, 72) if level < 4 else (144, 140, 127)
+            if level >= 5:
+                inner_color = (82, 139, 127)
+            pygame.draw.rect(surface, base_color, self.rect)
+            pygame.draw.rect(surface, inner_color, self.rect.inflate(-5, -5))
             for offset in (6, 16):
                 pygame.draw.line(
                     surface,
@@ -1860,6 +2522,14 @@ class Structure:
                     (self.rect.right - 3, self.rect.top + offset),
                     3,
                 )
+            if level >= 3:
+                for x in range(self.rect.left + 5, self.rect.right - 3, 7):
+                    pygame.draw.line(surface, (218, 210, 184), (x, self.rect.top + 4), (x + 3, self.rect.top - 2), 2)
+            if level >= 4 and self.titan_guard_ready:
+                pygame.draw.rect(surface, COLORS["gold"], self.rect.inflate(-2, -2), 2)
+            if level >= 5:
+                pulse = 1 + int(math.sin(pygame.time.get_ticks() * 0.009) > 0)
+                pygame.draw.line(surface, COLORS["cyan"], (self.rect.left + 4, self.rect.centery), (self.rect.right - 4, self.rect.centery), pulse)
 
         pct = clamp(self.hp / self.max_hp, 0, 1)
         bar = pygame.Rect(self.rect.left, self.rect.bottom + 3, self.rect.width, 4)
@@ -1872,6 +2542,7 @@ class Zombie:
         self.kind = kind
         self.cfg = ZOMBIE_TYPES[kind]
         difficulty = DIFFICULTIES.get(difficulty_id, DIFFICULTIES["normal"])
+        self.difficulty_id = difficulty_id
         self.elite = elite and kind != "titan"
         self.pos = Vec2(pos)
         hp_scale = 1.0 + max(0, wave - 1) * 0.18
@@ -1904,7 +2575,8 @@ class Zombie:
         self.charge_dir = Vec2(0, 0)
         self.charge_hit_player = False
         self.shockwave_timer = random.uniform(3.8, 5.2)
-        self.wall_leap_timer = random.uniform(3.0, 4.8)
+        leap_cooldown = TITAN_LEAP_COOLDOWNS.get(difficulty_id, TITAN_LEAP_COOLDOWNS["normal"])
+        self.wall_leap_timer = random.uniform(leap_cooldown * 0.55, leap_cooldown * 0.85)
         self.wall_leap_time = 0
         self.wall_leap_duration = 0.7
         self.wall_leap_start = Vec2(self.pos)
@@ -1912,16 +2584,22 @@ class Zombie:
         self.summon_thresholds = [0.72, 0.48, 0.24] if kind == "titan" else []
         self.last_pos = Vec2(self.pos)
         self.stuck_timer = 0
+        self.stun_timer = 0.0
+        self.facing = "down"
+        self.anim_phase = random.uniform(0, 4)
 
     def take_damage(self, amount, game):
         self.hp -= amount
         self.flash = 0.08
         game.play_sound("hit", 0.28, cooldown=0.05)
+        if random.random() < 0.12:
+            game.play_zombie_sound("groan", self.kind, volume=0.22, cooldown=0.35)
         if self.hp <= 0 and self.alive:
             self.die(game)
 
     def die(self, game):
         self.alive = False
+        game.play_zombie_sound("death", self.kind, volume=0.48 if self.kind != "titan" else 0.82, cooldown=0.12)
         reward = int(round((self.cfg["reward"] + random.randint(0, 3 + game.wave)) * game.difficulty_cfg()["reward"]))
         if self.elite:
             reward = int(round(reward * 1.65))
@@ -1937,7 +2615,7 @@ class Zombie:
         elif random.random() < min(0.03 + game.wave * 0.006, 0.12):
             game.spawn_powerup(self.pos)
         if self.kind == "boomer":
-            game.create_explosion(self.pos, 105, self.damage + 22, enemy_owned=True)
+            game.create_explosion(self.pos, 105, self.damage + 22, enemy_owned=True, sound_name="boomer_explosion", sound_volume=0.76)
 
     def update(self, dt, game):
         if not self.alive:
@@ -1946,18 +2624,22 @@ class Zombie:
             self.update_titan(dt, game)
             return
         self.flash = max(0, self.flash - dt)
+        self.stun_timer = max(0, self.stun_timer - dt)
         self.attack_timer = max(0, self.attack_timer - dt)
         self.special_timer = max(0, self.special_timer - dt)
         self.lunge_boost = max(0, self.lunge_boost - dt)
         self.dash_timer = max(0, self.dash_timer - dt)
         self.dash_time = max(0, self.dash_time - dt)
+        if self.stun_timer > 0:
+            self.flash = max(self.flash, 0.06)
+            return
 
         if self.kind == "boomer":
             self.try_boomer_bile(game)
             self.try_boomer_dash(game)
             if self.should_explode(game):
                 self.alive = False
-                game.create_explosion(self.pos, 110, self.damage + 30, enemy_owned=True)
+                game.create_explosion(self.pos, 110, self.damage + 30, enemy_owned=True, sound_name="boomer_explosion", sound_volume=0.76)
                 return
         elif self.cfg["special"] == "acid":
             self.try_acid(dt, game)
@@ -1969,6 +2651,8 @@ class Zombie:
         target_structure = self.nearby_structure(game)
         if target_structure is not None and self.attack_timer <= 0:
             target_structure.take_damage(self.damage, game)
+            target_structure.on_zombie_attack(self, game)
+            game.play_zombie_sound("attack", self.kind, volume=0.26, cooldown=0.28)
             self.attack_timer = self.cfg["attack_rate"]
             return
 
@@ -1976,6 +2660,7 @@ class Zombie:
         if player_dist <= self.radius + game.player.radius + 4:
             if self.attack_timer <= 0:
                 game.player.take_damage(self.damage, game)
+                game.play_zombie_sound("attack", self.kind, volume=0.38, cooldown=0.22)
                 self.attack_timer = self.cfg["attack_rate"]
             return
 
@@ -1983,6 +2668,7 @@ class Zombie:
 
     def update_titan(self, dt, game):
         self.flash = max(0, self.flash - dt)
+        self.stun_timer = max(0, self.stun_timer - dt)
         self.attack_timer = max(0, self.attack_timer - dt)
         self.special_timer = max(0, self.special_timer - dt)
         self.trample_timer = max(0, self.trample_timer - dt)
@@ -1995,6 +2681,10 @@ class Zombie:
 
         if self.wall_leap_time > 0:
             self.update_titan_wall_leap(dt, game)
+            return
+
+        if self.stun_timer > 0:
+            self.flash = max(self.flash, 0.08)
             return
 
         if self.charge_time > 0:
@@ -2021,12 +2711,15 @@ class Zombie:
         moved = self.pos.distance_to(self.last_pos)
         self.stuck_timer = self.stuck_timer + dt if moved < 1.2 else 0
         self.last_pos = Vec2(self.pos)
-        if self.stuck_timer > 0.8:
-            if self.wall_leap_timer <= 0:
-                self.start_titan_wall_leap(game)
+        if self.stuck_timer >= game.titan_stuck_threshold():
+            if self.wall_leap_timer <= 0 and self.start_titan_wall_leap(game):
+                self.stuck_timer = 0
             else:
                 self.nudge_titan_out(game)
-            self.stuck_timer = 0
+                self.stuck_timer = max(0, self.stuck_timer - 1.0)
+
+    def can_titan_leap(self, game):
+        return self.wall_leap_timer <= 0 and self.stuck_timer >= game.titan_stuck_threshold()
 
     def ensure_titan_clear(self, game):
         if not game.tile_map.collides_circle(self.pos, self.radius, ()):
@@ -2049,17 +2742,18 @@ class Zombie:
             self.path.clear()
 
     def start_titan_wall_leap(self, game):
-        player_cell = game.tile_map.world_to_cell(game.player.pos)
-        target_cell = nearest_clear_cell(game.tile_map, player_cell, self.radius, max_distance=9, prefer_pos=self.pos)
+        if not self.can_titan_leap(game):
+            return False
+        target_cell = game.find_titan_leap_cell(self)
         if target_cell is None:
             return False
         self.wall_leap_start = Vec2(self.pos)
         self.wall_leap_target = game.tile_map.cell_center(target_cell)
         if self.wall_leap_target.distance_to(self.pos) < 90:
             return False
-        self.wall_leap_duration = clamp(self.wall_leap_target.distance_to(self.pos) / 520, 0.55, 0.95)
+        self.wall_leap_duration = clamp(self.wall_leap_target.distance_to(self.pos) / 520, 0.65, 1.05)
         self.wall_leap_time = self.wall_leap_duration
-        self.wall_leap_timer = random.uniform(6.5, 8.5)
+        self.wall_leap_timer = game.titan_leap_cooldown()
         self.path.clear()
         game.message = game.t("titan_vault")
         game.message_timer = 1.4
@@ -2073,7 +2767,8 @@ class Zombie:
         self.pos = self.wall_leap_start.lerp(self.wall_leap_target, eased)
         if self.wall_leap_time <= 0:
             self.pos = Vec2(self.wall_leap_target)
-            self.titan_stomp(game, radius=128, damage=self.damage + 12)
+            self.titan_stomp(game, radius=118, damage=max(4, self.damage // 2))
+            self.stun_timer = 1.0
             self.path_timer = 0
             self.stuck_timer = 0
 
@@ -2082,7 +2777,7 @@ class Zombie:
         if self.path_timer <= 0:
             self.rebuild_titan_path(game)
             self.path_timer = random.uniform(0.22, 0.38)
-            if not self.path and self.wall_leap_timer <= 0:
+            if not self.path and self.can_titan_leap(game):
                 self.start_titan_wall_leap(game)
                 return
 
@@ -2111,13 +2806,14 @@ class Zombie:
         if start is None or goal is None:
             self.path = []
             return
-        self.path = astar_clearance(game.tile_map, start, goal, self.radius)[:16]
+        self.path = astar_clearance(game.tile_map, start, goal, self.radius, game.blocked_cells())[:16]
 
     def move_titan_towards(self, target_pos, dt, game, speed_multiplier=1.0):
         direction = Vec2(target_pos) - self.pos
         if direction.length_squared() <= 1:
             return False
         desired = direction.normalize()
+        self.facing = facing_from_vector(desired)
         step_size = self.speed * speed_multiplier * dt
         candidates = [
             desired,
@@ -2134,7 +2830,7 @@ class Zombie:
         best_score = -999
         for candidate in candidates:
             new_pos = self.pos + candidate * step_size
-            if game.tile_map.collides_circle(new_pos, self.radius, ()):
+            if game.tile_map.collides_circle(new_pos, self.radius, [s for s in game.structures if s.alive]):
                 continue
             score = candidate.dot(desired) - new_pos.distance_to(game.player.pos) / 2000
             if score > best_score:
@@ -2151,6 +2847,7 @@ class Zombie:
         if direction.length_squared() <= 1:
             return
         self.charge_dir = direction.normalize()
+        self.facing = facing_from_vector(self.charge_dir)
         self.charge_time = 0.82
         self.charge_hit_player = False
         self.charge_timer = random.uniform(5.4, 7.0)
@@ -2158,6 +2855,7 @@ class Zombie:
         game.message = game.t("titan_charge")
         game.message_timer = 1.2
         game.create_shockwave(self.pos, 54, 0, visual_only=True)
+        game.play_zombie_sound("titan", self.kind, volume=0.7, cooldown=1.2)
 
     def update_titan_charge(self, dt, game):
         self.charge_time -= dt
@@ -2167,13 +2865,14 @@ class Zombie:
             new_pos = self.pos + self.charge_dir * (distance / steps)
             if game.tile_map.collides_circle(new_pos, self.radius, ()):
                 self.charge_time = 0
-                if self.wall_leap_timer <= 0:
-                    self.start_titan_wall_leap(game)
-                else:
-                    self.titan_stomp(game, radius=95, damage=self.damage + 3)
+                self.titan_stomp(game, radius=95, damage=self.damage + 3)
+                self.stun_timer = max(self.stun_timer, 0.55)
                 return
             self.pos = new_pos
-            self.trample_structures(game, self.damage + 18)
+            if self.trample_structures(game, self.damage + 18, charge=True):
+                self.charge_time = 0
+                self.stun_timer = max(self.stun_timer, 0.65)
+                return
             if not self.charge_hit_player and self.pos.distance_to(game.player.pos) < self.radius + game.player.radius + 12:
                 game.player.take_damage(self.damage + 16, game)
                 self.charge_hit_player = True
@@ -2197,18 +2896,28 @@ class Zombie:
 
     def titan_stomp(self, game, radius, damage):
         game.create_shockwave(self.pos, radius, damage)
-        self.trample_structures(game, damage + 12, force=True)
+        self.trample_structures(game, max(4, damage // 2 + 6), force=True)
+        game.play_zombie_sound("titan", self.kind, volume=0.62, cooldown=1.0)
 
-    def trample_structures(self, game, damage, force=False):
-        if self.trample_timer > 0 and not force:
-            return
+    def trample_structures(self, game, damage, force=False, charge=False):
+        if self.trample_timer > 0 and not force and not charge:
+            return False
         hit = False
         for structure in game.structures:
             if structure.alive and dist_point_rect((self.pos.x, self.pos.y), structure.rect) < self.radius + 12:
-                structure.take_damage(damage, game)
+                if charge and structure.kind == "fence" and structure.titan_guard_ready:
+                    structure.titan_guard_ready = False
+                    structure.take_damage(max(damage, int(structure.max_hp * 0.42)), game)
+                    game.create_shockwave(Vec2(structure.rect.center), 58, 0, visual_only=True)
+                else:
+                    structure.take_damage(damage, game)
+                structure.on_zombie_attack(self, game)
                 hit = True
+                if charge:
+                    break
         if hit:
             self.trample_timer = 0.24
+        return hit
 
     def try_titan_summon(self, game):
         if not self.summon_thresholds:
@@ -2220,6 +2929,7 @@ class Zombie:
         game.message = game.t("titan_roar")
         game.message_timer = 1.6
         game.create_shockwave(self.pos, 120, 0, visual_only=True)
+        game.play_zombie_sound("titan", self.kind, volume=0.78, cooldown=1.2)
         for kind in ["walker", "walker", "runner", "runner", "spitter"]:
             game.spawn_minion_near(kind, self.pos)
 
@@ -2258,6 +2968,7 @@ class Zombie:
             direction = target - self.pos
             if direction.length_squared() > 1:
                 self.dash_dir = direction.normalize()
+                self.facing = facing_from_vector(self.dash_dir)
                 self.dash_time = 0.28
                 self.dash_timer = random.uniform(2.1, 3.2)
                 game.spawn_spark(self.pos, (135, 255, 71))
@@ -2305,11 +3016,53 @@ class Zombie:
                 best_dist = distance
         return best
 
+    def nearby_fence(self, game, reach=18):
+        best = None
+        best_dist = 1_000_000
+        for structure in game.structures:
+            if not structure.alive or structure.kind != "fence":
+                continue
+            distance = dist_point_rect((self.pos.x, self.pos.y), structure.rect)
+            if distance < self.radius + reach and distance < best_dist:
+                best = structure
+                best_dist = distance
+        return best
+
+    def fence_slow_multiplier(self, game):
+        fence = self.nearby_fence(game, reach=20)
+        if fence is None:
+            return 1.0
+        if self.kind == "titan":
+            return 0.86
+        return fence.stats.get("slow", 1.0)
+
     def follow_path(self, dt, game):
+        speed = self.speed * game.zombie_speed_multiplier(self.kind) * self.fence_slow_multiplier(game)
+        if self.lunge_boost > 0:
+            speed *= 1.9
+        if self.dash_time > 0 and self.dash_dir.length_squared() > 0:
+            self.facing = facing_from_vector(self.dash_dir)
+            self.try_move(self.dash_dir.normalize() * speed * 3.2 * dt, game)
+            return
+
+        if self.kind == "walker":
+            flow_dir = game.flow_direction(self.pos)
+            if flow_dir is not None:
+                self.facing = facing_from_vector(flow_dir)
+                self.try_move(flow_dir * speed * dt, game)
+                return
+
+        if self.kind == "runner" and has_wall_line(game.tile_map, self.pos, game.player.pos):
+            direction = game.player.pos - self.pos
+            if direction.length_squared() > 1:
+                self.facing = facing_from_vector(direction)
+                self.try_move(direction.normalize() * speed * dt, game)
+                return
+
         self.path_timer -= dt
         if self.path_timer <= 0:
             self.rebuild_path(game)
-            self.path_timer = random.uniform(0.28, 0.55)
+            self.path_timer = random.uniform(0.20, 0.36) if self.kind in ("runner", "stalker", "boomer") else random.uniform(0.34, 0.62)
 
         target_pos = None
         while self.path:
@@ -2325,27 +3078,38 @@ class Zombie:
         direction = target_pos - self.pos
         if direction.length_squared() <= 1:
             return
-        speed = self.speed * game.zombie_speed_multiplier(self.kind)
-        if self.lunge_boost > 0:
-            speed *= 1.9
-        if self.dash_time > 0 and self.dash_dir.length_squared() > 0:
-            direction = self.dash_dir
-            speed *= 3.2
+        self.facing = facing_from_vector(direction)
         self.try_move(direction.normalize() * speed * dt, game)
 
     def rebuild_path(self, game):
         start = game.tile_map.world_to_cell(self.pos)
-        goal = game.tile_map.world_to_cell(game.player.pos)
-        blocked = game.blocked_cells()
-        path = astar(game.tile_map, start, goal, blocked)
+        player_cell = game.tile_map.world_to_cell(game.player.pos)
+        if self.kind == "spitter":
+            goal = game.spitter_goal_cell(self.pos)
+            path = game.cached_path("spitter_keep_range", start, goal, allow_diagonal=True, weight=1.08, max_nodes=620, smooth=True)
+        elif self.kind == "boomer":
+            goal = game.predicted_player_cell(lead_tiles=2) or player_cell
+            path = game.cached_path("boomer_intercept", start, goal, allow_diagonal=True, weight=1.28, max_nodes=520, smooth=True)
+        elif self.kind == "runner":
+            goal = game.predicted_player_cell(lead_tiles=3) or player_cell
+            path = game.cached_path("runner_weighted_astar", start, goal, allow_diagonal=True, weight=1.45, max_nodes=360, smooth=True)
+        elif self.kind == "stalker":
+            goal = game.stalker_flank_cell(self.pos)
+            stalker_blockers = {s.cell for s in game.structures if s.alive and (s.kind != "fence" or s.level >= 3)}
+            path = find_path(game.tile_map, start, goal, stalker_blockers, allow_diagonal=True, weight=1.18, max_nodes=620)
+            path = smooth_path(game.tile_map, start, path, stalker_blockers, 0) if path else []
+        else:
+            path = game.cached_path("walker_astar_fallback", start, player_cell, allow_diagonal=False, weight=1.0, max_nodes=520, smooth=False)
         if not path:
             structure = game.nearest_structure(self.pos)
             if structure is not None:
-                path = astar(game.tile_map, start, structure.cell, blocked)
-        self.path = path[:14]
+                path = game.cached_path(f"{self.kind}_structure", start, structure.cell, allow_diagonal=True, weight=1.2, max_nodes=360, smooth=False)
+        self.path = path[:16 if self.kind in ("runner", "stalker", "boomer") else 12]
 
     def try_move(self, delta, game):
         blockers = [s for s in game.structures if s.alive]
+        if self.kind == "stalker":
+            blockers = [s for s in blockers if s.kind != "fence" or s.level >= 3]
         new_pos = self.pos + delta
         if not game.tile_map.collides_circle(new_pos, self.radius, blockers):
             self.pos = new_pos
@@ -2359,10 +3123,28 @@ class Zombie:
             self.pos = y_pos
 
     def draw(self, surface, sprites):
-        sprite = sprites[self.kind]
+        speed_hint = {
+            "walker": 4.8,
+            "runner": 10.5,
+            "spitter": 5.6,
+            "boomer": 7.4,
+            "stalker": 9.2,
+            "titan": 3.4,
+        }.get(self.kind, 6.0)
+        if self.dash_time > 0 or self.lunge_boost > 0 or self.charge_time > 0:
+            speed_hint *= 1.6
+        frame = int(pygame.time.get_ticks() / 1000 * speed_hint + self.anim_phase) % 4
+        sprite = sprites.get(f"zombie_{self.kind}_{self.facing}_{frame}", sprites[self.kind])
         rect = sprite.get_rect(center=(round(self.pos.x), round(self.pos.y)))
         if self.elite:
             pygame.draw.circle(surface, COLORS["orange"], self.pos, self.radius + 8, 2)
+            pygame.draw.circle(surface, (255, 176, 82), self.pos, self.radius + 2 + (frame % 2) * 2, 1)
+        if self.kind == "spitter" and self.special_timer < 0.45:
+            pygame.draw.circle(surface, (99, 245, 75), self.pos, self.radius + 8, 1)
+        if self.kind == "boomer" and self.dash_time > 0:
+            pygame.draw.circle(surface, (142, 255, 71), self.pos, self.radius + 10, 2)
+        if self.kind == "titan" and (self.charge_time > 0 or self.wall_leap_time > 0):
+            pygame.draw.circle(surface, COLORS["red"], self.pos, self.radius + 10, 2)
         if self.kind == "stalker":
             ghost = sprite.copy()
             ghost.set_alpha(135 if self.lunge_boost <= 0 else 220)
@@ -2475,6 +3257,35 @@ class Particle:
         pygame.draw.rect(surface, self.color, (self.pos.x - size, self.pos.y - size, size * 2, size * 2))
 
 
+class PulseRing:
+    def __init__(self, pos, color, radius=72, life=0.55, width=3, start_radius=8):
+        self.pos = Vec2(pos)
+        self.color = color
+        self.radius = radius
+        self.start_radius = start_radius
+        self.life = life
+        self.max_life = life
+        self.width = width
+        self.alive = True
+
+    def update(self, dt):
+        self.life -= dt
+        if self.life <= 0:
+            self.alive = False
+
+    def draw(self, surface):
+        pct = 1 - clamp(self.life / self.max_life, 0, 1)
+        radius = int(self.start_radius + (self.radius - self.start_radius) * pct)
+        alpha = int(210 * (1 - pct))
+        if radius <= 0 or alpha <= 0:
+            return
+        padding = self.width + 3
+        size = (radius + padding) * 2
+        ring = pygame.Surface((size, size), pygame.SRCALPHA)
+        pygame.draw.circle(ring, (*self.color, alpha), (size // 2, size // 2), radius, self.width)
+        surface.blit(ring, (self.pos.x - size // 2, self.pos.y - size // 2))
+
+
 class FloatingText:
     def __init__(self, pos, text, color, life=0.9):
         self.pos = Vec2(pos)
@@ -2527,6 +3338,7 @@ class Game:
         self.tiny_font = make_ui_font(max(11, int(14 * self.ui_scale)))
         self.big_font = make_ui_font(max(38, int(64 * self.ui_scale)), bold=True)
         self.title_font = make_ui_font(max(42, int(74 * self.ui_scale)), bold=True)
+        self.ui = UIManager()
         self.sprites = build_sprites()
         self.menu_background = self.load_menu_background()
         self.state = "menu"
@@ -2539,6 +3351,13 @@ class Game:
         self.difficulty_id = "normal"
         self.character_id = "soldier"
         self.map_id = "warehouse"
+        self.setup_step = "difficulty"
+        self.COLORS = COLORS
+        self.character_defs = CHARACTERS
+        self.difficulty_defs = DIFFICULTIES
+        self.map_order = MAP_ORDER
+        self.map_themes = MAP_THEMES
+        self.map_rows_by_id = MAPS
         self.options_return_state = "menu"
         self.options_return_paused = False
         self.ui_buttons = {}
@@ -2547,6 +3366,15 @@ class Game:
         self.audio_enabled = False
         self.sounds = {}
         self.sound_cooldowns = {}
+        self.music_tracks = {}
+        self.current_music_key = None
+        self.wave_banner_text = ""
+        self.wave_banner_timer = 0.0
+        self.titan_banner_timer = 0.0
+        self.path_blockers = set()
+        self.path_signature = None
+        self.path_cache = {}
+        self.flow_field = {}
         self.init_audio()
         self.reset_gameplay()
 
@@ -2562,6 +3390,7 @@ class Game:
         self.gold_drops = []
         self.powerups = []
         self.particles = []
+        self.rings = []
         self.floating_texts = []
         self.teleport_player_to_spawn(effect=True)
         self.wave = 0
@@ -2574,8 +3403,15 @@ class Game:
         self.bile_timer = 0
         self.message = self.t("press_space_wave")
         self.message_timer = 4
+        self.wave_banner_text = ""
+        self.wave_banner_timer = 0.0
+        self.titan_banner_timer = 0.0
         self.spawn_cells = self.build_spawn_cells()
         self.boss_spawn_cells = self.build_boss_spawn_cells()
+        self.path_blockers = set()
+        self.path_signature = None
+        self.path_cache = {}
+        self.flow_field = {}
         self.paused = False
         self.build_mode = None
 
@@ -2623,31 +3459,59 @@ class Game:
             self.audio_enabled = False
             return
 
-        audio_dir = os.path.join(os.path.dirname(__file__), "assets", "audio", "kenney_rpg", "OGG")
+        base_audio_dir = os.path.join(os.path.dirname(__file__), "assets", "audio")
+        kenney_dir = os.path.join(base_audio_dir, "kenney_rpg", "OGG")
+        synth_dir = os.path.join(base_audio_dir, "synth")
+        oga_dir = os.path.join(base_audio_dir, "opengameart")
         sound_files = {
-            "click": "metalClick.ogg",
-            "shoot": "knifeSlice.ogg",
-            "laser": "drawKnife3.ogg",
-            "coin": "handleCoins.ogg",
-            "build": "metalLatch.ogg",
-            "upgrade": "handleCoins2.ogg",
-            "hit": "chop.ogg",
-            "explosion": "metalPot3.ogg",
-            "poison": "creak3.ogg",
-            "hurt": "cloth3.ogg",
-            "wave": "doorOpen_1.ogg",
-            "dash": "clothBelt.ogg",
-            "powerup": "handleSmallLeather.ogg",
+            "click": os.path.join(kenney_dir, "metalClick.ogg"),
+            "ui_confirm": os.path.join(oga_dir, "8bit_confirm.wav"),
+            "coin": os.path.join(kenney_dir, "handleCoins.ogg"),
+            "build": os.path.join(kenney_dir, "metalLatch.ogg"),
+            "upgrade": os.path.join(kenney_dir, "handleCoins2.ogg"),
+            "hit": os.path.join(kenney_dir, "chop.ogg"),
+            "explosion": os.path.join(kenney_dir, "metalPot3.ogg"),
+            "boomer_explosion": os.path.join(oga_dir, "chunky_explosion.mp3"),
+            "poison": os.path.join(kenney_dir, "creak3.ogg"),
+            "hurt": os.path.join(kenney_dir, "cloth3.ogg"),
+            "wave": os.path.join(kenney_dir, "doorOpen_1.ogg"),
+            "dash": os.path.join(kenney_dir, "clothBelt.ogg"),
+            "powerup": os.path.join(kenney_dir, "handleSmallLeather.ogg"),
+            "reload": os.path.join(synth_dir, "reload_mag.wav"),
+            "levelup": os.path.join(synth_dir, "level_up.wav"),
+            "weapon_upgrade": os.path.join(synth_dir, "weapon_upgrade.wav"),
+            "gun_glock17": os.path.join(synth_dir, "gun_glock17.wav"),
+            "gun_dual_beretta": os.path.join(synth_dir, "gun_dual_beretta.wav"),
+            "gun_mp5": os.path.join(synth_dir, "gun_mp5.wav"),
+            "gun_mossberg500": os.path.join(synth_dir, "gun_mossberg500.wav"),
+            "gun_m4a1": os.path.join(synth_dir, "gun_m4a1.wav"),
+            "gun_benelli_m4": os.path.join(synth_dir, "gun_benelli_m4.wav"),
+            "gun_xm_las": os.path.join(synth_dir, "gun_xm_las.wav"),
+            "zombie_groan": os.path.join(oga_dir, "monster_groan.wav"),
+            "zombie_attack": os.path.join(oga_dir, "monster_attack.wav"),
+            "zombie_death": os.path.join(oga_dir, "monster_death.wav"),
+            "zombie_titan": os.path.join(oga_dir, "monster_titan.wav"),
+            "zombie_groan_synth": os.path.join(synth_dir, "zombie_groan.wav"),
+            "zombie_attack_synth": os.path.join(synth_dir, "zombie_attack.wav"),
+            "zombie_death_synth": os.path.join(synth_dir, "zombie_death.wav"),
+            "zombie_titan_synth": os.path.join(synth_dir, "zombie_titan.wav"),
         }
-        for name, filename in sound_files.items():
-            path = os.path.join(audio_dir, filename)
+        for name, path in sound_files.items():
             if not os.path.exists(path):
                 continue
             try:
                 self.sounds[name] = pygame.mixer.Sound(path)
             except pygame.error:
                 continue
-        self.audio_enabled = bool(self.sounds)
+        self.music_tracks = {
+            "menu": os.path.join(synth_dir, "bgm_dead_factory.wav"),
+            "battle": os.path.join(synth_dir, "bgm_last_stand.wav"),
+            "boss": os.path.join(synth_dir, "bgm_boss_warning.wav"),
+        }
+        self.music_tracks = {key: path for key, path in self.music_tracks.items() if os.path.exists(path)}
+        self.audio_enabled = bool(self.sounds or self.music_tracks)
+        if self.music_tracks:
+            self.apply_music_volume()
 
     def load_menu_background(self):
         asset_dir = os.path.join(os.path.dirname(__file__), "assets")
@@ -2675,6 +3539,79 @@ class Game:
         if cooldown > 0:
             self.sound_cooldowns[name] = now + cooldown
 
+    def play_weapon_sound(self):
+        audio = WEAPON_AUDIO.get(self.player.weapon.tier_name, WEAPON_AUDIO["Glock 17"])
+        self.play_sound(audio["sound"], audio["volume"], audio["cooldown"])
+
+    def play_zombie_sound(self, mood, kind="walker", volume=0.38, cooldown=0.35):
+        if kind == "titan" or mood == "titan":
+            key = "zombie_titan"
+        elif mood == "death":
+            key = "zombie_death"
+        elif mood == "attack":
+            key = "zombie_attack"
+        else:
+            key = "zombie_groan"
+        self.play_sound(key, volume, cooldown)
+
+    def apply_music_volume(self):
+        if self.headless or not pygame.mixer.get_init():
+            return
+        pygame.mixer.music.set_volume(clamp(self.music_volume / 100, 0, 1))
+
+    def desired_music_key(self):
+        if self.state == "playing":
+            if any(z.alive and z.kind == "titan" for z in self.zombies):
+                return "boss"
+            return "battle"
+        return "menu"
+
+    def update_music(self):
+        if not self.audio_enabled or self.headless or not self.music_tracks or not pygame.mixer.get_init():
+            return
+        self.apply_music_volume()
+        key = self.desired_music_key()
+        path = self.music_tracks.get(key)
+        if path is None:
+            return
+        if self.music_volume <= 0:
+            return
+        if self.current_music_key == key and pygame.mixer.music.get_busy():
+            return
+        try:
+            pygame.mixer.music.load(path)
+            pygame.mixer.music.play(-1, fade_ms=900)
+            self.current_music_key = key
+        except pygame.error:
+            self.current_music_key = None
+
+    def create_level_up_effect(self, pos, level):
+        pos = Vec2(pos)
+        self.rings.append(PulseRing(pos, COLORS["cyan"], radius=92, life=0.65, width=4, start_radius=16))
+        self.rings.append(PulseRing(pos, COLORS["gold"], radius=56, life=0.45, width=3, start_radius=8))
+        for i in range(64):
+            angle = math.tau * i / 64 + random.uniform(-0.04, 0.04)
+            direction = Vec2(math.cos(angle), math.sin(angle))
+            speed = random.uniform(120, 260)
+            color = random.choice([COLORS["cyan"], COLORS["gold"], (232, 255, 250), (86, 220, 255)])
+            self.particles.append(Particle(pos + direction * random.uniform(8, 18), direction * speed, color, life=random.uniform(0.42, 0.82), size=random.randint(3, 5)))
+        self.floating_texts.append(FloatingText(pos + Vec2(0, -64), self.t("level_up").format(level=level), COLORS["gold"], life=1.35))
+        self.play_sound("levelup", 0.72, cooldown=0.12)
+
+    def create_weapon_upgrade_effect(self, pos, evolved=False, label=None):
+        pos = Vec2(pos)
+        main_color = COLORS["purple"] if evolved else COLORS["orange"]
+        self.rings.append(PulseRing(pos, main_color, radius=74 if evolved else 58, life=0.55, width=4, start_radius=10))
+        self.rings.append(PulseRing(pos, COLORS["cyan"], radius=42, life=0.38, width=2, start_radius=6))
+        for i in range(42 if evolved else 30):
+            angle = math.tau * i / (42 if evolved else 30) + random.uniform(-0.1, 0.1)
+            direction = Vec2(math.cos(angle), math.sin(angle))
+            color = random.choice([main_color, COLORS["gold"], COLORS["cyan"], (255, 232, 156)])
+            self.particles.append(Particle(pos + direction * random.uniform(5, 14), direction * random.uniform(90, 210), color, life=random.uniform(0.32, 0.68), size=random.randint(2, 4)))
+        label = label or self.t("upgrade")
+        self.floating_texts.append(FloatingText(pos + Vec2(0, -54), label, main_color, life=1.1))
+        self.play_sound("weapon_upgrade", 0.66 if evolved else 0.52, cooldown=0.12)
+
     def open_options(self, return_state="menu", return_paused=False):
         self.options_return_state = return_state
         self.options_return_paused = return_paused
@@ -2688,6 +3625,18 @@ class Game:
     def gold_text(self):
         return self.t("infinite") if self.dev_mode else str(self.player.gold)
 
+    def weapon_ammo_text(self):
+        weapon = self.player.weapon
+        if weapon.is_reloading:
+            return f"{self.t('reloading')} {weapon.reload_timer:.1f}s"
+        return f"{self.t('ammo')} {weapon.ammo}/{weapon.magazine_size}"
+
+    def weapon_reload_text(self):
+        weapon = self.player.weapon
+        if weapon.is_reloading:
+            return f"{self.t('reloading')} {weapon.reload_timer:.1f}s"
+        return f"{self.t('reload')} {weapon.reload_time:.1f}s"
+
     def difficulty_cfg(self):
         return DIFFICULTIES.get(self.difficulty_id, DIFFICULTIES["normal"])
 
@@ -2697,11 +3646,32 @@ class Game:
     def scaled_wave_count(self, count):
         return max(1, int(round(count * self.difficulty_cfg()["count"])))
 
-    def structure_stats(self, kind):
+    def fence_level(self):
+        progress = max(self.wave, self.player.level)
+        level = 1 + progress // 4
+        if self.character_id == "engineer" and progress >= 4:
+            level += 1
+        return int(clamp(level, 1, MAX_FENCE_LEVEL))
+
+    def fence_stats_for_level(self, level):
+        level = int(clamp(level, 1, MAX_FENCE_LEVEL))
+        stats = dict(FENCE_TIER_STATS[level])
+        balance = self.structure_balance_cfg()
+        stats["level"] = level
+        stats["hp"] = max(1, int(round(stats["hp"] * balance["hp"] * balance.get("fence_hp", 1.0))))
+        stats["range"] = 0
+        stats["damage"] = 0
+        stats["cooldown"] = 0
+        return stats
+
+    def structure_stats(self, kind, level=None):
         cfg = STRUCTURE_TYPES[kind]
         balance = self.structure_balance_cfg()
+        if kind == "fence":
+            return self.fence_stats_for_level(level or self.fence_level())
+        hp_multiplier = balance["hp"] * (balance.get("fence_hp", 1.0) if kind == "fence" else 1.0)
         return {
-            "hp": max(1, int(round(cfg["hp"] * balance["hp"]))),
+            "hp": max(1, int(round(cfg["hp"] * hp_multiplier))),
             "range": max(0, int(round(cfg["range"] * balance["turret_range"]))),
             "damage": max(0, int(round(cfg["damage"] * balance["turret_damage"]))),
             "cooldown": max(0.08, cfg["cooldown"] * balance["turret_cooldown"]),
@@ -2709,9 +3679,16 @@ class Game:
 
     def structure_cost(self, kind):
         base_cost = STRUCTURE_TYPES[kind]["cost"]
+        if kind == "fence":
+            base_cost = int(round(base_cost * (1 + (self.fence_level() - 1) * 0.32)))
         difficulty_cost = self.structure_balance_cfg()["cost"]
         discount = CHARACTERS.get(self.character_id, CHARACTERS["soldier"])["build_discount"]
         return max(1, int(round(base_cost * difficulty_cost * (1 - discount))))
+
+    def fence_upgrade_cost(self, target_level):
+        difficulty_cost = self.structure_balance_cfg()["cost"]
+        discount = CHARACTERS.get(self.character_id, CHARACTERS["soldier"])["build_discount"]
+        return max(1, int(round((28 + target_level * 26) * difficulty_cost * (1 - discount))))
 
     def repair_cost(self):
         difficulty_cost = self.structure_balance_cfg()["repair_cost"]
@@ -2735,37 +3712,23 @@ class Game:
             self.player.gold -= cost
 
     def draw_text_center(self, text, rect, color=None, font=None):
-        color = color or COLORS["text"]
-        font = font or self.font
-        image = font.render(text, True, color)
-        self.screen.blit(image, image.get_rect(center=rect.center))
+        self.ui.draw_text_center(self.screen, text, rect, color or COLORS["text"], font or self.font)
 
     def draw_panel(self, rect, color=(18, 20, 25), alpha=210, border=True):
-        panel = pygame.Surface((rect.w, rect.h), pygame.SRCALPHA)
-        panel.fill((*color, alpha))
-        self.screen.blit(panel, rect)
-        if border:
-            pygame.draw.rect(self.screen, COLORS["hud_line"], rect, 2, border_radius=8)
+        self.ui.draw_panel(self.screen, rect, color=color, alpha=alpha, border=border, border_color=COLORS["hud_line"])
 
     def draw_button(self, key, rect, label, *, active=False, disabled=False, font=None):
-        mouse = pygame.mouse.get_pos()
-        hover = rect.collidepoint(mouse) and not disabled
-        if disabled:
-            fill = (44, 47, 54)
-            text_color = (118, 124, 130)
-        elif active:
-            fill = (58, 105, 104)
-            text_color = COLORS["text"]
-        elif hover:
-            fill = (64, 68, 78)
-            text_color = COLORS["gold"]
-        else:
-            fill = (35, 38, 46)
-            text_color = COLORS["text"]
-        pygame.draw.rect(self.screen, fill, rect, border_radius=8)
-        pygame.draw.rect(self.screen, COLORS["hud_line"], rect, 2, border_radius=8)
-        self.draw_text_center(label, rect, text_color, font or self.font)
-        self.ui_buttons[key] = rect
+        self.ui.draw_button(
+            self.screen,
+            self.ui_buttons,
+            key,
+            rect,
+            label,
+            colors=COLORS,
+            active=active,
+            disabled=disabled,
+            font=font or self.font,
+        )
 
     def draw_cover_image(self, image, darken=88):
         sw, sh = self.screen_w, self.screen_h
@@ -2821,26 +3784,23 @@ class Game:
         self.screen.blit(veil, (0, 0))
 
     def draw_select_card(self, key, rect, title, subtitle="", *, active=False, accent=None):
-        accent = accent or COLORS["cyan"]
-        mouse = pygame.mouse.get_pos()
-        hover = rect.collidepoint(mouse)
-        fill = (48, 67, 68) if active else ((42, 46, 54) if hover else (27, 30, 37))
-        pygame.draw.rect(self.screen, fill, rect, border_radius=8)
-        pygame.draw.rect(self.screen, accent if active else COLORS["hud_line"], rect, 2, border_radius=8)
-        title = self.fit_text(title, self.small_font, rect.w - 18)
-        self.draw_text_center(title, pygame.Rect(rect.x + 8, rect.y + 8, rect.w - 16, max(22, int(26 * self.ui_scale))), COLORS["text"], self.small_font)
-        if subtitle:
-            subtitle = self.fit_text(subtitle, self.tiny_font, rect.w - 18)
-            self.draw_text_center(subtitle, pygame.Rect(rect.x + 8, rect.bottom - max(30, int(34 * self.ui_scale)), rect.w - 16, max(20, int(24 * self.ui_scale))), accent if active else COLORS["muted"], self.tiny_font)
-        self.ui_buttons[key] = rect
+        self.ui.draw_select_card(
+            self.screen,
+            self.ui_buttons,
+            key,
+            rect,
+            title,
+            subtitle,
+            active=active,
+            accent=accent or COLORS["cyan"],
+            colors=COLORS,
+            small_font=self.small_font,
+            tiny_font=self.tiny_font,
+            ui_scale=self.ui_scale,
+        )
 
     def fit_text(self, text, font, max_width):
-        if font.size(text)[0] <= max_width:
-            return text
-        trimmed = text
-        while len(trimmed) > 4 and font.size(trimmed + "...")[0] > max_width:
-            trimmed = trimmed[:-1].rstrip()
-        return trimmed + "..."
+        return self.ui.fit_text(text, font, max_width)
 
     def draw_map_preview(self, rect, map_id, title=True):
         theme = MAP_THEMES.get(map_id, MAP_THEMES["warehouse"])
@@ -2927,6 +3887,77 @@ class Game:
             return 1.25
         return BILE_BOOST_MULTIPLIER
 
+    def titan_leap_cooldown(self):
+        return TITAN_LEAP_COOLDOWNS.get(self.difficulty_id, TITAN_LEAP_COOLDOWNS["normal"])
+
+    def titan_stuck_threshold(self):
+        return TITAN_STUCK_LEAP_SECONDS.get(self.difficulty_id, TITAN_STUCK_LEAP_SECONDS["normal"])
+
+    def titan_cell_clear(self, cell, radius):
+        return (
+            self.tile_map.in_bounds(cell)
+            and cell not in self.path_blockers
+            and self.tile_map.is_clear_for_radius(cell, radius)
+        )
+
+    def titan_open_neighbor_count(self, cell, radius):
+        return sum(
+            1
+            for dx, dy in ORTHO_NEIGHBORS
+            if self.titan_cell_clear((cell[0] + dx, cell[1] + dy), radius)
+        )
+
+    def titan_cell_has_escape_route(self, cell, radius):
+        if self.titan_open_neighbor_count(cell, radius) < 2:
+            return False
+        goals = [
+            goal
+            for goal in self.boss_spawn_cells
+            if goal != cell and self.tile_map.cell_center(goal).distance_to(self.player.pos) > TITAN_LEAP_MIN_PLAYER_DISTANCE
+        ]
+        if not goals:
+            return False
+        step = max(1, len(goals) // 18)
+        for goal in goals[::step]:
+            path = find_path(
+                self.tile_map,
+                cell,
+                goal,
+                self.path_blockers,
+                allow_diagonal=True,
+                weight=1.05,
+                radius=radius,
+                max_nodes=560,
+            )
+            if path:
+                return True
+        return False
+
+    def find_titan_leap_cell(self, titan):
+        self.refresh_pathfinding_context()
+        player_cell = self.tile_map.world_to_cell(self.player.pos)
+        candidates = []
+        for ring in range(4, 9):
+            for y in range(player_cell[1] - ring, player_cell[1] + ring + 1):
+                for x in range(player_cell[0] - ring, player_cell[0] + ring + 1):
+                    if max(abs(x - player_cell[0]), abs(y - player_cell[1])) != ring:
+                        continue
+                    cell = (x, y)
+                    if not self.titan_cell_clear(cell, titan.radius):
+                        continue
+                    center = self.tile_map.cell_center(cell)
+                    player_distance = center.distance_to(self.player.pos)
+                    if player_distance < TITAN_LEAP_MIN_PLAYER_DISTANCE:
+                        continue
+                    if not self.titan_cell_has_escape_route(cell, titan.radius):
+                        continue
+                    score = abs(player_distance - 190) + center.distance_to(titan.pos) * 0.18 + (tile_noise(x, y, 91) % 17)
+                    candidates.append((score, cell))
+        if not candidates:
+            return None
+        candidates.sort(key=lambda item: item[0])
+        return candidates[0][1]
+
     def apply_bile(self, pos):
         self.bile_timer = BILE_BOOST_DURATION
         self.message = self.t("boomer_bile")
@@ -2978,7 +4009,6 @@ class Game:
 
         self.lasers.append(LaserBeam(start, end, width=8, life=0.13))
         self.add_muzzle_particle(start, direction * 500)
-        self.play_sound("laser", 0.48, cooldown=0.045)
 
     def build_spawn_cells(self):
         cells = []
@@ -3058,6 +4088,162 @@ class Game:
     def blocked_cells(self):
         return {structure.cell for structure in self.structures if structure.alive}
 
+    def refresh_pathfinding_context(self):
+        blockers = self.blocked_cells()
+        player_cell = self.tile_map.world_to_cell(self.player.pos)
+        signature = (self.tile_map.map_id, player_cell, tuple(sorted(blockers)))
+        if signature == self.path_signature:
+            return
+        self.path_signature = signature
+        self.path_blockers = blockers
+        self.path_cache = {}
+        self.flow_field = build_distance_field(self.tile_map, [player_cell], blockers)
+
+    def flow_direction(self, pos):
+        cell = self.tile_map.world_to_cell(pos)
+        if not self.flow_field or cell not in self.flow_field:
+            return None
+        best_cell = None
+        best_score = self.flow_field[cell]
+        for dx, dy in DIAGONAL_NEIGHBORS:
+            nxt = (cell[0] + dx, cell[1] + dy)
+            if nxt not in self.flow_field:
+                continue
+            score = self.flow_field[nxt] + (0.12 if dx and dy else 0)
+            if score < best_score:
+                best_cell = nxt
+                best_score = score
+        if best_cell is None:
+            return None
+        direction = self.tile_map.cell_center(best_cell) - Vec2(pos)
+        if direction.length_squared() <= 1:
+            return None
+        return direction.normalize()
+
+    def cached_path(self, strategy, start, goal, *, allow_diagonal=False, weight=1.0, radius=0, max_nodes=700, smooth=False):
+        self.refresh_pathfinding_context()
+        cache_key = (
+            strategy,
+            start,
+            goal,
+            allow_diagonal,
+            round(weight, 2),
+            int(radius),
+            bool(smooth),
+            self.path_signature,
+        )
+        if cache_key not in self.path_cache:
+            path = find_path(
+                self.tile_map,
+                start,
+                goal,
+                self.path_blockers,
+                allow_diagonal=allow_diagonal,
+                weight=weight,
+                radius=radius,
+                max_nodes=max_nodes,
+            )
+            if smooth:
+                path = smooth_path(self.tile_map, start, path, self.path_blockers, radius)
+            self.path_cache[cache_key] = path
+        return list(self.path_cache[cache_key])
+
+    def nearest_walkable_cell(self, target_cell, radius=0, max_distance=8, prefer_pos=None):
+        if self.tile_map.in_bounds(target_cell) and target_cell not in self.path_blockers:
+            if radius > 0:
+                if self.tile_map.is_clear_for_radius(target_cell, radius):
+                    return target_cell
+            elif not self.tile_map.is_wall(target_cell):
+                return target_cell
+        ox, oy = target_cell
+        best = None
+        best_score = 1_000_000
+        for distance in range(1, max_distance + 1):
+            for y in range(oy - distance, oy + distance + 1):
+                for x in range(ox - distance, ox + distance + 1):
+                    cell = (x, y)
+                    if abs(x - ox) != distance and abs(y - oy) != distance:
+                        continue
+                    if cell in self.path_blockers or not self.tile_map.in_bounds(cell):
+                        continue
+                    if radius > 0:
+                        if not self.tile_map.is_clear_for_radius(cell, radius):
+                            continue
+                    elif self.tile_map.is_wall(cell):
+                        continue
+                    score = abs(x - ox) + abs(y - oy)
+                    if prefer_pos is not None:
+                        score += self.tile_map.cell_center(cell).distance_to(prefer_pos) / TILE
+                    if score < best_score:
+                        best = cell
+                        best_score = score
+            if best is not None:
+                return best
+        return None
+
+    def predicted_player_cell(self, lead_tiles=3):
+        self.refresh_pathfinding_context()
+        direction = Vec2(self.player.last_move_dir)
+        if direction.length_squared() <= 0:
+            direction = Vec2(self.player.aim_dir)
+        if direction.length_squared() <= 0:
+            direction = Vec2(0, 1)
+        target_pos = self.player.pos + direction.normalize() * TILE * lead_tiles
+        target_pos.x = clamp(target_pos.x, TILE * 1.5, WORLD_W - TILE * 1.5)
+        target_pos.y = clamp(target_pos.y, TILE * 1.5, WORLD_H - TILE * 1.5)
+        return self.nearest_walkable_cell(self.tile_map.world_to_cell(target_pos), max_distance=7, prefer_pos=self.player.pos)
+
+    def spitter_goal_cell(self, zombie_pos):
+        self.refresh_pathfinding_context()
+        player_cell = self.tile_map.world_to_cell(self.player.pos)
+        best = None
+        best_score = 1_000_000
+        for radius in range(5, 10):
+            for y in range(player_cell[1] - radius, player_cell[1] + radius + 1):
+                for x in range(player_cell[0] - radius, player_cell[0] + radius + 1):
+                    if max(abs(x - player_cell[0]), abs(y - player_cell[1])) != radius:
+                        continue
+                    cell = (x, y)
+                    if cell in self.path_blockers or not self.tile_map.in_bounds(cell) or self.tile_map.is_wall(cell):
+                        continue
+                    center = self.tile_map.cell_center(cell)
+                    dist = center.distance_to(self.player.pos)
+                    if not (160 <= dist <= 330) or not has_wall_line(self.tile_map, center, self.player.pos):
+                        continue
+                    score = abs(dist - 235) + center.distance_to(zombie_pos) * 0.32
+                    if score < best_score:
+                        best = cell
+                        best_score = score
+        return best or self.predicted_player_cell(1) or player_cell
+
+    def stalker_flank_cell(self, zombie_pos):
+        direction = Vec2(self.player.last_move_dir)
+        if direction.length_squared() <= 0:
+            direction = Vec2(self.player.pos) - Vec2(zombie_pos)
+        if direction.length_squared() <= 0:
+            direction = Vec2(0, 1)
+        direction = direction.normalize()
+        side = Vec2(-direction.y, direction.x)
+        candidates = [
+            self.player.pos - direction * TILE * 3 + side * TILE * 2,
+            self.player.pos - direction * TILE * 3 - side * TILE * 2,
+            self.player.pos + side * TILE * 4,
+            self.player.pos - side * TILE * 4,
+        ]
+        best = None
+        best_score = 1_000_000
+        for pos in candidates:
+            pos.x = clamp(pos.x, TILE * 1.5, WORLD_W - TILE * 1.5)
+            pos.y = clamp(pos.y, TILE * 1.5, WORLD_H - TILE * 1.5)
+            cell = self.nearest_walkable_cell(self.tile_map.world_to_cell(pos), max_distance=5, prefer_pos=zombie_pos)
+            if cell is None:
+                continue
+            score = self.tile_map.cell_center(cell).distance_to(zombie_pos)
+            if score < best_score:
+                best = cell
+                best_score = score
+        return best or self.tile_map.world_to_cell(self.player.pos)
+
     def nearest_structure(self, pos):
         alive = [s for s in self.structures if s.alive]
         if not alive:
@@ -3075,6 +4261,8 @@ class Game:
         self.wave_active = True
         self.message = self.t("wave_label").format(wave=self.wave)
         self.message_timer = 2.0
+        self.wave_banner_text = self.t("wave_start_banner").format(wave=self.wave)
+        self.wave_banner_timer = 2.0
         self.play_sound("wave", 0.42, cooldown=0.5)
         if self.wave == 1 or random.random() < 0.72:
             self.spawn_powerup()
@@ -3114,6 +4302,10 @@ class Game:
         pos = self.tile_map.cell_center(cell)
         elite = kind != "titan" and random.random() < self.elite_chance()
         self.zombies.append(Zombie(kind, pos, self.wave, self.difficulty_id, elite=elite))
+        if kind == "titan":
+            self.titan_banner_timer = 3.0
+        if random.random() < (0.95 if kind == "titan" else 0.18):
+            self.play_zombie_sound("titan" if kind == "titan" else "groan", kind, volume=0.72 if kind == "titan" else 0.24, cooldown=0.95)
         if elite and random.random() < 0.28:
             self.message = self.t("elite_incoming")
             self.message_timer = 1.4
@@ -3140,6 +4332,8 @@ class Game:
             self.spawn_zombie(kind)
             return
         self.zombies.append(Zombie(kind, self.tile_map.cell_center(random.choice(cells)), self.wave, self.difficulty_id))
+        if random.random() < 0.2:
+            self.play_zombie_sound("groan", kind, volume=0.2, cooldown=0.8)
 
     def drop_gold(self, pos, total):
         chunks = max(1, min(5, total // 7))
@@ -3215,15 +4409,14 @@ class Game:
 
     def repair_nearest(self):
         damaged = [s for s in self.structures if s.alive and s.hp < s.max_hp]
-        if not damaged:
-            self.message = self.t("no_damaged_structure")
+        nearby_damaged = [s for s in damaged if Vec2(s.rect.center).distance_to(self.player.pos) <= 90]
+        if not nearby_damaged:
+            if self.upgrade_nearest_fence():
+                return
+            self.message = self.t("move_closer_repair") if damaged else self.t("no_damaged_structure")
             self.message_timer = 1.3
             return
-        nearest = min(damaged, key=lambda s: Vec2(s.rect.center).distance_squared_to(self.player.pos))
-        if Vec2(nearest.rect.center).distance_to(self.player.pos) > 90:
-            self.message = self.t("move_closer_repair")
-            self.message_timer = 1.3
-            return
+        nearest = min(nearby_damaged, key=lambda s: Vec2(s.rect.center).distance_squared_to(self.player.pos))
         cost = self.repair_cost()
         if not self.can_afford(cost):
             self.message = self.t("need_gold_repair").format(cost=cost)
@@ -3234,6 +4427,45 @@ class Game:
         nearest.repair(repair_amount)
         self.floating_texts.append(FloatingText(Vec2(nearest.rect.center), self.t("repair_float"), COLORS["green"]))
         self.play_sound("build", 0.42, cooldown=0.12)
+
+    def reload_weapon(self):
+        weapon = self.player.weapon
+        if weapon.is_reloading:
+            self.message = self.weapon_reload_text()
+            self.message_timer = 0.9
+            return False
+        if weapon.ammo >= weapon.magazine_size:
+            self.message = self.t("reload_full")
+            self.message_timer = 1.0
+            return False
+        weapon.start_reload()
+        self.message = self.t("reload_started")
+        self.message_timer = 1.0
+        self.play_sound("reload", 0.42, cooldown=0.12)
+        return True
+
+    def upgrade_nearest_fence(self):
+        fences = [s for s in self.structures if s.alive and s.kind == "fence" and Vec2(s.rect.center).distance_to(self.player.pos) <= 90]
+        if not fences:
+            return False
+        nearest = min(fences, key=lambda s: Vec2(s.rect.center).distance_squared_to(self.player.pos))
+        target_level = min(self.fence_level(), nearest.level + 1)
+        if nearest.level >= target_level:
+            self.message = self.t("fence_max")
+            self.message_timer = 1.3
+            return True
+        cost = self.fence_upgrade_cost(target_level)
+        if not self.can_afford(cost):
+            self.message = self.t("need_gold_fence_upgrade").format(cost=cost)
+            self.message_timer = 1.3
+            return True
+        self.spend_gold(cost)
+        nearest.upgrade_to(self.structure_stats("fence", level=target_level))
+        center = Vec2(nearest.rect.center)
+        self.floating_texts.append(FloatingText(center, self.t("fence_upgraded").format(level=target_level), COLORS["gold"], life=1.1))
+        self.create_shockwave(center, 48, 0, visual_only=True)
+        self.play_sound("build", 0.5, cooldown=0.12)
+        return True
 
     def upgrade_weapon(self):
         if self.player.weapon.is_maxed:
@@ -3254,7 +4486,8 @@ class Game:
         else:
             self.message = self.t("weapon_upgraded").format(weapon=self.weapon_name(new_name), level=self.player.weapon.level)
         self.message_timer = 1.8
-        self.play_sound("upgrade", 0.62, cooldown=0.12)
+        effect_label = self.weapon_name(new_name) if new_name != old_name else self.t("upgrade")
+        self.create_weapon_upgrade_effect(self.player.pos, evolved=new_name != old_name, label=effect_label)
 
     def damage_zombies_in_radius(self, pos, radius, damage, exclude=None):
         for zombie in self.zombies:
@@ -3286,8 +4519,8 @@ class Game:
                 scale = 1 - distance / radius
                 structure.take_damage(max(5, int(damage * (0.45 + scale * 0.55))), self)
 
-    def create_explosion(self, pos, radius, damage, enemy_owned=True, visual_only=False):
-        self.play_sound("explosion", 0.5, cooldown=0.18)
+    def create_explosion(self, pos, radius, damage, enemy_owned=True, visual_only=False, sound_name="explosion", sound_volume=0.5):
+        self.play_sound(sound_name, sound_volume, cooldown=0.18)
         for _ in range(26):
             angle = random.uniform(0, math.tau)
             speed = random.uniform(45, 190)
@@ -3382,6 +4615,8 @@ class Game:
                 elif event.key == pygame.K_b:
                     self.build_mode = None
                 elif not self.paused and event.key == pygame.K_r:
+                    self.reload_weapon()
+                elif not self.paused and event.key == pygame.K_e:
                     self.repair_nearest()
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button != 1:
@@ -3412,6 +4647,7 @@ class Game:
         if self.state == "menu":
             if action == "menu_start":
                 self.state = "setup"
+                self.setup_step = "difficulty"
                 return True
             if action == "menu_options":
                 self.open_options("menu", False)
@@ -3419,12 +4655,19 @@ class Game:
             if action == "menu_exit":
                 return True
         elif self.state == "setup":
+            if action == "setup_next":
+                self.advance_setup_step()
+                return True
             if action == "setup_begin":
-                self.reset_gameplay()
-                self.state = "playing"
+                if self.setup_step != "character":
+                    self.advance_setup_step()
+                else:
+                    self.reset_gameplay()
+                    self.state = "playing"
                 return True
             if action == "setup_back":
-                self.state = "menu"
+                if not self.retreat_setup_step():
+                    self.state = "menu"
                 return True
             if action.startswith("difficulty_"):
                 difficulty_id = action.removeprefix("difficulty_")
@@ -3452,8 +4695,10 @@ class Game:
                 self.dev_mode = not self.dev_mode
             elif action == "music_down":
                 self.music_volume = max(0, self.music_volume - 10)
+                self.apply_music_volume()
             elif action == "music_up":
                 self.music_volume = min(100, self.music_volume + 10)
+                self.apply_music_volume()
             elif action == "sfx_down":
                 self.sfx_volume = max(0, self.sfx_volume - 10)
             elif action == "sfx_up":
@@ -3479,6 +4724,10 @@ class Game:
                 self.build_mode = "fence"
                 self.message = self.t("build_mode").format(name=self.structure_name("fence"))
                 self.message_timer = 1.0
+            elif not self.paused and action == "hotbar_reload":
+                self.reload_weapon()
+            elif not self.paused and action == "hotbar_repair":
+                self.repair_nearest()
             elif not self.paused and action == "hotbar_dash":
                 self.player.start_dash(self)
             elif not self.paused and action == "auto_toggle_game":
@@ -3490,12 +4739,27 @@ class Game:
             return True
         return action in self.ui_buttons
 
+    def advance_setup_step(self):
+        steps = ("difficulty", "map", "character")
+        index = steps.index(self.setup_step) if self.setup_step in steps else 0
+        self.setup_step = steps[min(len(steps) - 1, index + 1)]
+
+    def retreat_setup_step(self):
+        steps = ("difficulty", "map", "character")
+        index = steps.index(self.setup_step) if self.setup_step in steps else 0
+        if index <= 0:
+            return False
+        self.setup_step = steps[index - 1]
+        return True
+
     def update(self, dt):
         if self.state != "playing" or self.paused:
             return
         if self.game_over:
             return
         self.message_timer = max(0, self.message_timer - dt)
+        self.wave_banner_timer = max(0, self.wave_banner_timer - dt)
+        self.titan_banner_timer = max(0, self.titan_banner_timer - dt)
         self.bile_timer = max(0, self.bile_timer - dt)
         if self.wave_active:
             self.spawn_timer -= dt
@@ -3517,6 +4781,7 @@ class Game:
         self.player.update(dt, self)
         for structure in self.structures:
             structure.update(dt, self)
+        self.refresh_pathfinding_context()
         for zombie in self.zombies:
             zombie.update(dt, self)
         for bullet in self.bullets:
@@ -3533,6 +4798,8 @@ class Game:
             powerup.update(dt, self)
         for particle in self.particles:
             particle.update(dt)
+        for ring in self.rings:
+            ring.update(dt)
         for floating in self.floating_texts:
             floating.update(dt)
 
@@ -3545,12 +4812,11 @@ class Game:
         self.gold_drops = [g for g in self.gold_drops if g.alive]
         self.powerups = [p for p in self.powerups if p.alive]
         self.particles = [p for p in self.particles if p.alive]
+        self.rings = [r for r in self.rings if r.alive]
         self.floating_texts = [f for f in self.floating_texts if f.alive]
 
     def draw_bar(self, surface, rect, pct, fill, back=(52, 38, 43)):
-        pygame.draw.rect(surface, back, rect)
-        pygame.draw.rect(surface, fill, (rect.x, rect.y, int(rect.w * clamp(pct, 0, 1)), rect.h))
-        pygame.draw.rect(surface, COLORS["hud_line"], rect, 1)
+        self.ui.draw_progress_bar(surface, rect, pct, fill, back, COLORS["hud_line"])
 
     def draw_world(self):
         world = self.world_surface
@@ -3572,6 +4838,8 @@ class Game:
         for zombie in self.zombies:
             zombie.draw(world, self.sprites)
         self.player.draw(world, self.sprites, self.mouse_world())
+        for ring in self.rings:
+            ring.draw(world)
         for particle in self.particles:
             particle.draw(world)
         for floating in self.floating_texts:
@@ -3601,9 +4869,7 @@ class Game:
         self.world_surface.blit(overlay, rect)
 
     def draw_text(self, text, x, y, color=None, font=None):
-        color = color or COLORS["text"]
-        font = font or self.font
-        self.screen.blit(font.render(text, True, color), (x, y))
+        self.ui.draw_text(self.screen, text, x, y, color or COLORS["text"], font or self.font)
 
     def draw_hud(self):
         sw, sh, s = self.screen_w, self.screen_h, self.ui_scale
@@ -3641,6 +4907,8 @@ class Game:
         self.draw_text(self.t("xp"), xp_rect.x - 54, xp_rect.y - 4, COLORS["text"], self.small_font)
         self.draw_bar(self.screen, xp_rect, self.player.xp / self.player.next_xp, COLORS["cyan"], (32, 39, 48))
         self.draw_text(f"{self.t('level_short')} {self.player.level}", hp_rect.right + 18, hp_rect.y - 2, COLORS["cyan"], self.small_font)
+        ammo_color = COLORS["orange"] if self.player.weapon.is_reloading else COLORS["gold"]
+        self.draw_text(self.weapon_ammo_text(), hp_rect.right + 18, xp_rect.y - 4, ammo_color, self.small_font)
 
         pause_rect = pygame.Rect(sw - self.margin - int(132 * s), hp_rect.y, int(132 * s), max(38, int(46 * s)))
         self.draw_button("pause_toggle", pause_rect, self.t("pause"), font=self.small_font)
@@ -3665,6 +4933,8 @@ class Game:
         turret_cost = self.t("free") if self.dev_mode else f"{self.structure_cost('turret')}g"
         turret_value = f"{turret_cost} {self.turret_count()}/{self.turret_limit()}"
         fence_value = self.t("free") if self.dev_mode else f"{self.structure_cost('fence')}g"
+        fence_level = self.structure_stats("fence")["level"]
+        fence_value = f"{fence_value} L{fence_level}"
         self.draw_hotbar_slot("hotbar_turret", pygame.Rect(start_x + (slot_w + gap), y, slot_w, slot_h), "2", self.t("turret"), turret_value, COLORS["cyan"], active=self.build_mode == "turret")
         self.draw_hotbar_slot("hotbar_fence", pygame.Rect(start_x + (slot_w + gap) * 2, y, slot_w, slot_h), "3", self.t("fence"), fence_value, COLORS["orange"], active=self.build_mode == "fence")
         dash_value = self.t("ready") if self.player.dash_cooldown <= 0 else f"{self.player.dash_cooldown:.1f}s"
@@ -3675,24 +4945,27 @@ class Game:
         self.draw_hotbar_slot("info_toggle", pygame.Rect(start_x + (slot_w + gap) * 5, y, slot_w, slot_h), "I", self.t("info"), info_text, COLORS["blue"], active=self.info_panel_open)
 
     def draw_hotbar_slot(self, key, rect, number, label, value, accent, active=False):
-        mouse = pygame.mouse.get_pos()
-        hover = rect.collidepoint(mouse)
-        fill = (47, 55, 62) if active else ((45, 48, 58) if hover else (30, 34, 42))
-        pygame.draw.rect(self.screen, fill, rect, border_radius=8)
-        pygame.draw.rect(self.screen, accent if active else COLORS["hud_line"], rect, 2, border_radius=8)
-        badge = pygame.Rect(rect.centerx - 22, rect.y + 10, 44, 34)
-        pygame.draw.rect(self.screen, accent, badge, border_radius=6)
-        self.draw_text_center(number, badge, (15, 18, 22), self.font)
-        self.draw_text_center(label, pygame.Rect(rect.x + 8, rect.y + 48, rect.w - 16, 26), COLORS["text"], self.small_font)
-        self.draw_text_center(value, pygame.Rect(rect.x + 8, rect.y + 76, rect.w - 16, 22), accent, self.small_font)
-        self.ui_buttons[key] = rect
+        self.ui.draw_hotbar_slot(
+            self.screen,
+            self.ui_buttons,
+            key,
+            rect,
+            number,
+            label,
+            value,
+            accent,
+            active=active,
+            colors=COLORS,
+            font=self.font,
+            small_font=self.small_font,
+        )
 
     def draw_info_panel(self):
         if not self.info_panel_open or self.state != "playing" or self.game_over:
             return
         sw, sh, s = self.screen_w, self.screen_h, self.ui_scale
         panel_w = min(int(520 * s), sw - self.margin * 2)
-        panel_h = max(260, int(300 * s))
+        panel_h = max(320, int(350 * s))
         panel = pygame.Rect(sw - panel_w - self.margin, self.top_ui_h + int(18 * s), panel_w, panel_h)
         self.draw_panel(panel, alpha=232)
 
@@ -3712,11 +4985,12 @@ class Game:
             (self.t("info"), COLORS["gold"], self.font),
             (f"{self.character_name()} | {self.difficulty_name()} | {self.t('level_short')} {self.player.level}", COLORS["cyan"], self.small_font),
             (f"{self.weapon_name(weapon.tier_name)} {self.t('level_short')} {weapon.level}: {self.t('dmg')} {weapon_damage} | {self.t('rate')} {fire_rate:.1f}/s | {self.t('range_short')} {weapon.bullet_range}", COLORS["text"], self.small_font),
-            (f"{self.t('shots')} {weapon.bullet_count} | {self.t('pierce')} {weapon.pierce} | {self.t('armor')} {self.player.armor} | {self.t('magnet')} {int(self.player.pickup_radius)}", COLORS["muted"], self.small_font),
+            (f"{self.weapon_ammo_text()} | {self.weapon_reload_text()} | {self.t('shots')} {weapon.bullet_count} | {self.t('pierce')} {weapon.pierce}", COLORS["muted"], self.small_font),
+            (f"{self.t('armor')} {self.player.armor} | {self.t('magnet')} {int(self.player.pickup_radius)}", COLORS["muted"], self.small_font),
             (f"{self.t('turrets')} {self.turret_count()}/{self.turret_limit()} | {self.t('cost')} {self.structure_cost('turret')}g | {self.t('hp')} {turret['hp']} | {self.t('dmg')} {turret['damage']}", COLORS["cyan"], self.small_font),
-            (f"{self.t('fence')} {self.t('cost')} {self.structure_cost('fence')}g | {self.t('hp')} {fence['hp']} | {self.t('repair')} {self.repair_cost()}g", COLORS["orange"], self.small_font),
+            (f"{self.t('fence_level').format(level=fence['level'])} | {self.t('cost')} {self.structure_cost('fence')}g | {self.t('hp')} {fence['hp']} | {self.t('repair')} {self.repair_cost()}g", COLORS["orange"], self.small_font),
             (f"{self.t('dash')}: {dash} | {self.t('buffs')}: {', '.join(buffs) if buffs else '-'}", COLORS["purple"], self.small_font),
-            (f"{self.t('wave_key')} | {self.t('repair_key')} | B {self.t('cancel_build')} | I {self.t('close')}", COLORS["muted"], self.tiny_font),
+            (f"{self.t('wave_key')} | R {self.t('reload')} | {self.t('repair_key')} | B {self.t('cancel_build')} | I {self.t('close')}", COLORS["muted"], self.tiny_font),
         ]
         x = panel.x + int(24 * s)
         y = panel.y + int(20 * s)
@@ -3892,7 +5166,7 @@ class Game:
             self.small_font,
         )
         self.draw_text_center(
-            f"{self.t('fence')} {self.structure_cost('fence')}g | {self.t('hp')} {fence['hp']} | {self.t('repair')} {self.repair_cost()}g",
+            f"{self.t('fence_level').format(level=fence['level'])} {self.structure_cost('fence')}g | {self.t('hp')} {fence['hp']} | {self.t('repair')} {self.repair_cost()}g",
             pygame.Rect(summary.x, summary.y + int(66 * s), summary.w, int(26 * s)),
             COLORS["muted"],
             self.small_font,
@@ -3945,16 +5219,16 @@ class Game:
     def draw(self):
         self.ui_buttons = {}
         if self.state == "menu":
-            self.draw_menu()
+            self.ui.draw_main_menu(self.screen, self)
         elif self.state == "setup":
-            self.draw_setup()
+            self.ui.draw_prepare_screen(self.screen, self)
         elif self.state == "options":
-            self.draw_options()
+            self.ui.draw_options_menu(self.screen, self)
         else:
             self.screen.fill((8, 10, 14))
             self.draw_world()
-            self.draw_hud()
-            self.draw_overlay()
+            self.ui.draw_hud(self.screen, self)
+            self.ui.draw_overlay(self.screen, self)
         pygame.display.flip()
 
     def run(self):
@@ -3962,6 +5236,7 @@ class Game:
         while running:
             dt = self.clock.tick(FPS) / 1000
             running = self.handle_events()
+            self.update_music()
             self.update(dt)
             self.draw()
         pygame.quit()
