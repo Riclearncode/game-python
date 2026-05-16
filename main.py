@@ -21,6 +21,8 @@ except ModuleNotFoundError as exc:
         "Install it with: py -m pip install -r requirements.txt"
     ) from exc
 
+from map_manager import MapManager
+
 
 Vec2 = pygame.math.Vector2
 
@@ -186,7 +188,7 @@ TURRET_LIMITS = {
     "nightmare": 2,
 }
 TITAN_LEAP_COOLDOWNS = {
-    "easy": 20.0,
+    "easy": 18.0,
     "normal": 16.0,
     "hard": 14.0,
     "nightmare": 12.0,
@@ -197,7 +199,9 @@ TITAN_STUCK_LEAP_SECONDS = {
     "hard": 3.6,
     "nightmare": 3.0,
 }
-TITAN_LEAP_MIN_PLAYER_DISTANCE = 120
+TITAN_LEAP_MIN_PLAYER_DISTANCE = 180
+TITAN_STOMP_WARNING_SECONDS = 0.78
+TITAN_CHARGE_MAX_STRUCTURE_HITS = 2
 FENCE_TIER_STATS = {
     1: {"hp": 300, "slow": 0.80, "damage_reduction": 0.0, "spike_damage": 0, "electric_cooldown": 0.0, "titan_guard": False},
     2: {"hp": 430, "slow": 0.72, "damage_reduction": 0.08, "spike_damage": 0, "electric_cooldown": 0.0, "titan_guard": False},
@@ -277,6 +281,7 @@ TEXT = {
         "upgrade": "Upgrade",
         "turret": "Turret",
         "fence": "Fence",
+        "gate": "Gate",
         "repair": "Repair",
         "hp": "HP",
         "xp": "XP",
@@ -321,6 +326,9 @@ TEXT = {
         "tile_occupied": "Tile occupied",
         "too_close_player": "Too close to player",
         "not_enough_gold": "Not enough gold",
+        "build_cannot_place": "Cannot place here",
+        "would_trap_player": "Would trap player",
+        "repair_prompt": "Press E to repair",
         "built": "Built {name}",
         "no_damaged_structure": "No damaged structure nearby",
         "move_closer_repair": "Move closer to repair",
@@ -404,6 +412,7 @@ TEXT = {
         "upgrade": "Nâng cấp",
         "turret": "Trụ súng",
         "fence": "Hàng rào",
+        "gate": "Cổng",
         "repair": "Sửa",
         "hp": "Máu",
         "xp": "KN",
@@ -448,6 +457,9 @@ TEXT = {
         "tile_occupied": "Ô này đã bị chiếm",
         "too_close_player": "Quá gần người chơi",
         "not_enough_gold": "Không đủ vàng",
+        "build_cannot_place": "Không thể đặt ở đây",
+        "would_trap_player": "Sẽ nhốt người chơi",
+        "repair_prompt": "Nhấn E để sửa",
         "built": "Đã xây {name}",
         "no_damaged_structure": "Không có công trình hư hại gần đây",
         "move_closer_repair": "Đến gần hơn để sửa",
@@ -835,6 +847,14 @@ STRUCTURE_TYPES = {
         "label": "Fence",
         "cost": 45,
         "hp": 420,
+        "range": 0,
+        "damage": 0,
+        "cooldown": 0,
+    },
+    "gate": {
+        "label": "Gate",
+        "cost": 60,
+        "hp": 480,
         "range": 0,
         "damage": 0,
         "cooldown": 0,
@@ -1401,128 +1421,6 @@ def build_sprites():
     return sprites
 
 
-class TileMap:
-    def __init__(self, rows, map_id="warehouse"):
-        self.rows = rows
-        self.map_id = map_id if map_id in MAP_THEMES else "warehouse"
-        self.theme = MAP_THEMES[self.map_id]
-
-    def in_bounds(self, cell):
-        x, y = cell
-        return 0 <= x < GRID_W and 0 <= y < GRID_H
-
-    def is_wall(self, cell):
-        x, y = cell
-        if not self.in_bounds(cell):
-            return True
-        return self.rows[y][x] == "#"
-
-    def world_to_cell(self, pos):
-        return (int(pos[0] // TILE), int(pos[1] // TILE))
-
-    def cell_center(self, cell):
-        x, y = cell
-        return Vec2(x * TILE + TILE / 2, y * TILE + TILE / 2)
-
-    def collides_circle(self, pos, radius, structures=()):
-        if pos.x - radius < 0 or pos.x + radius >= WORLD_W:
-            return True
-        if pos.y - radius < 0 or pos.y + radius >= WORLD_H:
-            return True
-
-        left = int((pos.x - radius) // TILE)
-        right = int((pos.x + radius) // TILE)
-        top = int((pos.y - radius) // TILE)
-        bottom = int((pos.y + radius) // TILE)
-        for gy in range(top, bottom + 1):
-            for gx in range(left, right + 1):
-                if self.is_wall((gx, gy)):
-                    tile_rect = pygame.Rect(gx * TILE, gy * TILE, TILE, TILE)
-                    if dist_point_rect((pos.x, pos.y), tile_rect) < radius:
-                        return True
-
-        actor_rect = pygame.Rect(0, 0, int(radius * 2), int(radius * 2))
-        actor_rect.center = (round(pos.x), round(pos.y))
-        for structure in structures:
-            if structure.alive and actor_rect.colliderect(structure.rect):
-                return True
-        return False
-
-    def is_clear_for_radius(self, cell, radius):
-        if not self.in_bounds(cell) or self.is_wall(cell):
-            return False
-        return not self.collides_circle(self.cell_center(cell), radius, ())
-
-    def draw(self, surface):
-        theme = self.theme
-        surface.fill(theme["bg"], (0, 0, WORLD_W, WORLD_H))
-        for y, row in enumerate(self.rows):
-            for x, value in enumerate(row):
-                rect = pygame.Rect(x * TILE, y * TILE, TILE, TILE)
-                if value == "#":
-                    pygame.draw.rect(surface, theme["wall_dark"], rect)
-                    pygame.draw.rect(surface, theme["wall"], rect.inflate(-4, -4))
-                    pygame.draw.line(surface, theme["wall_light"], rect.topleft, rect.topright, 2)
-                    pygame.draw.line(surface, theme["wall_dark"], rect.bottomleft, rect.bottomright, 2)
-                    self.draw_wall_detail(surface, rect, x, y)
-                else:
-                    color = theme["floor_a"] if (x + y) % 2 == 0 else theme["floor_b"]
-                    pygame.draw.rect(surface, color, rect)
-                    self.draw_floor_detail(surface, rect, x, y)
-                    pygame.draw.rect(surface, theme["grid"], rect, 1)
-
-    def draw_wall_detail(self, surface, rect, x, y):
-        theme = self.theme
-        n = tile_noise(x, y, 17)
-        inner = rect.inflate(-6, -6)
-        if self.map_id == "warehouse":
-            pygame.draw.line(surface, theme["wall_dark"], (inner.left, inner.centery), (inner.right, inner.centery), 1)
-            if n % 3 == 0:
-                pygame.draw.line(surface, theme["prop_b"], (inner.centerx, inner.top), (inner.centerx, inner.bottom), 2)
-            if n % 11 == 0:
-                pygame.draw.rect(surface, theme["accent"], (inner.left + 4, inner.top + 5, inner.w - 8, 3))
-        elif self.map_id == "crossfire":
-            pygame.draw.rect(surface, theme["prop_b"], inner, 1)
-            if n % 4 == 0:
-                pygame.draw.line(surface, theme["accent"], (inner.left + 3, inner.bottom - 5), (inner.right - 3, inner.top + 5), 2)
-            if n % 7 == 0:
-                pygame.draw.rect(surface, theme["prop_a"], (inner.left + 5, inner.top + 7, 7, 4))
-        else:
-            pygame.draw.rect(surface, theme["wall_light"], inner, 1)
-            if n % 3 == 0:
-                pygame.draw.circle(surface, theme["prop_a"], (inner.left + 7, inner.top + 8), 3)
-                pygame.draw.circle(surface, theme["prop_c"], (inner.right - 6, inner.bottom - 7), 2)
-            if n % 9 == 0:
-                pygame.draw.line(surface, theme["prop_a"], (inner.left + 3, inner.top + 3), (inner.right - 2, inner.bottom - 4), 2)
-
-    def draw_floor_detail(self, surface, rect, x, y):
-        theme = self.theme
-        n = tile_noise(x, y, 31)
-        if self.map_id == "warehouse":
-            if n % 8 == 0:
-                pygame.draw.rect(surface, theme["prop_b"], (rect.x + 7, rect.y + 7, 18, 2))
-                pygame.draw.rect(surface, theme["prop_b"], (rect.x + 7, rect.y + 21, 18, 2))
-            if n % 23 == 0:
-                pygame.draw.rect(surface, theme["prop_a"], (rect.x + 9, rect.y + 9, 14, 14))
-                pygame.draw.rect(surface, (78, 50, 30), (rect.x + 12, rect.y + 9, 2, 14))
-        elif self.map_id == "crossfire":
-            if n % 6 == 0:
-                pygame.draw.line(surface, theme["prop_b"], (rect.x + 6, rect.y + 25), (rect.x + 25, rect.y + 8), 1)
-            if n % 17 == 0:
-                pygame.draw.circle(surface, theme["prop_c"], rect.center, 5)
-                pygame.draw.circle(surface, theme["floor_b"], rect.center, 3)
-            if n % 29 == 0:
-                pygame.draw.rect(surface, theme["prop_a"], (rect.x + 5, rect.y + 14, 22, 4))
-        else:
-            if n % 5 == 0:
-                pygame.draw.circle(surface, theme["prop_a"], (rect.x + 8, rect.y + 9), 2)
-                pygame.draw.circle(surface, theme["prop_a"], (rect.x + 23, rect.y + 21), 2)
-            if n % 13 == 0:
-                pygame.draw.line(surface, theme["prop_b"], (rect.x + 5, rect.y + 7), (rect.x + 27, rect.y + 24), 1)
-            if n % 31 == 0:
-                pygame.draw.rect(surface, theme["prop_c"], (rect.x + 12, rect.y + 10, 8, 4))
-
-
 ORTHO_NEIGHBORS = [(1, 0), (-1, 0), (0, 1), (0, -1)]
 DIAGONAL_NEIGHBORS = ORTHO_NEIGHBORS + [(1, 1), (1, -1), (-1, 1), (-1, -1)]
 
@@ -1918,7 +1816,7 @@ class Player:
             self.shoot_at(mouse_world, game)
 
     def try_move(self, delta, game):
-        blockers = [s for s in game.structures if s.alive]
+        blockers = [s for s in game.structures if s.alive and s.kind != "gate"]
         if self.dash_time > 0:
             blockers = [s for s in blockers if s.kind != "fence" or s.level >= 4]
         new_pos = self.pos + delta
@@ -2433,7 +2331,7 @@ class Structure:
     def update(self, dt, game):
         if not self.alive:
             return
-        if self.kind == "fence":
+        if self.kind in ("fence", "gate"):
             self.electric_timer = max(0, self.electric_timer - dt)
             return
         if self.kind != "turret":
@@ -2461,7 +2359,7 @@ class Structure:
         self.fire_timer = self.stats["cooldown"]
 
     def take_damage(self, amount, game):
-        if self.kind == "fence":
+        if self.kind in ("fence", "gate"):
             amount = max(1, int(round(amount * (1 - self.stats.get("damage_reduction", 0.0)))))
         self.hp -= amount
         game.spawn_spark(Vec2(self.rect.center), (210, 92, 73))
@@ -2506,6 +2404,21 @@ class Structure:
             center = Vec2(base.center)
             pygame.draw.circle(surface, (45, 49, 55), center, 8)
             pygame.draw.rect(surface, COLORS["cyan"], (center.x - 4, center.y - 15, 8, 18))
+        elif self.kind == "gate":
+            base = pygame.Rect(self.rect)
+            post_w = max(4, self.rect.width // 6)
+            left_post = pygame.Rect(self.rect.left, self.rect.top, post_w, self.rect.height)
+            right_post = pygame.Rect(self.rect.right - post_w, self.rect.top, post_w, self.rect.height)
+            pygame.draw.rect(surface, (83, 58, 41), left_post)
+            pygame.draw.rect(surface, (83, 58, 41), right_post)
+            center_rect = pygame.Rect(self.rect.left + post_w, self.rect.top, self.rect.width - post_w * 2, self.rect.height)
+            pygame.draw.rect(surface, (62, 63, 64), center_rect)
+            pygame.draw.rect(surface, (36, 38, 42), center_rect.inflate(-4, -4))
+            pygame.draw.rect(surface, (143, 108, 64), (base.left + 3, base.top + 4, base.w - 6, 5), border_radius=2)
+            pygame.draw.rect(surface, (143, 108, 64), (base.left + 3, base.bottom - 9, base.w - 6, 5), border_radius=2)
+            for x in (base.left + base.w // 3, base.left + base.w * 2 // 3):
+                pygame.draw.line(surface, (190, 185, 168), (x, base.top + 7), (x, base.bottom - 7), 2)
+            pygame.draw.circle(surface, COLORS["gold"], (base.centerx + base.w // 6, base.centery), 2)
         else:
             level = max(1, self.level)
             base_color = (112, 82, 54) if level < 4 else (93, 92, 88)
@@ -2574,6 +2487,9 @@ class Zombie:
         self.charge_time = 0
         self.charge_dir = Vec2(0, 0)
         self.charge_hit_player = False
+        self.charge_structure_hits = 0
+        self.charge_hit_structure_ids = set()
+        self.last_trampled_structure = None
         self.shockwave_timer = random.uniform(3.8, 5.2)
         leap_cooldown = TITAN_LEAP_COOLDOWNS.get(difficulty_id, TITAN_LEAP_COOLDOWNS["normal"])
         self.wall_leap_timer = random.uniform(leap_cooldown * 0.55, leap_cooldown * 0.85)
@@ -2702,6 +2618,7 @@ class Zombie:
             self.titan_stomp(game, radius=150, damage=self.damage + 2)
             self.shockwave_timer = random.uniform(5.2, 7.2)
             self.attack_timer = max(self.attack_timer, 0.65)
+            return
 
         if self.charge_timer <= 0 and 135 < player_dist < 520 and self.has_titan_charge_lane(game, game.player.pos):
             self.start_titan_charge(game.player.pos, game)
@@ -2719,7 +2636,11 @@ class Zombie:
                 self.stuck_timer = max(0, self.stuck_timer - 1.0)
 
     def can_titan_leap(self, game):
-        return self.wall_leap_timer <= 0 and self.stuck_timer >= game.titan_stuck_threshold()
+        if self.wall_leap_timer > 0 or self.stuck_timer < game.titan_stuck_threshold():
+            return False
+        if self.nearby_structure(game, reach_bonus=36) is not None:
+            return False
+        return not game.titan_has_reasonable_path(self)
 
     def ensure_titan_clear(self, game):
         if not game.tile_map.collides_circle(self.pos, self.radius, ()):
@@ -2768,7 +2689,7 @@ class Zombie:
         if self.wall_leap_time <= 0:
             self.pos = Vec2(self.wall_leap_target)
             self.titan_stomp(game, radius=118, damage=max(4, self.damage // 2))
-            self.stun_timer = 1.0
+            self.stun_timer = random.uniform(0.8, 1.2)
             self.path_timer = 0
             self.stuck_timer = 0
 
@@ -2850,6 +2771,8 @@ class Zombie:
         self.facing = facing_from_vector(self.charge_dir)
         self.charge_time = 0.82
         self.charge_hit_player = False
+        self.charge_structure_hits = 0
+        self.charge_hit_structure_ids = set()
         self.charge_timer = random.uniform(5.4, 7.0)
         self.path.clear()
         game.message = game.t("titan_charge")
@@ -2859,19 +2782,32 @@ class Zombie:
 
     def update_titan_charge(self, dt, game):
         self.charge_time -= dt
-        distance = self.speed * 3.3 * dt
+        charge_speed = 3.3 if self.charge_structure_hits == 0 else 2.35
+        distance = self.speed * charge_speed * dt
         steps = max(1, int(distance // 7))
         for _ in range(steps):
             new_pos = self.pos + self.charge_dir * (distance / steps)
             if game.tile_map.collides_circle(new_pos, self.radius, ()):
                 self.charge_time = 0
                 self.titan_stomp(game, radius=95, damage=self.damage + 3)
-                self.stun_timer = max(self.stun_timer, 0.55)
+                self.stun_timer = max(self.stun_timer, 0.85)
                 return
             self.pos = new_pos
+            self.last_trampled_structure = None
             if self.trample_structures(game, self.damage + 18, charge=True):
+                hit_structure = self.last_trampled_structure
+                self.charge_structure_hits += 1
+                can_push_next_fence = (
+                    hit_structure is not None
+                    and hit_structure.kind == "fence"
+                    and not hit_structure.alive
+                    and self.charge_structure_hits < TITAN_CHARGE_MAX_STRUCTURE_HITS
+                )
+                if can_push_next_fence:
+                    self.charge_time = min(self.charge_time, 0.34)
+                    continue
                 self.charge_time = 0
-                self.stun_timer = max(self.stun_timer, 0.65)
+                self.stun_timer = max(self.stun_timer, 0.75)
                 return
             if not self.charge_hit_player and self.pos.distance_to(game.player.pos) < self.radius + game.player.radius + 12:
                 game.player.take_damage(self.damage + 16, game)
@@ -2879,6 +2815,7 @@ class Zombie:
                 game.create_shockwave(self.pos, 74, 0, visual_only=True)
         if self.charge_time <= 0:
             self.titan_stomp(game, radius=86, damage=self.damage // 2)
+            self.stun_timer = max(self.stun_timer, 0.75)
 
     def has_titan_charge_lane(self, game, target_pos):
         target = Vec2(target_pos)
@@ -2895,24 +2832,33 @@ class Zombie:
         return True
 
     def titan_stomp(self, game, radius, damage):
-        game.create_shockwave(self.pos, radius, damage)
-        self.trample_structures(game, max(4, damage // 2 + 6), force=True)
+        game.warning_zones.append(WarningZone(self.pos, radius, damage))
+        game.create_shockwave(self.pos, radius, 0, visual_only=True)
+        self.stun_timer = max(self.stun_timer, TITAN_STOMP_WARNING_SECONDS * 0.72)
         game.play_zombie_sound("titan", self.kind, volume=0.62, cooldown=1.0)
 
     def trample_structures(self, game, damage, force=False, charge=False):
         if self.trample_timer > 0 and not force and not charge:
             return False
         hit = False
+        self.last_trampled_structure = None
         for structure in game.structures:
             if structure.alive and dist_point_rect((self.pos.x, self.pos.y), structure.rect) < self.radius + 12:
+                if charge and id(structure) in self.charge_hit_structure_ids:
+                    continue
                 if charge and structure.kind == "fence" and structure.titan_guard_ready:
                     structure.titan_guard_ready = False
                     structure.take_damage(max(damage, int(structure.max_hp * 0.42)), game)
                     game.create_shockwave(Vec2(structure.rect.center), 58, 0, visual_only=True)
+                elif charge and structure.kind == "fence":
+                    structure.take_damage(max(damage, int(structure.max_hp * 1.05)), game)
                 else:
-                    structure.take_damage(damage, game)
+                    structure.take_damage(max(damage, int(structure.max_hp * 0.55)) if charge else damage, game)
                 structure.on_zombie_attack(self, game)
                 hit = True
+                self.last_trampled_structure = structure
+                if charge:
+                    self.charge_hit_structure_ids.add(id(structure))
                 if charge:
                     break
         if hit:
@@ -2931,7 +2877,7 @@ class Zombie:
         game.create_shockwave(self.pos, 120, 0, visual_only=True)
         game.play_zombie_sound("titan", self.kind, volume=0.78, cooldown=1.2)
         for kind in ["walker", "walker", "runner", "runner", "spitter"]:
-            game.spawn_minion_near(kind, self.pos)
+            game.spawn_minion_near(kind, self.pos, min_player_distance=220, prefer_spawn_edges=True, require_path=True)
 
     def try_acid(self, dt, game):
         if self.special_timer > 0:
@@ -3003,13 +2949,13 @@ class Zombie:
                 self.attack_timer = self.cfg["attack_rate"]
                 return
 
-    def nearby_structure(self, game):
+    def nearby_structure(self, game, reach_bonus=8):
         best = None
         best_dist = 1_000_000
         for structure in game.structures:
             if not structure.alive:
                 continue
-            reach = self.radius + 8
+            reach = self.radius + reach_bonus
             distance = dist_point_rect((self.pos.x, self.pos.y), structure.rect)
             if distance < reach and distance < best_dist:
                 best = structure
@@ -3286,6 +3232,39 @@ class PulseRing:
         surface.blit(ring, (self.pos.x - size // 2, self.pos.y - size // 2))
 
 
+class WarningZone:
+    def __init__(self, pos, radius, damage, delay=TITAN_STOMP_WARNING_SECONDS, color=None):
+        self.pos = Vec2(pos)
+        self.radius = radius
+        self.damage = damage
+        self.delay = delay
+        self.timer = delay
+        self.color = color or COLORS["red"]
+        self.alive = True
+
+    def update(self, dt, game):
+        self.timer -= dt
+        if self.timer > 0:
+            return
+        self.alive = False
+        game.create_shockwave(self.pos, self.radius, self.damage)
+
+    def draw(self, surface):
+        pct = 1 - clamp(self.timer / max(0.01, self.delay), 0, 1)
+        pulse = 0.55 + 0.45 * math.sin(pygame.time.get_ticks() * 0.03)
+        radius = int(self.radius)
+        padding = 8
+        size = (radius + padding) * 2
+        warning = pygame.Surface((size, size), pygame.SRCALPHA)
+        fill_alpha = int(24 + 32 * pct)
+        line_alpha = int(105 + 120 * pulse)
+        pygame.draw.circle(warning, (*self.color, fill_alpha), (size // 2, size // 2), radius)
+        pygame.draw.circle(warning, (*self.color, line_alpha), (size // 2, size // 2), radius, 3)
+        inner = max(8, int(radius * pct))
+        pygame.draw.circle(warning, (*self.color, 150), (size // 2, size // 2), inner, 2)
+        surface.blit(warning, (self.pos.x - size // 2, self.pos.y - size // 2))
+
+
 class FloatingText:
     def __init__(self, pos, text, color, life=0.9):
         self.pos = Vec2(pos)
@@ -3322,16 +3301,6 @@ class Game:
         self.top_ui_h = max(104, int(TOP_UI_H * self.ui_scale))
         self.bottom_ui_h = max(112, int(BOTTOM_UI_H * self.ui_scale))
         self.margin = max(10, int(16 * self.ui_scale))
-        self.world_surface = pygame.Surface((WORLD_W, WORLD_H))
-        self.play_rect = pygame.Rect(
-            self.margin,
-            self.top_ui_h,
-            max(320, self.screen_w - self.margin * 2),
-            max(240, self.screen_h - self.top_ui_h - self.bottom_ui_h - self.margin),
-        )
-        self.world_scale = min(self.play_rect.w / WORLD_W, self.play_rect.h / WORLD_H)
-        self.world_rect = pygame.Rect(0, 0, int(WORLD_W * self.world_scale), int(WORLD_H * self.world_scale))
-        self.world_rect.center = self.play_rect.center
         self.clock = pygame.time.Clock()
         self.font = make_ui_font(max(18, int(24 * self.ui_scale)))
         self.small_font = make_ui_font(max(14, int(18 * self.ui_scale)))
@@ -3358,6 +3327,8 @@ class Game:
         self.map_order = MAP_ORDER
         self.map_themes = MAP_THEMES
         self.map_rows_by_id = MAPS
+        self.map_manager = MapManager(MAPS, MAP_THEMES, self.map_id, TILE)
+        self.refresh_world_layout()
         self.options_return_state = "menu"
         self.options_return_paused = False
         self.ui_buttons = {}
@@ -3378,9 +3349,25 @@ class Game:
         self.init_audio()
         self.reset_gameplay()
 
+    def refresh_world_layout(self):
+        world_w = getattr(self.map_manager, "world_w", WORLD_W)
+        world_h = getattr(self.map_manager, "world_h", WORLD_H)
+        self.world_surface = pygame.Surface((world_w, world_h))
+        self.play_rect = pygame.Rect(
+            self.margin,
+            self.top_ui_h,
+            max(320, self.screen_w - self.margin * 2),
+            max(240, self.screen_h - self.top_ui_h - self.bottom_ui_h - self.margin),
+        )
+        self.world_scale = min(self.play_rect.w / world_w, self.play_rect.h / world_h)
+        self.world_rect = pygame.Rect(0, 0, int(world_w * self.world_scale), int(world_h * self.world_scale))
+        self.world_rect.center = self.play_rect.center
+
     def reset_gameplay(self):
-        self.tile_map = TileMap(MAPS.get(self.map_id, MAP_ROWS), self.map_id)
-        self.player = Player((WORLD_W / 2, WORLD_H / 2), self.character_id)
+        self.map_manager.load_builtin_map(self.map_id)
+        self.tile_map = self.map_manager
+        self.refresh_world_layout()
+        self.player = Player((self.map_manager.world_w / 2, self.map_manager.world_h / 2), self.character_id)
         self.zombies = []
         self.bullets = []
         self.lasers = []
@@ -3391,6 +3378,7 @@ class Game:
         self.powerups = []
         self.particles = []
         self.rings = []
+        self.warning_zones = []
         self.floating_texts = []
         self.teleport_player_to_spawn(effect=True)
         self.wave = 0
@@ -3669,7 +3657,15 @@ class Game:
         balance = self.structure_balance_cfg()
         if kind == "fence":
             return self.fence_stats_for_level(level or self.fence_level())
-        hp_multiplier = balance["hp"] * (balance.get("fence_hp", 1.0) if kind == "fence" else 1.0)
+        if kind == "gate":
+            return {
+                "hp": max(1, int(round(cfg["hp"] * balance["hp"] * balance.get("fence_hp", 1.0)))),
+                "range": 0,
+                "damage": 0,
+                "cooldown": 0,
+                "damage_reduction": 0.18,
+            }
+        hp_multiplier = balance["hp"]
         return {
             "hp": max(1, int(round(cfg["hp"] * hp_multiplier))),
             "range": max(0, int(round(cfg["range"] * balance["turret_range"]))),
@@ -3810,9 +3806,11 @@ class Game:
         inner = pygame.Rect(rect.x + 16, rect.y + 14 + label_h, rect.w - 32, rect.h - 28 - label_h)
         if title:
             self.draw_text_center(self.map_name(map_id), pygame.Rect(rect.x + 12, rect.y + 8, rect.w - 24, label_h - 4), theme["accent"], self.font)
-        rows = MAPS.get(map_id, MAP_ROWS)
-        cell = max(2, int(min(inner.w / GRID_W, inner.h / GRID_H)))
-        map_w, map_h = GRID_W * cell, GRID_H * cell
+        rows = self.map_manager.maps.get(map_id, MAP_ROWS)
+        grid_w = max(1, len(rows[0]))
+        grid_h = max(1, len(rows))
+        cell = max(2, int(min(inner.w / grid_w, inner.h / grid_h)))
+        map_w, map_h = grid_w * cell, grid_h * cell
         ox = inner.centerx - map_w // 2
         oy = inner.centery - map_h // 2
         preview_rect = pygame.Rect(ox, oy, map_w, map_h)
@@ -3858,8 +3856,79 @@ class Game:
             return Vec2(x, y)
         return None
 
+    def world_to_screen(self, pos):
+        pos = Vec2(pos)
+        return Vec2(self.world_rect.x + pos.x * self.world_scale, self.world_rect.y + pos.y * self.world_scale)
+
+    def world_rect_to_screen(self, rect):
+        return pygame.Rect(
+            int(self.world_rect.x + rect.x * self.world_scale),
+            int(self.world_rect.y + rect.y * self.world_scale),
+            max(1, int(rect.w * self.world_scale)),
+            max(1, int(rect.h * self.world_scale)),
+        )
+
     def mouse_world(self):
         return self.screen_to_world(pygame.mouse.get_pos())
+
+    def can_place_building(self, position, building_type):
+        if building_type not in STRUCTURE_TYPES:
+            return False, "build_cannot_place"
+        if hasattr(position, "x") and hasattr(position, "y"):
+            cell = self.tile_map.world_to_cell(Vec2(position))
+        else:
+            cell = (int(position[0]), int(position[1]))
+        if building_type == "turret" and self.turret_count() >= self.turret_limit():
+            return False, "turret_limit"
+        self.map_manager.update_dynamic_obstacles(self.structures)
+        if not self.map_manager.in_bounds(cell) or self.map_manager.is_wall(cell):
+            return False, "build_cannot_place"
+        if not self.map_manager.is_buildable(cell[0], cell[1]):
+            return False, "build_cannot_place"
+        if self.tile_map.cell_center(cell).distance_to(self.player.pos) < 40:
+            return False, "build_cannot_place"
+        if not self.can_afford(self.structure_cost(building_type)):
+            return False, "not_enough_gold"
+        # Prevent building fences or gates that would fully trap the player (no path to zombie spawns)
+        if building_type in ("fence", "gate"):
+            player_cell = self.tile_map.world_to_cell(self.player.pos)
+            spawn_goals = self.spawn_cells or self.build_spawn_cells()
+            blocked = set(self.map_manager.dynamic_obstacles) | {cell}
+            path_ok = False
+            for goal in (spawn_goals or []):
+                if find_path(self.tile_map, player_cell, goal, blocked=blocked, allow_diagonal=True, weight=1.05, radius=int(self.player.radius)):
+                    path_ok = True
+                    break
+            if not path_ok:
+                return False, "would_trap_player"
+        return True, ""
+
+    def building_block_reason_text(self, reason):
+        if reason == "not_enough_gold":
+            return self.t("not_enough_gold")
+        if reason == "turret_limit":
+            return self.t("turret_limit").format(count=self.turret_count(), limit=self.turret_limit())
+        if reason == "would_trap_player":
+            return self.t("would_trap_player")
+        return self.t("build_cannot_place")
+
+    def structure_at_world(self, pos):
+        if pos is None:
+            return None
+        for structure in reversed(self.structures):
+            if structure.alive and structure.rect.inflate(5, 5).collidepoint((pos.x, pos.y)):
+                return structure
+        return None
+
+    def nearby_damaged_structure(self, distance=90):
+        damaged = [
+            structure
+            for structure in self.structures
+            if structure.alive and structure.hp < structure.max_hp and Vec2(structure.rect.center).distance_to(self.player.pos) <= distance
+        ]
+        if not damaged:
+            return None
+        return min(damaged, key=lambda structure: Vec2(structure.rect.center).distance_squared_to(self.player.pos))
 
     def pointer_over_ui(self):
         x, y = pygame.mouse.get_pos()
@@ -3893,6 +3962,30 @@ class Game:
     def titan_stuck_threshold(self):
         return TITAN_STUCK_LEAP_SECONDS.get(self.difficulty_id, TITAN_STUCK_LEAP_SECONDS["normal"])
 
+    def titan_has_reasonable_path(self, titan):
+        self.refresh_pathfinding_context()
+        start = nearest_clear_cell(self.tile_map, self.tile_map.world_to_cell(titan.pos), titan.radius, max_distance=8)
+        goal = nearest_clear_cell(
+            self.tile_map,
+            self.tile_map.world_to_cell(self.player.pos),
+            titan.radius,
+            max_distance=12,
+            prefer_pos=titan.pos,
+        )
+        if start is None or goal is None:
+            return False
+        path = find_path(
+            self.tile_map,
+            start,
+            goal,
+            self.path_blockers,
+            allow_diagonal=True,
+            weight=1.05,
+            radius=titan.radius,
+            max_nodes=900,
+        )
+        return bool(path)
+
     def titan_cell_clear(self, cell, radius):
         return (
             self.tile_map.in_bounds(cell)
@@ -3908,7 +4001,7 @@ class Game:
         )
 
     def titan_cell_has_escape_route(self, cell, radius):
-        if self.titan_open_neighbor_count(cell, radius) < 2:
+        if self.titan_open_neighbor_count(cell, radius) < 3:
             return False
         goals = [
             goal
@@ -3937,7 +4030,7 @@ class Game:
         self.refresh_pathfinding_context()
         player_cell = self.tile_map.world_to_cell(self.player.pos)
         candidates = []
-        for ring in range(4, 9):
+        for ring in range(6, 11):
             for y in range(player_cell[1] - ring, player_cell[1] + ring + 1):
                 for x in range(player_cell[0] - ring, player_cell[0] + ring + 1):
                     if max(abs(x - player_cell[0]), abs(y - player_cell[1])) != ring:
@@ -3951,7 +4044,7 @@ class Game:
                         continue
                     if not self.titan_cell_has_escape_route(cell, titan.radius):
                         continue
-                    score = abs(player_distance - 190) + center.distance_to(titan.pos) * 0.18 + (tile_noise(x, y, 91) % 17)
+                    score = abs(player_distance - 260) + center.distance_to(titan.pos) * 0.18 + (tile_noise(x, y, 91) % 17)
                     candidates.append((score, cell))
         if not candidates:
             return None
@@ -4011,67 +4104,14 @@ class Game:
         self.add_muzzle_particle(start, direction * 500)
 
     def build_spawn_cells(self):
-        cells = []
-        for y, row in enumerate(self.tile_map.rows):
-            for x, value in enumerate(row):
-                if value == "#":
-                    continue
-                if x in (1, GRID_W - 2) or y in (1, GRID_H - 2):
-                    cells.append((x, y))
-        return cells
+        return self.map_manager.get_zombie_spawns()
 
     def build_boss_spawn_cells(self):
         radius = ZOMBIE_TYPES["titan"]["radius"]
-        cells = []
-        for y, row in enumerate(self.tile_map.rows):
-            for x, value in enumerate(row):
-                cell = (x, y)
-                if value != "#" and self.tile_map.is_clear_for_radius(cell, radius):
-                    cells.append(cell)
-        return cells
+        return self.map_manager.get_boss_spawns(radius)
 
     def find_player_spawn_cell(self):
-        center_cell = (GRID_W // 2, GRID_H // 2)
-        center_pos = Vec2(WORLD_W / 2, WORLD_H / 2)
-        best_open = None
-        best_open_score = 1_000_000
-        best_fallback = None
-        best_fallback_score = 1_000_000
-
-        for y, row in enumerate(self.tile_map.rows):
-            for x, value in enumerate(row):
-                cell = (x, y)
-                if value == "#" or not self.tile_map.is_clear_for_radius(cell, self.player.radius + 4):
-                    continue
-
-                immediate_walls = 0
-                near_walls = 0
-                open_count = 0
-                for dy in range(-2, 3):
-                    for dx in range(-2, 3):
-                        if dx == 0 and dy == 0:
-                            continue
-                        near = (x + dx, y + dy)
-                        blocked = not self.tile_map.in_bounds(near) or self.tile_map.is_wall(near)
-                        if blocked:
-                            near_walls += 1
-                            if max(abs(dx), abs(dy)) <= 1:
-                                immediate_walls += 1
-                        else:
-                            open_count += 1
-
-                border = min(x, y, GRID_W - 1 - x, GRID_H - 1 - y)
-                distance = self.tile_map.cell_center(cell).distance_to(center_pos) / TILE
-                score = distance + near_walls * 4 + immediate_walls * 18 - open_count * 0.45 + max(0, 4 - border) * 8
-
-                if immediate_walls == 0 and open_count >= 18 and score < best_open_score:
-                    best_open = cell
-                    best_open_score = score
-                if score < best_fallback_score:
-                    best_fallback = cell
-                    best_fallback_score = score
-
-        return best_open or best_fallback or nearest_clear_cell(self.tile_map, center_cell, self.player.radius, max_distance=GRID_W)
+        return self.map_manager.get_player_spawn(self.player.radius + 4)
 
     def teleport_player_to_spawn(self, effect=False):
         cell = self.find_player_spawn_cell()
@@ -4086,7 +4126,8 @@ class Game:
             self.create_teleport_effect(self.player.pos)
 
     def blocked_cells(self):
-        return {structure.cell for structure in self.structures if structure.alive}
+        self.map_manager.update_dynamic_obstacles(self.structures)
+        return set(self.map_manager.dynamic_obstacles)
 
     def refresh_pathfinding_context(self):
         blockers = self.blocked_cells()
@@ -4310,20 +4351,51 @@ class Game:
             self.message = self.t("elite_incoming")
             self.message_timer = 1.4
 
-    def spawn_minion_near(self, kind, pos):
+    def spawn_minion_near(self, kind, pos, min_player_distance=90, prefer_spawn_edges=False, require_path=False):
         radius = ZOMBIE_TYPES[kind]["radius"]
         origin = self.tile_map.world_to_cell(pos)
         cells = []
         blocked = self.blocked_cells()
+        player_cell = self.tile_map.world_to_cell(self.player.pos)
+
+        def valid_summon_cell(cell):
+            if cell in blocked or not self.tile_map.is_clear_for_radius(cell, radius):
+                return False
+            center = self.tile_map.cell_center(cell)
+            if center.distance_to(self.player.pos) < min_player_distance:
+                return False
+            if require_path:
+                path = find_path(
+                    self.tile_map,
+                    cell,
+                    player_cell,
+                    blocked,
+                    allow_diagonal=True,
+                    weight=1.08,
+                    radius=radius,
+                    max_nodes=800,
+                )
+                if not path:
+                    return False
+            return True
+
+        if prefer_spawn_edges:
+            edge_cells = [cell for cell in self.spawn_cells if valid_summon_cell(cell)]
+            if edge_cells:
+                edge_cells.sort(key=lambda cell: self.tile_map.cell_center(cell).distance_to(pos))
+                choices = edge_cells[: min(4, len(edge_cells))]
+                self.zombies.append(Zombie(kind, self.tile_map.cell_center(random.choice(choices)), self.wave, self.difficulty_id))
+                if random.random() < 0.2:
+                    self.play_zombie_sound("groan", kind, volume=0.2, cooldown=0.8)
+                return
+
         for distance in range(2, 8):
             for y in range(origin[1] - distance, origin[1] + distance + 1):
                 for x in range(origin[0] - distance, origin[0] + distance + 1):
                     cell = (x, y)
                     if abs(x - origin[0]) != distance and abs(y - origin[1]) != distance:
                         continue
-                    if cell in blocked or not self.tile_map.is_clear_for_radius(cell, radius):
-                        continue
-                    if self.tile_map.cell_center(cell).distance_to(self.player.pos) < 90:
+                    if not valid_summon_cell(cell):
                         continue
                     cells.append(cell)
             if cells:
@@ -4345,14 +4417,14 @@ class Game:
 
     def random_floor_position(self, min_player_distance=120):
         for _ in range(80):
-            cell = random.choice(self.spawn_cells or [(GRID_W // 2, GRID_H // 2)])
+            cell = random.choice(self.spawn_cells or [(self.map_manager.grid_w // 2, self.map_manager.grid_h // 2)])
             if self.tile_map.is_wall(cell):
                 continue
             pos = self.tile_map.cell_center(cell)
             if pos.distance_to(self.player.pos) < min_player_distance:
                 continue
             return pos
-        return Vec2(WORLD_W / 2, WORLD_H / 2)
+        return Vec2(self.map_manager.world_w / 2, self.map_manager.world_h / 2)
 
     def spawn_powerup(self, pos=None, kind=None):
         if kind is None:
@@ -4377,29 +4449,12 @@ class Game:
         return clamp(base, 0, 0.32)
 
     def place_structure(self, kind, cell):
-        if kind == "turret" and self.turret_count() >= self.turret_limit():
-            self.message = self.t("turret_limit").format(count=self.turret_count(), limit=self.turret_limit())
-            self.message_timer = 1.5
-            return False
-        if cell[0] >= GRID_W or cell[1] >= GRID_H or not self.tile_map.in_bounds(cell):
-            return False
-        if self.tile_map.is_wall(cell):
-            self.message = self.t("cannot_build_wall")
-            self.message_timer = 1.4
-            return False
-        if cell in self.blocked_cells():
-            self.message = self.t("tile_occupied")
-            self.message_timer = 1.4
-            return False
-        if self.tile_map.cell_center(cell).distance_to(self.player.pos) < 40:
-            self.message = self.t("too_close_player")
+        valid, reason = self.can_place_building(cell, kind)
+        if not valid:
+            self.message = self.building_block_reason_text(reason)
             self.message_timer = 1.4
             return False
         cost = self.structure_cost(kind)
-        if not self.can_afford(cost):
-            self.message = self.t("not_enough_gold")
-            self.message_timer = 1.4
-            return False
         self.spend_gold(cost)
         self.structures.append(Structure(kind, cell, self.structure_stats(kind)))
         self.message = self.t("built").format(name=self.structure_name(kind))
@@ -4612,6 +4667,10 @@ class Game:
                     self.build_mode = "fence"
                     self.message = self.t("build_mode").format(name=self.structure_name("fence"))
                     self.message_timer = 1.0
+                elif not self.paused and event.key == pygame.K_4:
+                    self.build_mode = "gate"
+                    self.message = self.t("build_mode").format(name=self.structure_name("gate"))
+                    self.message_timer = 1.0
                 elif event.key == pygame.K_b:
                     self.build_mode = None
                 elif not self.paused and event.key == pygame.K_r:
@@ -4681,7 +4740,7 @@ class Game:
                     return True
             if action.startswith("map_"):
                 map_id = action.removeprefix("map_")
-                if map_id in MAPS:
+                if self.map_manager.has_map(map_id):
                     self.map_id = map_id
                     return True
         elif self.state == "options":
@@ -4723,6 +4782,10 @@ class Game:
             elif not self.paused and action == "hotbar_fence":
                 self.build_mode = "fence"
                 self.message = self.t("build_mode").format(name=self.structure_name("fence"))
+                self.message_timer = 1.0
+            elif not self.paused and action == "hotbar_gate":
+                self.build_mode = "gate"
+                self.message = self.t("build_mode").format(name=self.structure_name("gate"))
                 self.message_timer = 1.0
             elif not self.paused and action == "hotbar_reload":
                 self.reload_weapon()
@@ -4800,6 +4863,8 @@ class Game:
             particle.update(dt)
         for ring in self.rings:
             ring.update(dt)
+        for warning in self.warning_zones:
+            warning.update(dt, self)
         for floating in self.floating_texts:
             floating.update(dt)
 
@@ -4813,6 +4878,7 @@ class Game:
         self.powerups = [p for p in self.powerups if p.alive]
         self.particles = [p for p in self.particles if p.alive]
         self.rings = [r for r in self.rings if r.alive]
+        self.warning_zones = [w for w in self.warning_zones if w.alive]
         self.floating_texts = [f for f in self.floating_texts if f.alive]
 
     def draw_bar(self, surface, rect, pct, fill, back=(52, 38, 43)):
@@ -4820,7 +4886,7 @@ class Game:
 
     def draw_world(self):
         world = self.world_surface
-        self.tile_map.draw(world)
+        self.map_manager.render(world)
         for pool in self.poison_pools:
             pool.draw(world)
         for gold in self.gold_drops:
@@ -4829,6 +4895,8 @@ class Game:
             powerup.draw(world)
         for structure in self.structures:
             structure.draw(world)
+        for warning in self.warning_zones:
+            warning.draw(world)
         for bullet in self.bullets:
             bullet.draw(world)
         for laser in self.lasers:
@@ -4856,16 +4924,37 @@ class Game:
             return
         cell = self.tile_map.world_to_cell(mouse_world)
         rect = pygame.Rect(cell[0] * TILE, cell[1] * TILE, TILE, TILE)
-        valid = (
-            self.tile_map.in_bounds(cell)
-            and not self.tile_map.is_wall(cell)
-            and cell not in self.blocked_cells()
-            and self.tile_map.cell_center(cell).distance_to(self.player.pos) >= 40
-            and self.can_afford(self.structure_cost(self.build_mode))
-            and (self.build_mode != "turret" or self.turret_count() < self.turret_limit())
-        )
+        valid, _ = self.can_place_building(cell, self.build_mode)
+        accent = COLORS["green"] if valid else COLORS["red"]
+        center = self.tile_map.cell_center(cell)
+        stats = self.structure_stats(self.build_mode)
+
+        if self.build_mode == "turret":
+            radius = stats["range"]
+            diameter = int(radius * 2 + 8)
+            ring = pygame.Surface((diameter, diameter), pygame.SRCALPHA)
+            pygame.draw.circle(ring, (*accent, 28), (diameter // 2, diameter // 2), int(radius))
+            pygame.draw.circle(ring, (*accent, 135), (diameter // 2, diameter // 2), int(radius), 2)
+            self.world_surface.blit(ring, (center.x - diameter // 2, center.y - diameter // 2))
+
         overlay = pygame.Surface((TILE, TILE), pygame.SRCALPHA)
-        overlay.fill((82, 215, 126, 120) if valid else (230, 70, 70, 130))
+        overlay.fill((*accent, 88 if valid else 118))
+        pygame.draw.rect(overlay, (*accent, 230), overlay.get_rect(), 2)
+        if self.build_mode == "turret":
+            pygame.draw.circle(overlay, (*accent, 210), (TILE // 2, TILE // 2), 9)
+            pygame.draw.rect(overlay, (235, 245, 245, 180), (TILE // 2 - 3, 7, 6, 15))
+        elif self.build_mode == "gate":
+            pygame.draw.rect(overlay, (*accent, 210), (5, 5, 7, TILE - 10), border_radius=2)
+            pygame.draw.rect(overlay, (*accent, 210), (TILE - 12, 5, 7, TILE - 10), border_radius=2)
+            pygame.draw.rect(overlay, (*accent, 210), (6, 7, TILE - 12, 5), border_radius=2)
+            pygame.draw.rect(overlay, (*accent, 210), (6, TILE - 12, TILE - 12, 5), border_radius=2)
+            for x in (TILE // 3, TILE * 2 // 3):
+                pygame.draw.line(overlay, (245, 232, 190, 190), (x, 8), (x, TILE - 8), 2)
+        else:
+            pygame.draw.rect(overlay, (*accent, 210), (5, 8, TILE - 10, 6), border_radius=2)
+            pygame.draw.rect(overlay, (*accent, 210), (5, TILE - 13, TILE - 10, 6), border_radius=2)
+            for x in (8, TILE // 2 - 3, TILE - 13):
+                pygame.draw.rect(overlay, (245, 232, 190, 185), (x, 4, 6, TILE - 8), border_radius=2)
         self.world_surface.blit(overlay, rect)
 
     def draw_text(self, text, x, y, color=None, font=None):
@@ -4937,8 +5026,8 @@ class Game:
         fence_value = f"{fence_value} L{fence_level}"
         self.draw_hotbar_slot("hotbar_turret", pygame.Rect(start_x + (slot_w + gap), y, slot_w, slot_h), "2", self.t("turret"), turret_value, COLORS["cyan"], active=self.build_mode == "turret")
         self.draw_hotbar_slot("hotbar_fence", pygame.Rect(start_x + (slot_w + gap) * 2, y, slot_w, slot_h), "3", self.t("fence"), fence_value, COLORS["orange"], active=self.build_mode == "fence")
-        dash_value = self.t("ready") if self.player.dash_cooldown <= 0 else f"{self.player.dash_cooldown:.1f}s"
-        self.draw_hotbar_slot("hotbar_dash", pygame.Rect(start_x + (slot_w + gap) * 3, y, slot_w, slot_h), "Sh", self.t("dash"), dash_value, COLORS["purple"], active=self.player.dash_time > 0)
+        gate_value = self.t("free") if self.dev_mode else f"{self.structure_cost('gate')}g"
+        self.draw_hotbar_slot("hotbar_gate", pygame.Rect(start_x + (slot_w + gap) * 3, y, slot_w, slot_h), "4", self.t("gate"), gate_value, COLORS["orange"], active=self.build_mode == "gate")
         auto_text = self.t("on") if self.auto_fire else self.t("off")
         self.draw_hotbar_slot("auto_toggle_game", pygame.Rect(start_x + (slot_w + gap) * 4, y, slot_w, slot_h), "F", self.t("auto_fire"), auto_text, COLORS["green"], active=self.auto_fire)
         info_text = self.t("on") if self.info_panel_open else self.t("off")
@@ -4965,7 +5054,7 @@ class Game:
             return
         sw, sh, s = self.screen_w, self.screen_h, self.ui_scale
         panel_w = min(int(520 * s), sw - self.margin * 2)
-        panel_h = max(320, int(350 * s))
+        panel_h = max(360, int(390 * s))
         panel = pygame.Rect(sw - panel_w - self.margin, self.top_ui_h + int(18 * s), panel_w, panel_h)
         self.draw_panel(panel, alpha=232)
 
@@ -4975,6 +5064,7 @@ class Game:
         fire_rate = (1 + self.player.fire_rate_bonus + (0.45 if self.player.buff_timers["overdrive"] > 0 else 0)) / weapon.cooldown
         turret = self.structure_stats("turret")
         fence = self.structure_stats("fence")
+        gate = self.structure_stats("gate")
         buffs = [
             f"{self.buff_label(key)} {math.ceil(value)}s"
             for key, value in self.player.buff_timers.items()
@@ -4989,6 +5079,7 @@ class Game:
             (f"{self.t('armor')} {self.player.armor} | {self.t('magnet')} {int(self.player.pickup_radius)}", COLORS["muted"], self.small_font),
             (f"{self.t('turrets')} {self.turret_count()}/{self.turret_limit()} | {self.t('cost')} {self.structure_cost('turret')}g | {self.t('hp')} {turret['hp']} | {self.t('dmg')} {turret['damage']}", COLORS["cyan"], self.small_font),
             (f"{self.t('fence_level').format(level=fence['level'])} | {self.t('cost')} {self.structure_cost('fence')}g | {self.t('hp')} {fence['hp']} | {self.t('repair')} {self.repair_cost()}g", COLORS["orange"], self.small_font),
+            (f"{self.t('gate')} | {self.t('cost')} {self.structure_cost('gate')}g | {self.t('hp')} {gate['hp']} | {self.t('repair')} {self.repair_cost()}g", COLORS["gold"], self.small_font),
             (f"{self.t('dash')}: {dash} | {self.t('buffs')}: {', '.join(buffs) if buffs else '-'}", COLORS["purple"], self.small_font),
             (f"{self.t('wave_key')} | R {self.t('reload')} | {self.t('repair_key')} | B {self.t('cancel_build')} | I {self.t('close')}", COLORS["muted"], self.tiny_font),
         ]
@@ -5001,6 +5092,7 @@ class Game:
     def draw_overlay(self):
         sw, sh = self.screen_w, self.screen_h
         self.draw_info_panel()
+        self.draw_build_screen_feedback()
         if self.message_timer > 0 and self.message:
             image = self.font.render(self.message, True, COLORS["text"])
             rect = image.get_rect(center=(sw // 2, self.top_ui_h + 20))
@@ -5027,6 +5119,85 @@ class Game:
             self.screen.blit(sub, sub.get_rect(center=(sw // 2, sh // 2 + int(28 * self.ui_scale))))
         if self.paused:
             self.draw_pause_overlay()
+
+    def draw_build_screen_feedback(self):
+        if self.state != "playing" or self.game_over or self.paused:
+            return
+        if self.build_mode is not None:
+            self.draw_build_tooltip()
+        else:
+            self.draw_structure_hover_tooltip()
+        self.draw_repair_prompt()
+
+    def draw_build_tooltip(self):
+        mouse_pos = pygame.mouse.get_pos()
+        mouse_world = self.screen_to_world(mouse_pos)
+        if mouse_world is None:
+            return
+        cell = self.tile_map.world_to_cell(mouse_world)
+        valid, reason = self.can_place_building(cell, self.build_mode)
+        cost = self.structure_cost(self.build_mode)
+        color = COLORS["green"] if valid else COLORS["red"]
+        lines = [
+            (self.structure_name(self.build_mode), color, self.small_font),
+            (f"{self.t('cost')}: {self.t('free') if self.dev_mode else str(cost) + 'g'}", COLORS["gold"], self.tiny_font),
+        ]
+        if not valid:
+            lines.append((self.building_block_reason_text(reason), COLORS["red"], self.tiny_font))
+        elif self.build_mode == "turret":
+            stats = self.structure_stats("turret")
+            lines.append((f"{self.t('range_short')} {stats['range']} | {self.t('dmg')} {stats['damage']}", COLORS["cyan"], self.tiny_font))
+        else:
+            stats = self.structure_stats(self.build_mode)
+            lines.append((f"{self.t('hp')}: {stats['hp']}", color, self.tiny_font))
+        self.draw_tooltip(lines, (mouse_pos[0] + 18, mouse_pos[1] + 18), accent=color)
+
+    def draw_structure_hover_tooltip(self):
+        mouse_pos = pygame.mouse.get_pos()
+        structure = self.structure_at_world(self.screen_to_world(mouse_pos))
+        if structure is None:
+            return
+        hp = f"{max(0, int(structure.hp))}/{int(structure.max_hp)}"
+        lines = [
+            (self.structure_name(structure.kind), COLORS["gold"], self.small_font),
+            (f"{self.t('hp')}: {hp}", COLORS["text"], self.tiny_font),
+        ]
+        if structure.hp < structure.max_hp:
+            cost = self.t("free") if self.dev_mode else f"{self.repair_cost()}g"
+            lines.append((f"{self.t('repair')}: {cost}", COLORS["green"] if self.can_afford(self.repair_cost()) else COLORS["red"], self.tiny_font))
+        self.draw_tooltip(lines, (mouse_pos[0] + 18, mouse_pos[1] + 18), accent=COLORS["cyan"])
+
+    def draw_repair_prompt(self):
+        structure = self.nearby_damaged_structure()
+        if structure is None or self.build_mode is not None:
+            return
+        cost = self.t("free") if self.dev_mode else f"{self.repair_cost()}g"
+        text = f"{self.t('repair_prompt')}  |  {cost}"
+        pos = self.world_to_screen(self.player.pos + Vec2(0, -48))
+        image = self.small_font.render(text, True, COLORS["green"] if self.can_afford(self.repair_cost()) else COLORS["red"])
+        rect = image.get_rect(center=(int(pos.x), int(pos.y)))
+        rect.clamp_ip(pygame.Rect(8, self.top_ui_h, self.screen_w - 16, self.screen_h - self.top_ui_h - self.bottom_ui_h))
+        box = rect.inflate(24, 12)
+        self.draw_panel(box, color=(13, 16, 22), alpha=224, border=True)
+        self.screen.blit(image, rect)
+
+    def draw_tooltip(self, lines, pos, accent=COLORS["cyan"]):
+        if not lines:
+            return
+        padding = max(10, int(10 * self.ui_scale))
+        line_gap = max(4, int(5 * self.ui_scale))
+        widths = [font.size(text)[0] for text, _, font in lines]
+        heights = [font.get_height() for _, _, font in lines]
+        box_w = max(widths) + padding * 2
+        box_h = sum(heights) + line_gap * (len(lines) - 1) + padding * 2
+        rect = pygame.Rect(int(pos[0]), int(pos[1]), box_w, box_h)
+        rect.clamp_ip(pygame.Rect(8, 8, self.screen_w - 16, self.screen_h - 16))
+        self.draw_panel(rect, color=(12, 15, 21), alpha=234, border=True)
+        pygame.draw.line(self.screen, accent, (rect.x + padding, rect.y + 1), (rect.right - padding, rect.y + 1), 2)
+        y = rect.y + padding
+        for text, color, font in lines:
+            self.screen.blit(font.render(text, True, color), (rect.x + padding, y))
+            y += font.get_height() + line_gap
 
     def draw_pause_overlay(self):
         sw, sh, s = self.screen_w, self.screen_h, self.ui_scale

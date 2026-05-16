@@ -644,13 +644,7 @@ class UIManager:
         bottom_h = getattr(state, "bottom_ui_h", max(118, int(140 * scale)))
         slot_h = max(92, min(int(112 * scale), bottom_h - int(24 * scale)))
         gap = max(7, int(10 * scale))
-        slot_count = 7
-        slot_w = min(int(126 * scale), max(92, (sw - getattr(state, "margin", 16) * 2 - gap * (slot_count - 1)) // slot_count))
-        total_w = slot_w * slot_count + gap * (slot_count - 1)
-        x = sw // 2 - total_w // 2
         y = sh - bottom_h + (bottom_h - slot_h) // 2
-        back = pygame.Rect(x - int(14 * scale), y - int(10 * scale), total_w + int(28 * scale), slot_h + int(20 * scale))
-        self.draw_panel(screen, back, color=(10, 12, 17), alpha=196, border=True, border_color=(48, 54, 67), border_radius=10)
 
         player = state.player
         weapon = player.weapon
@@ -659,6 +653,7 @@ class UIManager:
         repair_cost = state.repair_cost()
         turret_cost = state.structure_cost("turret")
         fence_cost = state.structure_cost("fence")
+        gate_cost = state.structure_cost("gate")
         turret_full = state.turret_count() >= state.turret_limit()
         slots = [
             {
@@ -690,6 +685,16 @@ class UIManager:
                 "icon": "fence",
                 "active": state.build_mode == "fence",
                 "disabled": not can_afford(fence_cost),
+            },
+            {
+                "key": "hotbar_gate",
+                "shortcut": "4",
+                "label": state.t("gate"),
+                "value": state.t("free") if state.dev_mode else f"{gate_cost}g",
+                "accent": (198, 154, 88),
+                "icon": "gate",
+                "active": state.build_mode == "gate",
+                "disabled": not can_afford(gate_cost),
             },
             {
                 "key": "hotbar_reload",
@@ -734,6 +739,13 @@ class UIManager:
                 "disabled": False,
             },
         ]
+        slot_count = len(slots)
+        slot_w = min(int(126 * scale), max(82, (sw - getattr(state, "margin", 16) * 2 - gap * (slot_count - 1)) // slot_count))
+        total_w = slot_w * slot_count + gap * (slot_count - 1)
+        x = sw // 2 - total_w // 2
+        back = pygame.Rect(x - int(14 * scale), y - int(10 * scale), total_w + int(28 * scale), slot_h + int(20 * scale))
+        self.draw_panel(screen, back, color=(10, 12, 17), alpha=196, border=True, border_color=(48, 54, 67), border_radius=10)
+
         for index, slot in enumerate(slots):
             rect = pygame.Rect(x + index * (slot_w + gap), y, slot_w, slot_h)
             self._draw_action_slot(screen, state, rect, slot, colors, scale)
@@ -818,6 +830,16 @@ class UIManager:
                 pygame.draw.rect(screen, color, (rect.x + offset, rect.y + 3, max(5, rect.w // 8), rect.h - 6), border_radius=2)
             pygame.draw.rect(screen, color, (rect.x + 2, cy - 5, rect.w - 4, 5))
             pygame.draw.rect(screen, color, (rect.x + 2, cy + 7, rect.w - 4, 5))
+        elif icon == "gate":
+            frame = pygame.Rect(rect.x + 4, rect.y + 4, rect.w - 8, rect.h - 8)
+            post_w = max(5, frame.w // 6)
+            pygame.draw.rect(screen, color, (frame.left, frame.top, post_w, frame.h), border_radius=2)
+            pygame.draw.rect(screen, color, (frame.right - post_w, frame.top, post_w, frame.h), border_radius=2)
+            pygame.draw.rect(screen, color, (frame.left, frame.top, frame.w, max(5, frame.h // 5)), border_radius=2)
+            pygame.draw.rect(screen, color, (frame.left, frame.bottom - max(5, frame.h // 5), frame.w, max(5, frame.h // 5)), border_radius=2)
+            for x in (frame.left + frame.w // 3, frame.left + frame.w * 2 // 3):
+                pygame.draw.line(screen, color, (x, frame.top + 4), (x, frame.bottom - 4), 3)
+            pygame.draw.circle(screen, dark, (frame.centerx + frame.w // 5, frame.centery), max(2, frame.w // 18))
         elif icon == "reload":
             mag = pygame.Rect(rect.x + rect.w // 3, rect.y + 3, rect.w // 3, rect.h - 6)
             pygame.draw.rect(screen, color, mag, border_radius=3)
@@ -940,7 +962,23 @@ class UIManager:
         pygame.draw.rect(screen, accent if active else colors["hud_line"], rect, 2, border_radius=8)
         badge = pygame.Rect(rect.centerx - 22, rect.y + 10, 44, 34)
         pygame.draw.rect(screen, accent, badge, border_radius=6)
-        self.draw_text_center(screen, number, badge, (15, 18, 22), font)
+        # draw number or icon for special keys
+        if key == "hotbar_gate":
+            # smaller number badge in corner
+            num_rect = pygame.Rect(badge.x + 3, badge.y + 3, 18, 14)
+            self.draw_text_center(screen, number, num_rect, (15, 18, 22), small_font)
+            # draw simple gate icon in the badge center
+            icon_rect = pygame.Rect(badge.centerx - 12, badge.centery - 8, 24, 18)
+            post_w = max(2, icon_rect.w // 7)
+            left_post = pygame.Rect(icon_rect.left, icon_rect.top, post_w, icon_rect.h)
+            right_post = pygame.Rect(icon_rect.right - post_w, icon_rect.top, post_w, icon_rect.h)
+            center_rect = pygame.Rect(icon_rect.left + post_w + 2, icon_rect.top + icon_rect.h // 3, icon_rect.w - post_w * 2 - 4, icon_rect.h // 3)
+            pygame.draw.rect(screen, (83, 58, 41), left_post)
+            pygame.draw.rect(screen, (83, 58, 41), right_post)
+            pygame.draw.rect(screen, (60, 60, 60), center_rect)
+            pygame.draw.line(screen, (200, 200, 200), (center_rect.left + 1, center_rect.top + 1), (center_rect.right - 1, center_rect.top + 1), 1)
+        else:
+            self.draw_text_center(screen, number, badge, (15, 18, 22), font)
         self.draw_text_center(screen, label, pygame.Rect(rect.x + 8, rect.y + 48, rect.w - 16, 26), colors["text"], small_font)
         self.draw_text_center(screen, value, pygame.Rect(rect.x + 8, rect.y + 76, rect.w - 16, 22), accent, small_font)
         buttons[key] = rect

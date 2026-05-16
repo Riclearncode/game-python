@@ -1,0 +1,88 @@
+{
+  "compressionlevel": -1,
+  "height": 8,
+  "infinite": false,
+  "layers": [
+    {
+      "data": [
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1
+      ],
+      "height": 8,
+      "id": 1,
+      "name": "ground",
+      "opacity": 1,
+      "type": "tilelayer",
+      "visible": true,
+      "width": 10,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "data": [
+        2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+        2, 0, 0, 0, 0, 0, 0, 0, 0, 2,
+        2, 0, 0, 0, 0, 0, 0, 0, 0, 2,
+        2, 0, 0, 0, 2, 2, 0, 0, 0, 2,
+        2, 0, 0, 0, 2, 2, 0, 0, 0, 2,
+        2, 0, 0, 0, 0, 0, 0, 0, 0, 2,
+        2, 0, 0, 0, 0, 0, 0, 0, 0, 2,
+        2, 2, 2, 2, 2, 2, 2, 2, 2, 2
+      ],
+      "height": 8,
+      "id": 2,
+      "name": "collision",
+      "opacity": 1,
+      "type": "tilelayer",
+      "visible": false,
+      "width": 10,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "draworder": "topdown",
+      "id": 3,
+      "name": "gameplay_objects",
+      "objects": [
+        {"height": 0, "id": 1, "name": "player_spawn", "rotation": 0, "type": "player_spawn", "visible": true, "width": 0, "x": 96, "y": 96},
+        {"height": 0, "id": 2, "name": "zombie_spawn", "rotation": 0, "type": "zombie_spawn", "visible": true, "width": 0, "x": 256, "y": 96},
+        {"height": 0, "id": 3, "name": "boss_spawn", "rotation": 0, "type": "boss_spawn", "visible": true, "width": 0, "x": 256, "y": 192},
+        {"height": 96, "id": 4, "name": "build_zone", "rotation": 0, "type": "build_zone", "visible": true, "width": 128, "x": 64, "y": 64},
+        {"height": 32, "id": 5, "name": "no_build_zone", "rotation": 0, "type": "no_build_zone", "visible": true, "width": 32, "x": 96, "y": 96},
+        {"height": 32, "id": 6, "name": "safe_zone", "rotation": 0, "type": "safe_zone", "visible": true, "width": 32, "x": 64, "y": 64},
+        {"height": 0, "id": 7, "name": "choke_point_marker", "rotation": 0, "type": "choke_point_marker", "visible": true, "width": 0, "x": 160, "y": 96}
+      ],
+      "opacity": 1,
+      "type": "objectgroup",
+      "visible": true,
+      "x": 0,
+      "y": 0
+    }
+  ],
+  "nextlayerid": 4,
+  "nextobjectid": 8,
+  "orientation": "orthogonal",
+  "renderorder": "right-down",
+  "tiledversion": "1.11.0",
+  "tileheight": 32,
+  "tilesets": [
+    {
+      "columns": 1,
+      "firstgid": 1,
+      "name": "placeholder_missing_image",
+      "tilecount": 2,
+      "tileheight": 32,
+      "tilewidth": 32
+    }
+  ],
+  "tilewidth": 32,
+  "type": "map",
+  "version": "1.10",
+  "width": 10
+}
