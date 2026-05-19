@@ -18,6 +18,10 @@ class UIManager:
     screen bodies here without changing the main loop again.
     """
 
+    def __init__(self):
+        self._vignette_cache = {}
+        self._cover_cache = {}
+
     def _colors(self, state):
         colors = getattr(state, "COLORS", None)
         if colors is not None:
@@ -78,6 +82,41 @@ class UIManager:
         for index, (key, label, accent) in enumerate(buttons):
             rect = pygame.Rect(bx, y0 + index * (button_h + gap), button_w, button_h)
             self.draw_menu_button(screen, state.ui_buttons, key, rect, label, accent=accent, colors=colors, font=state.font)
+        self._draw_high_score_panel(screen, state, colors, scale, panel)
+
+    def _draw_high_score_panel(self, screen, state, colors, scale, menu_panel):
+        high_score_fn = getattr(state, "high_score", None)
+        if high_score_fn is None:
+            return
+        high = high_score_fn()
+        sw, sh = screen.get_size()
+        panel_w = max(290, int(330 * scale))
+        panel_h = max(210, int(250 * scale))
+        if sw - menu_panel.right > panel_w + int(52 * scale):
+            rect = pygame.Rect(menu_panel.right + int(34 * scale), menu_panel.y + int(12 * scale), panel_w, panel_h)
+        else:
+            rect = pygame.Rect(sw // 2 - panel_w // 2, min(sh - panel_h - int(34 * scale), menu_panel.bottom + int(28 * scale)), panel_w, panel_h)
+        self.draw_panel(screen, rect, color=(10, 12, 16), alpha=162, border=True, border_color=(92, 72, 48))
+        pad = int(18 * scale)
+        y = rect.y + pad
+        self.draw_text(screen, state.t("high_score"), rect.x + pad, y, colors["gold"], state.small_font)
+        y += max(26, int(30 * scale))
+        best_time = state.format_time(high.get("best_survival_time", 0)) if hasattr(state, "format_time") else str(int(high.get("best_survival_time", 0)))
+        rows = (
+            (state.t("highest_wave"), high.get("highest_wave", 0)),
+            (state.t("highest_score"), high.get("highest_score", 0)),
+            (state.t("most_kills"), high.get("most_kills", 0)),
+            (state.t("most_gold"), high.get("most_gold", 0)),
+            (state.t("best_time"), best_time),
+            (state.t("best_map"), high.get("best_map", "-")),
+            (state.t("best_class"), high.get("best_class", "-")),
+            (state.t("best_difficulty"), high.get("best_difficulty", "-")),
+        )
+        label_w = int(142 * scale)
+        for label, value in rows:
+            self.draw_text(screen, self.fit_text(str(label), state.tiny_font, label_w), rect.x + pad, y, colors["muted"], state.tiny_font)
+            self.draw_text(screen, self.fit_text(str(value), state.tiny_font, rect.w - label_w - pad * 2), rect.x + pad + label_w, y, colors["text"], state.tiny_font)
+            y += max(20, int(22 * scale))
 
     def _draw_survival_menu_background(self, screen, state, scale):
         image = getattr(state, "menu_background", None)
@@ -106,7 +145,12 @@ class UIManager:
         iw, ih = image.get_size()
         scale = max(sw / iw, sh / ih)
         size = (max(1, math.ceil(iw * scale)), max(1, math.ceil(ih * scale)))
-        scaled = pygame.transform.smoothscale(image, size)
+        key = (id(image), size)
+        scaled = self._cover_cache.get(key)
+        if scaled is None:
+            scaled = pygame.transform.smoothscale(image, size)
+            self._cover_cache.clear()
+            self._cover_cache[key] = scaled
         screen.blit(scaled, scaled.get_rect(center=(sw // 2, sh // 2)))
 
     def _draw_procedural_survival_background(self, screen, scale):
@@ -649,7 +693,7 @@ class UIManager:
         player = state.player
         weapon = player.weapon
         can_afford = getattr(state, "can_afford", lambda cost: True)
-        upgrade_cost = getattr(weapon, "upgrade_cost", 0)
+        upgrade_cost = state.weapon_upgrade_cost() if hasattr(state, "weapon_upgrade_cost") else getattr(weapon, "upgrade_cost", 0)
         repair_cost = state.repair_cost()
         turret_cost = state.structure_cost("turret")
         fence_cost = state.structure_cost("fence")
@@ -873,8 +917,62 @@ class UIManager:
     def draw_overlay(self, screen, game_state):
         game_state.draw_overlay()
         if not getattr(game_state, "game_over", False) and not getattr(game_state, "paused", False):
+            self._draw_vignette(screen, game_state)
             self._draw_event_banners(screen, game_state)
+            self._draw_dev_debug(screen, game_state)
         self._draw_low_hp_warning(screen, game_state)
+
+    def _draw_vignette(self, screen, state):
+        sw, sh = screen.get_size()
+        edge = max(70, int(105 * getattr(state, "ui_scale", 1.0)))
+        key = (sw, sh, edge)
+        vignette = self._vignette_cache.get(key)
+        if vignette is None:
+            vignette = pygame.Surface((sw, sh), pygame.SRCALPHA)
+            steps = 18
+            for i in range(steps):
+                pct = 1 - i / steps
+                alpha = int(52 * pct * pct)
+                thickness = max(1, edge // steps)
+                offset = i * thickness
+                color = (0, 0, 0, alpha)
+                pygame.draw.rect(vignette, color, (0, offset, sw, thickness))
+                pygame.draw.rect(vignette, color, (0, sh - offset - thickness, sw, thickness))
+                pygame.draw.rect(vignette, color, (offset, 0, thickness, sh))
+                pygame.draw.rect(vignette, color, (sw - offset - thickness, 0, thickness, sh))
+            self._vignette_cache[key] = vignette
+        screen.blit(vignette, (0, 0))
+
+    def _draw_dev_debug(self, screen, state):
+        if not getattr(state, "dev_mode", False):
+            return
+        colors = self._colors(state)
+        clock = getattr(state, "clock", None)
+        fps = clock.get_fps() if clock is not None else 0
+        lines = [
+            f"FPS {fps:5.1f}",
+            f"Z {len(getattr(state, 'zombies', []) or [])}  B {len(getattr(state, 'bullets', []) or [])}  P {len(getattr(state, 'particles', []) or [])}",
+            f"Decal {len(getattr(state, 'blood_decals', []) or [])}  Text {len(getattr(state, 'floating_texts', []) or [])}",
+            f"Paths {len(getattr(state, 'path_cache', {}) or {})}  Flow {len(getattr(state, 'flow_field', {}) or {})}",
+        ]
+        font = getattr(state, "tiny_font", None)
+        if font is None:
+            return
+        pad = 8
+        width = max(font.size(line)[0] for line in lines) + pad * 2
+        line_h = font.get_height() + 2
+        height = line_h * len(lines) + pad * 2
+        rect = pygame.Rect(
+            getattr(state, "margin", 12),
+            getattr(state, "top_ui_h", 120) + 8,
+            width,
+            height,
+        )
+        self.draw_panel(screen, rect, color=(5, 7, 10), alpha=182, border=True, border_color=(72, 82, 92), border_radius=6)
+        y = rect.y + pad
+        for line in lines:
+            self.draw_text(screen, line, rect.x + pad, y, colors["green"], font)
+            y += line_h
 
     def _draw_event_banners(self, screen, state):
         colors = self._colors(state)

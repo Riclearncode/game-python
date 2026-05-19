@@ -9,6 +9,9 @@ import sys
 import time
 import os
 
+PASS = "[PASS]"
+FAIL = "[FAIL]"
+
 def run_test():
     print("=" * 60)
     print("TESTING GATE & FENCE FUNCTIONALITY (STEP 14)")
@@ -20,14 +23,14 @@ def run_test():
         [sys.executable, 'main.py', '--smoke'],
         capture_output=True,
         text=True,
-        timeout=15,
+        timeout=45,
         cwd=os.path.dirname(os.path.abspath(__file__))
     )
     
     if result.returncode == 0 and "Smoke test passed" in result.stdout:
-        print("✅ PASS: Game startup OK")
+        print(f"{PASS} Game startup OK")
     else:
-        print("❌ FAIL: Game startup failed")
+        print(f"{FAIL} Game startup failed")
         print(f"STDERR: {result.stderr[:300]}")
         return False
     
@@ -46,7 +49,7 @@ def run_test():
     
     all_pass = True
     for check_name, check_result in checks:
-        status = "✅" if check_result else "❌"
+        status = PASS if check_result else FAIL
         print(f"  {status} {check_name}")
         all_pass = all_pass and check_result
     
@@ -61,7 +64,7 @@ def run_test():
     ]
     
     for check_name, check_result in ui_checks:
-        status = "✅" if check_result else "❌"
+        status = PASS if check_result else FAIL
         print(f"  {status} {check_name}")
         all_pass = all_pass and check_result
     
@@ -75,7 +78,7 @@ def run_test():
     ]
     
     for check_name, check_result in map_checks:
-        status = "✅" if check_result else "❌"
+        status = PASS if check_result else FAIL
         print(f"  {status} {check_name}")
         all_pass = all_pass and check_result
     

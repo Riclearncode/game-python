@@ -4,6 +4,8 @@ import os
 
 import pygame
 
+from path_utils import resource_path
+
 
 Vec2 = pygame.math.Vector2
 
@@ -47,7 +49,7 @@ class MapManager:
         self.default_map = default_map if default_map in maps else next(iter(maps))
         self.default_tile_size = tile_size
         self.tile_size = tile_size
-        self.base_dir = base_dir or os.path.dirname(os.path.abspath(__file__))
+        self.base_dir = base_dir or resource_path("")
         self.maps_dir = os.path.join(self.base_dir, "assets", "maps")
         self.tilesets_dir = os.path.join(self.base_dir, "assets", "tilesets")
         self.dynamic_obstacles = set()
@@ -72,6 +74,7 @@ class MapManager:
         self.tiled_layers = {}
         self.tile_surfaces = {}
         self._missing_warnings = set()
+        self._static_surface = None
         self._boss_spawn_cache = {}
         self._player_spawn_cache = {}
         self.load_builtin_map(default_map)
@@ -103,6 +106,7 @@ class MapManager:
         print(f"[MapManager] Warning: Tiled map for '{map_name}' not found at '{path}'. Using built-in fallback.")
 
     def load_builtin_fallback(self, map_name):
+        self._invalidate_static_surface()
         self.map_id = map_name if map_name in self.maps else self.default_map
         self.tile_size = self.default_tile_size
         self.rows = list(self.maps[self.map_id])
@@ -129,6 +133,7 @@ class MapManager:
         return self
 
     def load_tiled_map(self, map_name, path=None, fallback_rows=None):
+        self._invalidate_static_surface()
         path = path or self.tiled_path_for(map_name)
         with open(path, "r", encoding="utf-8") as handle:
             data = json.load(handle)
@@ -200,6 +205,9 @@ class MapManager:
         self._boss_spawn_cache = {}
         self._player_spawn_cache = {}
         return self
+
+    def _invalidate_static_surface(self):
+        self._static_surface = None
 
     def _extract_layer_data(self, layer):
         if "data" in layer and isinstance(layer["data"], list):
@@ -564,10 +572,22 @@ class MapManager:
         self.render(surface)
 
     def render(self, surface, camera=None):
+        static = self._get_static_surface()
+        if camera is None:
+            surface.blit(static, (0, 0))
+            return
+        source = pygame.Rect(camera)
+        surface.blit(static, (0, 0), source)
+
+    def _get_static_surface(self):
+        if self._static_surface is not None:
+            return self._static_surface
+        self._static_surface = pygame.Surface((self.world_w, self.world_h))
         if self.loaded_from_tiled and self.tiled_layers:
-            self._render_tiled(surface)
+            self._render_tiled(self._static_surface)
         else:
-            self._render_builtin(surface)
+            self._render_builtin(self._static_surface)
+        return self._static_surface
 
     def _render_tiled(self, surface):
         theme = self.theme

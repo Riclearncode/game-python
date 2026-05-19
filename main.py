@@ -22,6 +22,8 @@ except ModuleNotFoundError as exc:
     ) from exc
 
 from map_manager import MapManager
+from path_utils import resource_path
+from save_manager import SaveManager
 
 
 Vec2 = pygame.math.Vector2
@@ -177,7 +179,11 @@ BOTTOM_UI_H = 156
 TOP_UI_H = 146
 FPS = 60
 WAVE_BREAK_SECONDS = 30
-WEAPON_MAX_LEVEL = 18
+WEAPON_MAX_LEVEL = 24
+MAX_BLOOD_DECALS = 72
+MAX_FLOATING_TEXTS = 80
+MAX_PARTICLES = 420
+MAX_BULLET_TRAILS = 96
 PLAYER_MAX_LEVEL = 18
 BILE_BOOST_MULTIPLIER = 2.35
 BILE_BOOST_DURATION = 5.5
@@ -186,6 +192,15 @@ TURRET_LIMITS = {
     "normal": 4,
     "hard": 3,
     "nightmare": 2,
+}
+SCORE_VALUES = {
+    "walker": 10,
+    "runner": 15,
+    "spitter": 25,
+    "boomer": 30,
+    "stalker": 35,
+    "elite": 50,
+    "titan": 500,
 }
 TITAN_LEAP_COOLDOWNS = {
     "easy": 18.0,
@@ -309,6 +324,20 @@ TEXT = {
         "build": "Build",
         "game_over": "GAME OVER",
         "restart_hint": "Press ENTER to restart",
+        "retry": "Retry",
+        "main_menu": "Main Menu",
+        "new_record": "NEW RECORD!",
+        "run_results": "Run Results",
+        "high_score": "High Score",
+        "highest_wave": "Highest Wave",
+        "highest_score": "Highest Score",
+        "most_kills": "Most Kills",
+        "most_gold": "Most Gold",
+        "best_time": "Best Time",
+        "best_map": "Best Map",
+        "best_class": "Best Class",
+        "best_difficulty": "Best Difficulty",
+        "survival_time": "Survival Time",
         "subtitle": "2D RPG SURVIVAL",
         "start_hint": "Press SPACE to start the next wave",
         "skip_hint": "SPACE skips the countdown",
@@ -327,6 +356,8 @@ TEXT = {
         "too_close_player": "Too close to player",
         "not_enough_gold": "Not enough gold",
         "build_cannot_place": "Cannot place here",
+        "build_spawn_blocked": "Keep spawn points clear",
+        "build_zombie_blocked": "Zombie is blocking this tile",
         "would_trap_player": "Would trap player",
         "repair_prompt": "Press E to repair",
         "built": "Built {name}",
@@ -334,6 +365,10 @@ TEXT = {
         "move_closer_repair": "Move closer to repair",
         "need_gold_repair": "Need {cost} gold to repair",
         "weapon_max": "{weapon} is MAX level",
+        "weapon_tier": "Tier",
+        "next_weapon": "Next",
+        "max_weapon": "Max weapon tier",
+        "spin_up": "Spin",
         "need_gold": "Need {cost} gold",
         "heal_ready_message": "Med injector ready",
         "heal_used": "Healed +{amount} HP",
@@ -440,6 +475,20 @@ TEXT = {
         "build": "Xây",
         "game_over": "THẤT BẠI",
         "restart_hint": "Nhấn ENTER để chơi lại",
+        "retry": "Chơi lại",
+        "main_menu": "Menu chính",
+        "new_record": "KỶ LỤC MỚI!",
+        "run_results": "Kết quả trận",
+        "high_score": "Kỷ lục",
+        "highest_wave": "Đợt cao nhất",
+        "highest_score": "Điểm cao nhất",
+        "most_kills": "Hạ gục nhiều nhất",
+        "most_gold": "Vàng nhiều nhất",
+        "best_time": "Thời gian tốt nhất",
+        "best_map": "Map tốt nhất",
+        "best_class": "Class tốt nhất",
+        "best_difficulty": "Độ khó tốt nhất",
+        "survival_time": "Thời gian sống",
         "subtitle": "SINH TỒN RPG 2D",
         "start_hint": "Nhấn SPACE để bắt đầu đợt tiếp theo",
         "skip_hint": "SPACE bỏ qua đếm ngược",
@@ -458,6 +507,8 @@ TEXT = {
         "too_close_player": "Quá gần người chơi",
         "not_enough_gold": "Không đủ vàng",
         "build_cannot_place": "Không thể đặt ở đây",
+        "build_spawn_blocked": "Phải chừa điểm xuất hiện",
+        "build_zombie_blocked": "Zombie đang chắn ô này",
         "would_trap_player": "Sẽ nhốt người chơi",
         "repair_prompt": "Nhấn E để sửa",
         "built": "Đã xây {name}",
@@ -465,6 +516,10 @@ TEXT = {
         "move_closer_repair": "Đến gần hơn để sửa",
         "need_gold_repair": "Cần {cost} vàng để sửa",
         "weapon_max": "{weapon} đã đạt cấp tối đa",
+        "weapon_tier": "Bậc",
+        "next_weapon": "Tiếp",
+        "max_weapon": "Bậc vũ khí tối đa",
+        "spin_up": "Quay nòng",
         "need_gold": "Cần {cost} vàng",
         "heal_ready_message": "Ống tiêm hồi máu đã sẵn sàng",
         "heal_used": "Hồi +{amount} máu",
@@ -510,6 +565,7 @@ DIFFICULTIES = {
         "count": 0.82,
         "reward": 1.15,
         "player_damage": 1.05,
+        "weapon_cost": 0.88,
     },
     "normal": {
         "label": "Normal",
@@ -519,6 +575,7 @@ DIFFICULTIES = {
         "count": 1.0,
         "reward": 1.0,
         "player_damage": 1.0,
+        "weapon_cost": 1.0,
     },
     "hard": {
         "label": "Hard",
@@ -528,6 +585,7 @@ DIFFICULTIES = {
         "count": 1.25,
         "reward": 0.95,
         "player_damage": 0.94,
+        "weapon_cost": 1.08,
     },
     "nightmare": {
         "label": "Nightmare",
@@ -537,6 +595,7 @@ DIFFICULTIES = {
         "count": 1.55,
         "reward": 0.85,
         "player_damage": 0.86,
+        "weapon_cost": 1.18,
     },
 }
 
@@ -712,127 +771,356 @@ ZOMBIE_TYPES = {
     },
 }
 
-WEAPON_TIERS = [
+WEAPON_DEFS = [
     {
+        "id": "glock17",
+        "tier": 1,
+        "icon": "G17",
+        "group": "pistol",
         "min_level": 1,
         "name": "Glock 17",
-        "damage": 18,
+        "cost": 0,
+        "damage": 19,
+        "damage_per_level": 3,
         "cooldown": 0.30,
         "min_cooldown": 0.26,
         "magazine": 17,
         "ammo_per_shot": 1,
-        "reload_time": 1.12,
+        "reload_time": 1.05,
         "bullet_speed": 560,
-        "range": 330,
-        "spread": 0.035,
+        "range": 320,
+        "spread": 0.030,
         "shots": 1,
         "pierce": 0,
         "explosion_radius": 0,
         "style": "single",
+        "role": {"en": "Starter pistol", "vi": "Súng khởi đầu"},
+        "description": {
+            "en": "Reliable starter sidearm with fast reload and stable aim.",
+            "vi": "Súng ngắn đầu game ổn định, nạp nhanh, dễ kiểm soát.",
+        },
     },
     {
+        "id": "dual_beretta",
+        "tier": 2,
+        "icon": "DB",
+        "group": "pistol",
         "min_level": 3,
         "name": "Dual Beretta 92FS",
-        "damage": 16,
-        "cooldown": 0.24,
-        "min_cooldown": 0.20,
+        "cost": 145,
+        "damage": 17,
+        "damage_per_level": 2,
+        "cooldown": 0.22,
+        "min_cooldown": 0.19,
         "magazine": 30,
         "ammo_per_shot": 2,
-        "reload_time": 1.42,
+        "reload_time": 1.30,
         "bullet_speed": 585,
-        "range": 330,
-        "spread": 0.085,
+        "range": 325,
+        "spread": 0.075,
         "shots": 2,
         "pierce": 0,
         "explosion_radius": 0,
         "style": "paired",
+        "role": {"en": "Early burst pistols", "vi": "Súng đôi đầu game"},
+        "description": {
+            "en": "Two pistols, stronger burst DPS, higher ammo drain.",
+            "vi": "Cặp súng ngắn bắn nhanh, DPS đầu game tốt nhưng tốn đạn hơn.",
+        },
     },
     {
+        "id": "mp5",
+        "tier": 3,
+        "icon": "MP5",
+        "group": "smg",
         "min_level": 5,
         "name": "HK MP5",
-        "damage": 13,
-        "cooldown": 0.105,
-        "min_cooldown": 0.09,
+        "cost": 215,
+        "damage": 15,
+        "damage_per_level": 2,
+        "cooldown": 0.090,
+        "min_cooldown": 0.078,
         "magazine": 30,
         "ammo_per_shot": 1,
-        "reload_time": 1.55,
+        "reload_time": 1.35,
         "bullet_speed": 610,
-        "range": 300,
-        "spread": 0.11,
+        "range": 315,
+        "spread": 0.090,
         "shots": 1,
         "pierce": 0,
         "explosion_radius": 0,
         "style": "single",
+        "role": {"en": "SMG horde clear", "vi": "SMG dọn đàn"},
+        "description": {
+            "en": "Fast SMG that clears walkers and runners at short-mid range.",
+            "vi": "SMG tốc độ cao, dọn walker/runner tốt ở tầm gần-vừa.",
+        },
     },
     {
+        "id": "mossberg500",
+        "tier": 4,
+        "icon": "M500",
+        "group": "shotgun",
         "min_level": 7,
         "name": "Mossberg 500",
-        "damage": 15,
-        "cooldown": 0.58,
+        "cost": 295,
+        "damage": 17,
+        "damage_per_level": 2,
+        "cooldown": 0.56,
         "min_cooldown": 0.50,
         "magazine": 6,
         "ammo_per_shot": 1,
-        "reload_time": 1.65,
+        "reload_time": 1.55,
         "bullet_speed": 535,
-        "range": 255,
-        "spread": 0.34,
+        "range": 260,
+        "spread": 0.330,
         "shots": 6,
         "pierce": 1,
         "explosion_radius": 0,
         "style": "fan",
+        "role": {"en": "Close-range panic clear", "vi": "Chống áp sát"},
+        "description": {
+            "en": "Pump shotgun with huge close damage and weak long range.",
+            "vi": "Shotgun bơm đạn mạnh ở tầm gần, yếu khi bắn xa.",
+        },
     },
     {
-        "min_level": 10,
+        "id": "m4a1",
+        "tier": 5,
+        "icon": "M4",
+        "group": "rifle",
+        "min_level": 9,
         "name": "M4A1 Carbine",
-        "damage": 28,
-        "cooldown": 0.16,
-        "min_cooldown": 0.135,
+        "cost": 385,
+        "damage": 27,
+        "damage_per_level": 3,
+        "cooldown": 0.145,
+        "min_cooldown": 0.120,
         "magazine": 30,
         "ammo_per_shot": 1,
-        "reload_time": 1.75,
+        "reload_time": 1.55,
         "bullet_speed": 690,
-        "range": 430,
-        "spread": 0.045,
+        "range": 440,
+        "spread": 0.038,
         "shots": 1,
         "pierce": 1,
         "explosion_radius": 0,
         "style": "single",
+        "role": {"en": "Stable rifle", "vi": "Rifle ổn định"},
+        "description": {
+            "en": "Accurate rifle with better range, pierce, and sustained control.",
+            "vi": "Rifle cân bằng, tầm xa tốt, có xuyên và ổn định hơn SMG.",
+        },
     },
     {
-        "min_level": 13,
-        "name": "Benelli M4",
-        "damage": 22,
-        "cooldown": 0.48,
-        "min_cooldown": 0.42,
-        "magazine": 7,
+        "id": "ak47",
+        "tier": 6,
+        "icon": "AK",
+        "group": "rifle",
+        "min_level": 11,
+        "name": "AK-47",
+        "cost": 485,
+        "damage": 35,
+        "damage_per_level": 3,
+        "cooldown": 0.175,
+        "min_cooldown": 0.150,
+        "magazine": 30,
         "ammo_per_shot": 1,
         "reload_time": 1.70,
+        "bullet_speed": 675,
+        "range": 410,
+        "spread": 0.070,
+        "shots": 1,
+        "pierce": 1,
+        "explosion_radius": 0,
+        "style": "single",
+        "role": {"en": "High-damage rifle", "vi": "Rifle sát thương cao"},
+        "description": {
+            "en": "Hard-hitting rifle, stronger than M4A1 but rougher to control.",
+            "vi": "Rifle sát thương cao hơn M4A1 nhưng giật và tản đạn hơn.",
+        },
+    },
+    {
+        "id": "benelli_m4",
+        "tier": 7,
+        "icon": "BM4",
+        "group": "shotgun",
+        "min_level": 13,
+        "name": "Benelli M4",
+        "cost": 595,
+        "damage": 24,
+        "damage_per_level": 2,
+        "cooldown": 0.42,
+        "min_cooldown": 0.36,
+        "magazine": 8,
+        "ammo_per_shot": 1,
+        "reload_time": 1.55,
         "bullet_speed": 610,
-        "range": 300,
-        "spread": 0.28,
-        "shots": 7,
+        "range": 310,
+        "spread": 0.255,
+        "shots": 8,
         "pierce": 2,
         "explosion_radius": 0,
         "style": "fan",
+        "role": {"en": "Combat shotgun", "vi": "Shotgun chiến đấu"},
+        "description": {
+            "en": "Semi-auto shotgun that upgrades Mossberg's role for late pressure.",
+            "vi": "Shotgun bắn nhanh, nâng cấp rõ rệt vai trò clear gần của Mossberg.",
+        },
     },
     {
-        "min_level": 16,
-        "name": "XM-LAS Prototype",
-        "damage": 54,
-        "cooldown": 0.42,
-        "min_cooldown": 0.36,
-        "magazine": 6,
+        "id": "rpk",
+        "tier": 8,
+        "icon": "RPK",
+        "group": "machine_gun",
+        "min_level": 15,
+        "name": "RPK",
+        "cost": 720,
+        "damage": 25,
+        "damage_per_level": 2,
+        "cooldown": 0.082,
+        "min_cooldown": 0.070,
+        "magazine": 75,
         "ammo_per_shot": 1,
-        "reload_time": 2.20,
+        "reload_time": 2.45,
+        "bullet_speed": 665,
+        "range": 385,
+        "spread": 0.090,
+        "heat_spread": 0.070,
+        "heat_per_shot": 0.035,
+        "heat_cool": 0.42,
+        "shots": 1,
+        "pierce": 0,
+        "explosion_radius": 0,
+        "style": "single",
+        "role": {"en": "LMG wave clear", "vi": "LMG dọn wave"},
+        "description": {
+            "en": "Large-mag LMG for crowds; heat adds spread during long sprays.",
+            "vi": "LMG băng đạn lớn để chống đám đông; xả lâu sẽ tản đạn hơn.",
+        },
+    },
+    {
+        "id": "xm_las",
+        "tier": 9,
+        "icon": "LAS",
+        "group": "laser",
+        "min_level": 17,
+        "name": "XM-LAS Prototype",
+        "cost": 860,
+        "damage": 92,
+        "damage_per_level": 6,
+        "cooldown": 0.34,
+        "min_cooldown": 0.30,
+        "magazine": 10,
+        "ammo_per_shot": 1,
+        "reload_time": 2.10,
         "bullet_speed": 790,
-        "range": 500,
-        "spread": 0.012,
+        "range": 560,
+        "spread": 0.010,
+        "shots": 1,
+        "pierce": 7,
+        "explosion_radius": 0,
+        "style": "laser",
+        "role": {"en": "Piercing energy beam", "vi": "Laser xuyên hàng"},
+        "description": {
+            "en": "Piercing beam with strong lane clear, limited by reload windows.",
+            "vi": "Laser xuyên hàng rất mạnh, nhưng cần canh thời điểm nạp lại.",
+        },
+    },
+    {
+        "id": "m134_minigun",
+        "tier": 10,
+        "icon": "MG",
+        "group": "machine_gun",
+        "min_level": 19,
+        "name": "M134 Minigun",
+        "cost": 1040,
+        "damage": 20,
+        "damage_per_level": 2,
+        "cooldown": 0.050,
+        "min_cooldown": 0.044,
+        "magazine": 140,
+        "ammo_per_shot": 1,
+        "reload_time": 3.25,
+        "bullet_speed": 690,
+        "range": 380,
+        "spread": 0.125,
+        "heat_spread": 0.095,
+        "heat_per_shot": 0.030,
+        "heat_cool": 0.30,
+        "spin_up": 0.55,
+        "spin_rate": 1.0,
+        "spin_down": 1.05,
+        "move_penalty": 0.42,
+        "shots": 1,
+        "pierce": 0,
+        "explosion_radius": 0,
+        "style": "single",
+        "role": {"en": "Late crowd control", "vi": "Áp chế cuối game"},
+        "description": {
+            "en": "Devastating crowd control after spin-up; slow while firing.",
+            "vi": "Cực mạnh khi thủ choke point sau spin-up, nhưng chậm khi xả đạn.",
+        },
+    },
+    {
+        "id": "barrett_m82a1",
+        "tier": 11,
+        "icon": "B82",
+        "group": "sniper",
+        "min_level": 21,
+        "name": "Barrett M82A1",
+        "cost": 1240,
+        "damage": 130,
+        "damage_per_level": 8,
+        "cooldown": 0.54,
+        "min_cooldown": 0.48,
+        "magazine": 10,
+        "ammo_per_shot": 1,
+        "reload_time": 2.15,
+        "bullet_speed": 880,
+        "range": 650,
+        "spread": 0.008,
         "shots": 1,
         "pierce": 5,
         "explosion_radius": 0,
-        "style": "laser",
+        "style": "single",
+        "role": {"en": "Elite and Titan breaker", "vi": "Diệt elite/Titan"},
+        "description": {
+            "en": "Anti-materiel sniper for elites and Titan lanes, not swarm spam.",
+            "vi": "Súng ngắm hạng nặng để diệt elite/Titan, không dùng spam đám đông.",
+        },
+    },
+    {
+        "id": "xm_railbreaker",
+        "tier": 12,
+        "icon": "XRB",
+        "group": "railgun",
+        "min_level": 23,
+        "name": "XM-Railbreaker",
+        "cost": 1550,
+        "damage": 168,
+        "damage_per_level": 10,
+        "cooldown": 0.46,
+        "min_cooldown": 0.40,
+        "magazine": 12,
+        "ammo_per_shot": 1,
+        "reload_time": 2.35,
+        "bullet_speed": 980,
+        "range": 700,
+        "spread": 0.006,
+        "shots": 1,
+        "pierce": 8,
+        "explosion_radius": 54,
+        "style": "single",
+        "role": {"en": "Rail cannon finisher", "vi": "Pháo railgun cuối game"},
+        "description": {
+            "en": "Endgame rail cannon with pierce and shock bursts for hordes and Titan.",
+            "vi": "Railgun cuối game, vừa xuyên hàng vừa nổ xung kích để clear quái và bắn Titan.",
+        },
     },
 ]
+
+WEAPON_TIERS = WEAPON_DEFS
 
 STRUCTURE_TYPES = {
     "turret": {
@@ -921,7 +1209,13 @@ WEAPON_NAMES = {
     "HK MP5": {"en": "HK MP5", "vi": "HK MP5"},
     "Mossberg 500": {"en": "Mossberg 500", "vi": "Mossberg 500"},
     "M4A1 Carbine": {"en": "M4A1 Carbine", "vi": "M4A1 Carbine"},
+    "AK-47": {"en": "AK-47", "vi": "AK-47"},
+    "RPK": {"en": "RPK", "vi": "RPK"},
+    "M249 SAW": {"en": "M249 SAW", "vi": "M249 SAW"},
     "Benelli M4": {"en": "Benelli M4", "vi": "Benelli M4"},
+    "M134 Minigun": {"en": "M134 Minigun", "vi": "M134 Minigun"},
+    "Barrett M82A1": {"en": "Barrett M82A1", "vi": "Barrett M82A1"},
+    "XM-Railbreaker": {"en": "XM-Railbreaker", "vi": "XM-Railbreaker"},
     "XM-LAS Prototype": {"en": "XM-LAS Prototype", "vi": "XM-LAS thử nghiệm"},
 }
 
@@ -996,6 +1290,48 @@ WEAPON_VISUALS = {
         "muzzle": (224, 211, 178),
         "kind": "rifle",
     },
+    "AK-47": {
+        "body": 21,
+        "barrel": 15,
+        "stock": 12,
+        "height": 8,
+        "barrel_width": 4,
+        "grip": 11,
+        "hand_forward": 9,
+        "color": (62, 57, 50),
+        "accent": (134, 78, 42),
+        "detail": (28, 29, 30),
+        "muzzle": (226, 212, 178),
+        "kind": "rifle",
+    },
+    "RPK": {
+        "body": 23,
+        "barrel": 18,
+        "stock": 13,
+        "height": 9,
+        "barrel_width": 5,
+        "grip": 12,
+        "hand_forward": 10,
+        "color": (59, 58, 50),
+        "accent": (142, 84, 45),
+        "detail": (28, 30, 29),
+        "muzzle": (230, 215, 174),
+        "kind": "lmg",
+    },
+    "M249 SAW": {
+        "body": 24,
+        "barrel": 17,
+        "stock": 12,
+        "height": 10,
+        "barrel_width": 5,
+        "grip": 12,
+        "hand_forward": 10,
+        "color": (63, 66, 59),
+        "accent": (125, 117, 82),
+        "detail": (30, 33, 30),
+        "muzzle": (230, 215, 174),
+        "kind": "rifle",
+    },
     "Benelli M4": {
         "body": 19,
         "barrel": 18,
@@ -1009,6 +1345,48 @@ WEAPON_VISUALS = {
         "detail": (27, 29, 32),
         "muzzle": (228, 216, 184),
         "kind": "semi_shotgun",
+    },
+    "M134 Minigun": {
+        "body": 25,
+        "barrel": 20,
+        "stock": 9,
+        "height": 11,
+        "barrel_width": 6,
+        "grip": 12,
+        "hand_forward": 10,
+        "color": (50, 54, 58),
+        "accent": (117, 126, 132),
+        "detail": (24, 26, 30),
+        "muzzle": (242, 220, 164),
+        "kind": "minigun",
+    },
+    "Barrett M82A1": {
+        "body": 25,
+        "barrel": 24,
+        "stock": 13,
+        "height": 9,
+        "barrel_width": 4,
+        "grip": 12,
+        "hand_forward": 11,
+        "color": (52, 55, 58),
+        "accent": (142, 126, 88),
+        "detail": (25, 27, 30),
+        "muzzle": (230, 220, 190),
+        "kind": "rifle",
+    },
+    "XM-Railbreaker": {
+        "body": 27,
+        "barrel": 24,
+        "stock": 10,
+        "height": 11,
+        "barrel_width": 6,
+        "grip": 12,
+        "hand_forward": 11,
+        "color": (46, 51, 67),
+        "accent": (116, 236, 255),
+        "detail": (20, 24, 38),
+        "muzzle": (210, 250, 255),
+        "kind": "railgun",
     },
     "XM-LAS Prototype": {
         "body": 22,
@@ -1032,8 +1410,26 @@ WEAPON_AUDIO = {
     "HK MP5": {"sound": "gun_mp5", "volume": 0.50, "cooldown": 0.025},
     "Mossberg 500": {"sound": "gun_mossberg500", "volume": 0.78, "cooldown": 0.11},
     "M4A1 Carbine": {"sound": "gun_m4a1", "volume": 0.70, "cooldown": 0.035},
+    "AK-47": {"sound": "gun_m4a1", "volume": 0.76, "cooldown": 0.045},
+    "RPK": {"sound": "gun_mp5", "volume": 0.60, "cooldown": 0.020},
+    "M249 SAW": {"sound": "gun_mp5", "volume": 0.58, "cooldown": 0.018},
     "Benelli M4": {"sound": "gun_benelli_m4", "volume": 0.76, "cooldown": 0.09},
+    "M134 Minigun": {"sound": "gun_mp5", "volume": 0.52, "cooldown": 0.012},
+    "Barrett M82A1": {"sound": "gun_mossberg500", "volume": 0.84, "cooldown": 0.16},
+    "XM-Railbreaker": {"sound": "gun_xm_railbreaker", "volume": 0.80, "cooldown": 0.10},
     "XM-LAS Prototype": {"sound": "gun_xm_las", "volume": 0.56, "cooldown": 0.08},
+}
+
+WEAPON_AUDIO_GROUPS = {
+    "pistol": {"sound": "gun_glock17", "volume": 0.62, "cooldown": 0.035},
+    "smg": {"sound": "gun_mp5", "volume": 0.50, "cooldown": 0.022},
+    "shotgun": {"sound": "gun_mossberg500", "volume": 0.78, "cooldown": 0.10},
+    "rifle": {"sound": "gun_m4a1", "volume": 0.70, "cooldown": 0.035},
+    "machine_gun": {"sound": "gun_mp5", "volume": 0.56, "cooldown": 0.014},
+    "laser": {"sound": "gun_xm_las", "volume": 0.56, "cooldown": 0.08},
+    "sniper": {"sound": "gun_mossberg500", "volume": 0.84, "cooldown": 0.16},
+    "railgun": {"sound": "gun_xm_railbreaker", "volume": 0.80, "cooldown": 0.10},
+    "explosion": {"sound": "explosion", "volume": 0.55, "cooldown": 0.16},
 }
 
 POWER_UP_MESSAGES = {
@@ -1594,11 +1990,24 @@ def has_wall_line(tile_map, a, b):
     return True
 
 
+def weapon_tier_for_level(level):
+    active = WEAPON_TIERS[0]
+    for tier in WEAPON_TIERS:
+        if level >= tier["min_level"]:
+            active = tier
+        else:
+            break
+    return active
+
+
 @dataclass
 class Weapon:
     level: int = 1
     ammo: int = 0
     reload_timer: float = 0.0
+    heat: float = 0.0
+    spin: float = 0.0
+    trigger_held: bool = False
 
     def __post_init__(self):
         if self.ammo <= 0:
@@ -1608,7 +2017,10 @@ class Weapon:
     def upgrade_cost(self):
         if self.is_maxed:
             return 0
-        return 45 + self.level * 36 + (self.level // 3) * 18
+        next_tier = weapon_tier_for_level(self.level + 1)
+        if next_tier["name"] != self.tier_name:
+            return next_tier.get("cost", 0)
+        return 45 + self.level * 36 + (self.level // 3) * 18 + self.tier.get("tier", 1) * 8
 
     @property
     def is_maxed(self):
@@ -1616,17 +2028,30 @@ class Weapon:
 
     @property
     def tier(self):
-        active = WEAPON_TIERS[0]
-        for tier in WEAPON_TIERS:
-            if self.level >= tier["min_level"]:
-                active = tier
-            else:
-                break
-        return active
+        return weapon_tier_for_level(self.level)
+
+    @property
+    def weapon_id(self):
+        return self.tier.get("id", self.tier_name.lower().replace(" ", "_"))
 
     @property
     def tier_name(self):
         return self.tier["name"]
+
+    @property
+    def tier_number(self):
+        return self.tier.get("tier", 1)
+
+    @property
+    def next_tier(self):
+        if self.is_maxed:
+            return None
+        return weapon_tier_for_level(self.level + 1)
+
+    @property
+    def next_tier_name(self):
+        tier = self.next_tier
+        return tier["name"] if tier else None
 
     @property
     def tier_rank(self):
@@ -1635,12 +2060,14 @@ class Weapon:
     @property
     def damage(self):
         tier = self.tier
-        return tier["damage"] + self.tier_rank * 4 + self.level // 4
+        per_level = tier.get("damage_per_level", 4)
+        return tier["damage"] + self.tier_rank * per_level + self.level // 4
 
     @property
     def cooldown(self):
         tier = self.tier
-        return max(tier.get("min_cooldown", 0.075), tier["cooldown"] * (0.985 ** self.tier_rank))
+        scale = tier.get("cooldown_scale", 0.985)
+        return max(tier.get("min_cooldown", 0.075), tier["cooldown"] * (scale ** self.tier_rank))
 
     @property
     def magazine_size(self):
@@ -1652,7 +2079,7 @@ class Weapon:
 
     @property
     def reload_time(self):
-        return max(0.8, self.tier["reload_time"] - self.tier_rank * 0.04)
+        return max(0.8, self.tier["reload_time"] - self.tier_rank * self.tier.get("reload_improve", 0.04))
 
     @property
     def is_reloading(self):
@@ -1660,18 +2087,20 @@ class Weapon:
 
     @property
     def bullet_speed(self):
-        return self.tier["bullet_speed"] + self.tier_rank * 18
+        return self.tier["bullet_speed"] + self.tier_rank * self.tier.get("speed_per_level", 18)
 
     @property
     def bullet_range(self):
-        return self.tier["range"] + self.tier_rank * 18
+        return self.tier["range"] + self.tier_rank * self.tier.get("range_per_level", 18)
 
     @property
     def spread(self):
         tier = self.tier
         if tier["style"] == "fan":
-            return max(0.18, tier["spread"] - self.tier_rank * 0.01)
-        return max(0.006, tier["spread"] - self.tier_rank * 0.004)
+            base = max(0.18, tier["spread"] - self.tier_rank * 0.01)
+        else:
+            base = max(0.006, tier["spread"] - self.tier_rank * 0.004)
+        return base + self.heat * tier.get("heat_spread", 0.0)
 
     @property
     def bullet_count(self):
@@ -1693,17 +2122,50 @@ class Weapon:
     def style(self):
         return self.tier["style"]
 
+    @property
+    def role(self):
+        return self.tier.get("role", "")
+
+    @property
+    def description(self):
+        return self.tier.get("description", {})
+
+    @property
+    def icon(self):
+        return self.tier.get("icon", self.tier_name[:3].upper())
+
+    @property
+    def group(self):
+        return self.tier.get("group", "rifle")
+
+    @property
+    def spin_up_time(self):
+        return self.tier.get("spin_up", 0.0)
+
+    @property
+    def spin_ready(self):
+        return self.spin_up_time <= 0 or self.spin >= self.spin_up_time
+
     def update(self, dt):
-        if self.reload_timer <= 0:
-            return
-        self.reload_timer = max(0, self.reload_timer - dt)
-        if self.reload_timer <= 0:
-            self.ammo = self.magazine_size
+        tier = self.tier
+        if self.trigger_held:
+            if self.spin_up_time > 0:
+                self.spin = min(self.spin_up_time, self.spin + dt * tier.get("spin_rate", 1.0))
+            self.heat = max(0.0, self.heat - dt * tier.get("heat_cool", 0.7) * 0.18)
+        else:
+            self.spin = max(0.0, self.spin - dt * tier.get("spin_down", 1.0))
+            self.heat = max(0.0, self.heat - dt * tier.get("heat_cool", 0.7))
+        self.trigger_held = False
+        if self.reload_timer > 0:
+            self.reload_timer = max(0, self.reload_timer - dt)
+            if self.reload_timer <= 0:
+                self.ammo = self.magazine_size
 
     def start_reload(self):
         if self.reload_timer > 0 or self.ammo >= self.magazine_size:
             return False
         self.reload_timer = self.reload_time
+        self.spin = 0.0
         return True
 
     def spend_ammo(self):
@@ -1711,6 +2173,9 @@ class Weapon:
             return False
         self.ammo -= self.ammo_per_shot
         return True
+
+    def add_heat(self):
+        self.heat = min(1.0, self.heat + self.tier.get("heat_per_shot", 0.0))
 
     def upgrade(self):
         if self.is_maxed:
@@ -1720,6 +2185,8 @@ class Weapon:
         if self.tier_name != old_name:
             self.ammo = self.magazine_size
             self.reload_timer = 0
+            self.heat = 0.0
+            self.spin = 0.0
         return True
 
 
@@ -1789,6 +2256,8 @@ class Player:
             self.last_move_dir = move_dir
             self.facing = facing_from_vector(move_dir)
             speed = self.speed * (1.35 if self.buff_timers["haste"] > 0 else 1.0)
+            if self.weapon.tier.get("move_penalty", 0.0) > 0 and (self.weapon.trigger_held or self.weapon.spin > 0):
+                speed *= max(0.35, 1.0 - self.weapon.tier["move_penalty"])
             self.try_move(move_dir * speed * dt, game)
             moving = True
         self.is_moving = moving
@@ -1831,8 +2300,6 @@ class Player:
             self.pos = y_pos
 
     def shoot_at(self, world_pos, game):
-        if self.fire_timer > 0:
-            return
         if self.weapon.is_reloading:
             return
         mx, my = world_pos
@@ -1841,8 +2308,14 @@ class Player:
         direction = Vec2(mx, my) - self.pos
         if direction.length_squared() <= 1:
             return
+        self.weapon.trigger_held = True
         self.aim_dir = direction.normalize()
         self.facing = facing_from_vector(direction)
+        if not self.weapon.spin_ready:
+            self.muzzle_flash_timer = max(self.muzzle_flash_timer, 0.035)
+            return
+        if self.fire_timer > 0:
+            return
         base_angle = math.atan2(direction.y, direction.x)
         overdrive_damage = 1.35 if self.buff_timers["overdrive"] > 0 else 1.0
         fire_rate_mult = 1 + self.fire_rate_bonus + (0.45 if self.buff_timers["overdrive"] > 0 else 0)
@@ -1851,6 +2324,7 @@ class Player:
             if self.weapon.start_reload():
                 game.play_sound("reload", 0.42, cooldown=0.12)
             return
+        self.weapon.add_heat()
         if self.weapon.style == "laser":
             angle = base_angle + random.uniform(-self.weapon.spread, self.weapon.spread)
             laser_dir = Vec2(math.cos(angle), math.sin(angle))
@@ -1878,6 +2352,11 @@ class Player:
             angle = base_angle + offset + random.uniform(-self.weapon.spread * 0.18, self.weapon.spread * 0.18)
             vel = Vec2(math.cos(angle), math.sin(angle)) * self.weapon.bullet_speed
             spawn = self.pos + vel.normalize() * (self.radius + 8)
+            explosion_colors = None
+            explosion_ring_color = None
+            if self.weapon.group == "railgun":
+                explosion_colors = [(92, 210, 255), (188, 250, 255), (92, 130, 255)]
+                explosion_ring_color = (100, 226, 255)
             game.bullets.append(
                 Bullet(
                     spawn,
@@ -1887,11 +2366,15 @@ class Player:
                     "player",
                     pierce=self.weapon.pierce,
                     explosion_radius=self.weapon.explosion_radius,
+                    explosion_colors=explosion_colors,
+                    explosion_ring_color=explosion_ring_color,
                 )
             )
-            game.add_muzzle_particle(spawn, vel)
+            game.add_bullet_trail(spawn - vel.normalize() * 8, spawn + vel.normalize() * self.weapon.bullet_range, self.weapon)
+            game.add_muzzle_particle(spawn, vel, self.weapon)
         self.muzzle_flash_timer = 0.06
         game.play_weapon_sound()
+        game.add_weapon_fire_feedback(self.weapon)
         self.fire_timer = self.weapon.cooldown / fire_rate_mult
         if self.weapon.ammo <= 0:
             self.weapon.start_reload()
@@ -1910,7 +2393,7 @@ class Player:
         game.floating_texts.append(FloatingText(self.pos + Vec2(0, -28), f"-{amount}", COLORS["red"]))
         if self.hp <= 0:
             self.hp = 0
-            game.game_over = True
+            game.end_run()
 
     def start_dash(self, game):
         if self.dash_cooldown > 0 or self.dash_time > 0 or game.build_mode is not None:
@@ -2034,7 +2517,7 @@ class Player:
 
         if stock > 0:
             draw_weapon_rect(surface, base, direction, lower, -stock + 1, 0, stock + 2, max(4, height * 0.65), detail, outline)
-            if kind in ("pump_shotgun", "rifle"):
+            if kind in ("pump_shotgun", "rifle", "lmg", "minigun", "railgun"):
                 draw_weapon_rect(surface, base, direction, lower, -stock + 2, height * 0.28, stock * 0.65, 3, accent, None)
 
         draw_weapon_rect(surface, base, direction, lower, body - 1, -height * 0.08, barrel, barrel_width, detail, outline)
@@ -2042,7 +2525,7 @@ class Player:
         draw_weapon_rect(surface, base, direction, lower, 0, 0, body, height, color, outline)
         draw_weapon_rect(surface, base, direction, lower, 2, -height * 0.28, body * 0.56, max(2, height * 0.24), accent, None)
 
-        if kind in ("smg", "rifle", "laser"):
+        if kind in ("smg", "rifle", "lmg", "minigun", "laser", "railgun"):
             draw_weapon_rect(surface, base, direction, lower, body * 0.12, -height * 0.72, body * 0.36, 2, detail, outline)
 
         grip_forward = 3 if kind in ("pistol", "dual_pistol") else body * 0.23
@@ -2064,7 +2547,7 @@ class Player:
             ]
             draw_weapon_poly(surface, mag_points, detail, outline)
             draw_weapon_rect(surface, base, direction, lower, body + 1, height * 0.50, 6, 4, accent, outline)
-        elif kind == "rifle":
+        elif kind in ("rifle", "lmg"):
             mag_points = [
                 weapon_point(base, direction, lower, body * 0.48, height * 0.44),
                 weapon_point(base, direction, lower, body * 0.70, height * 0.44),
@@ -2073,6 +2556,24 @@ class Player:
             ]
             draw_weapon_poly(surface, mag_points, detail, outline)
             draw_weapon_rect(surface, base, direction, lower, body + 4, -height * 0.05, 9, height * 0.70, accent, outline)
+            if kind == "lmg":
+                draw_weapon_rect(surface, base, direction, lower, body + barrel * 0.20, height * 0.60, 12, 4, accent, outline)
+                bipod = weapon_point(base, direction, lower, body + barrel * 0.55, height * 0.42)
+                pygame.draw.line(surface, detail, bipod, bipod + lower * 9 + direction * 4, 2)
+                pygame.draw.line(surface, detail, bipod, bipod - lower * 9 + direction * 4, 2)
+        elif kind == "minigun":
+            drum = weapon_point(base, direction, lower, body * 0.52, height * 0.72)
+            draw_weapon_circle(surface, drum, max(5, int(height * 0.72)), detail, outline)
+            for side in (-0.45, -0.15, 0.15, 0.45):
+                draw_weapon_rect(surface, base, direction, lower, body + 2, side * height, barrel - 1, max(2, barrel_width * 0.48), accent, outline)
+            draw_weapon_rect(surface, base, direction, lower, body * 0.16, height * 0.52, body * 0.42, 4, accent, outline)
+        elif kind == "railgun":
+            core = weapon_point(base, direction, lower, body * 0.58, 0)
+            draw_weapon_circle(surface, core, 7, (26, 68, 90), outline)
+            draw_weapon_circle(surface, core, 3, accent, None)
+            draw_weapon_rect(surface, base, direction, lower, body + 2, -height * 0.58, barrel * 0.82, 3, accent, None)
+            draw_weapon_rect(surface, base, direction, lower, body + 2, height * 0.44, barrel * 0.82, 3, accent, None)
+            draw_weapon_rect(surface, base, direction, lower, body + barrel * 0.48, -height * 0.10, 9, height * 0.82, detail, outline)
         elif kind == "pump_shotgun":
             draw_weapon_rect(surface, base, direction, lower, body + 1, height * 0.56, barrel - 2, 3, detail, outline)
             draw_weapon_rect(surface, base, direction, lower, body + 4, height * 0.72, 10, 5, accent, outline)
@@ -2094,6 +2595,25 @@ class Player:
             if kind == "laser":
                 pygame.draw.circle(surface, (80, 230, 255), (round(muzzle_pos.x), round(muzzle_pos.y)), 7)
                 pygame.draw.line(surface, (195, 255, 255), muzzle_pos, muzzle_pos + direction * 15, 3)
+            elif kind in ("pump_shotgun", "semi_shotgun"):
+                for spread in (-0.34, 0, 0.34):
+                    flash_dir = direction.rotate(math.degrees(spread))
+                    flash = [
+                        muzzle_pos + flash_dir * 15,
+                        muzzle_pos - direction * 2 + side * 7,
+                        muzzle_pos - direction * 2 - side * 7,
+                    ]
+                    draw_weapon_poly(surface, flash, (255, 176, 84), None)
+                pygame.draw.circle(surface, (255, 226, 158), (round(muzzle_pos.x), round(muzzle_pos.y)), 4)
+            elif kind in ("lmg", "minigun"):
+                length = 13 if kind == "lmg" else 17
+                pygame.draw.line(surface, (255, 236, 128), muzzle_pos, muzzle_pos + direction * length, 4)
+                pygame.draw.circle(surface, (255, 166, 62), (round((muzzle_pos + direction * length).x), round((muzzle_pos + direction * length).y)), 4)
+            elif kind == "railgun":
+                pygame.draw.circle(surface, (90, 235, 255), (round(muzzle_pos.x), round(muzzle_pos.y)), 9)
+                pygame.draw.line(surface, (220, 255, 255), muzzle_pos, muzzle_pos + direction * 22, 5)
+                pygame.draw.line(surface, (84, 178, 255), muzzle_pos - side * 4, muzzle_pos + direction * 18 - side * 4, 2)
+                pygame.draw.line(surface, (84, 178, 255), muzzle_pos + side * 4, muzzle_pos + direction * 18 + side * 4, 2)
             else:
                 flash = [
                     muzzle_pos + direction * 10,
@@ -2142,7 +2662,7 @@ class Player:
 
 
 class Bullet:
-    def __init__(self, pos, vel, damage, max_range, owner, pierce=0, explosion_radius=0):
+    def __init__(self, pos, vel, damage, max_range, owner, pierce=0, explosion_radius=0, explosion_colors=None, explosion_ring_color=None):
         self.pos = Vec2(pos)
         self.vel = Vec2(vel)
         self.damage = damage
@@ -2152,6 +2672,8 @@ class Bullet:
         self.alive = True
         self.pierce = pierce
         self.explosion_radius = explosion_radius
+        self.explosion_colors = explosion_colors
+        self.explosion_ring_color = explosion_ring_color
         self.hit_zombies = set()
 
     def update(self, dt, game):
@@ -2177,7 +2699,15 @@ class Bullet:
                 zombie.take_damage(self.damage, game)
                 if self.explosion_radius > 0:
                     game.damage_zombies_in_radius(self.pos, self.explosion_radius, max(5, self.damage // 2), exclude=zombie)
-                    game.create_explosion(self.pos, self.explosion_radius, max(1, self.damage // 3), enemy_owned=False, visual_only=True)
+                    game.create_explosion(
+                        self.pos,
+                        self.explosion_radius,
+                        max(1, self.damage // 3),
+                        enemy_owned=False,
+                        visual_only=True,
+                        colors=self.explosion_colors,
+                        ring_color=self.explosion_ring_color,
+                    )
                 game.spawn_spark(self.pos, COLORS["gold"])
                 if self.pierce <= 0:
                     self.alive = False
@@ -2507,6 +3037,7 @@ class Zombie:
     def take_damage(self, amount, game):
         self.hp -= amount
         self.flash = 0.08
+        game.add_damage_number(self.pos + Vec2(random.uniform(-8, 8), -self.radius - 8), amount, self.kind)
         game.play_sound("hit", 0.28, cooldown=0.05)
         if random.random() < 0.12:
             game.play_zombie_sound("groan", self.kind, volume=0.22, cooldown=0.35)
@@ -2515,13 +3046,15 @@ class Zombie:
 
     def die(self, game):
         self.alive = False
+        game.spawn_blood_decal(self.pos, self.kind, elite=self.elite)
         game.play_zombie_sound("death", self.kind, volume=0.48 if self.kind != "titan" else 0.82, cooldown=0.12)
         reward = int(round((self.cfg["reward"] + random.randint(0, 3 + game.wave)) * game.difficulty_cfg()["reward"]))
         if self.elite:
             reward = int(round(reward * 1.65))
         game.drop_gold(self.pos, reward)
         game.player.kills += 1
-        game.player.score += reward * 6
+        score_value = SCORE_VALUES["elite"] if self.elite else SCORE_VALUES.get(self.kind, 10)
+        game.add_score(score_value, self.pos + Vec2(0, -40), COLORS["cyan"] if not self.elite else COLORS["orange"])
         game.player.add_xp(int(round(self.cfg["xp"] * (1.55 if self.elite else 1.0))), game)
         game.floating_texts.append(FloatingText(self.pos + Vec2(0, -24), f"+{reward}g", COLORS["gold"]))
         if self.elite:
@@ -2531,7 +3064,16 @@ class Zombie:
         elif random.random() < min(0.03 + game.wave * 0.006, 0.12):
             game.spawn_powerup(self.pos)
         if self.kind == "boomer":
-            game.create_explosion(self.pos, 105, self.damage + 22, enemy_owned=True, sound_name="boomer_explosion", sound_volume=0.76)
+            game.create_explosion(
+                self.pos,
+                105,
+                self.damage + 22,
+                enemy_owned=True,
+                sound_name="boomer_explosion",
+                sound_volume=0.76,
+                colors=[(118, 255, 68), (172, 244, 82), (42, 155, 48)],
+                ring_color=(112, 255, 74),
+            )
 
     def update(self, dt, game):
         if not self.alive:
@@ -2555,7 +3097,17 @@ class Zombie:
             self.try_boomer_dash(game)
             if self.should_explode(game):
                 self.alive = False
-                game.create_explosion(self.pos, 110, self.damage + 30, enemy_owned=True, sound_name="boomer_explosion", sound_volume=0.76)
+                game.spawn_blood_decal(self.pos, self.kind, elite=self.elite)
+                game.create_explosion(
+                    self.pos,
+                    110,
+                    self.damage + 30,
+                    enemy_owned=True,
+                    sound_name="boomer_explosion",
+                    sound_volume=0.76,
+                    colors=[(118, 255, 68), (172, 244, 82), (42, 155, 48)],
+                    ring_color=(112, 255, 74),
+                )
                 return
         elif self.cfg["special"] == "acid":
             self.try_acid(dt, game)
@@ -2679,6 +3231,7 @@ class Zombie:
         game.message = game.t("titan_vault")
         game.message_timer = 1.4
         game.create_shockwave(self.pos, 62, 0, visual_only=True)
+        game.add_camera_shake(4.5, 0.16)
         return True
 
     def update_titan_wall_leap(self, dt, game):
@@ -2778,6 +3331,7 @@ class Zombie:
         game.message = game.t("titan_charge")
         game.message_timer = 1.2
         game.create_shockwave(self.pos, 54, 0, visual_only=True)
+        game.add_camera_shake(5.5, 0.20)
         game.play_zombie_sound("titan", self.kind, volume=0.7, cooldown=1.2)
 
     def update_titan_charge(self, dt, game):
@@ -3129,8 +3683,9 @@ class GoldDrop:
         if distance < 19:
             amount = max(1, int(round(self.amount * (1 + game.player.gold_bonus))))
             game.player.gold += amount
+            game.add_gold_collected(amount)
             game.play_sound("coin", 0.44, cooldown=0.07)
-            game.floating_texts.append(FloatingText(self.pos, f"+{amount}", COLORS["gold"], life=0.7))
+            game.add_floating_text(self.pos, f"+{amount}g", COLORS["gold"], life=0.7)
             self.alive = False
 
     def draw(self, surface):
@@ -3179,6 +3734,53 @@ class PowerUpDrop:
             pygame.draw.line(surface, (22, 42, 45), (rect.x + 4, rect.centery), (rect.centerx + 2, rect.bottom - 1), 2)
 
 
+class BloodDecal:
+    def __init__(self, pos, kind="walker", elite=False):
+        self.pos = Vec2(pos)
+        self.kind = kind
+        self.life = 16.0 if kind != "titan" else 22.0
+        self.max_life = self.life
+        self.alive = True
+        base_radius = 13 if kind != "titan" else 28
+        if kind == "boomer":
+            base_radius = 20
+        if elite:
+            base_radius += 5
+        size = int((base_radius + 16) * 2)
+        self.image = pygame.Surface((size, size), pygame.SRCALPHA)
+        center = Vec2(size / 2, size / 2)
+        palette = [(88, 8, 16, 172), (128, 20, 26, 150), (54, 8, 13, 132)]
+        if kind in ("spitter", "boomer"):
+            palette = [(70, 130, 34, 150), (114, 185, 52, 118), (34, 83, 31, 136)]
+        elif kind == "titan":
+            palette = [(85, 18, 29, 182), (124, 35, 42, 152), (38, 9, 18, 142)]
+        for i in range(11 if kind == "titan" else 7):
+            angle = random.uniform(0, math.tau)
+            distance = random.uniform(0, base_radius)
+            radius = random.randint(3, 8 if kind != "titan" else 13)
+            spot = center + Vec2(math.cos(angle), math.sin(angle)) * distance
+            pygame.draw.circle(self.image, random.choice(palette), (round(spot.x), round(spot.y)), radius)
+        for _ in range(4 if kind != "titan" else 8):
+            angle = random.uniform(0, math.tau)
+            length = random.uniform(base_radius * 0.35, base_radius * 0.95)
+            start = center + Vec2(math.cos(angle), math.sin(angle)) * random.uniform(2, base_radius * 0.35)
+            end = start + Vec2(math.cos(angle), math.sin(angle)) * length
+            pygame.draw.line(self.image, random.choice(palette), start, end, random.randint(1, 3))
+
+    def update(self, dt):
+        self.life -= dt
+        if self.life <= 0:
+            self.alive = False
+
+    def draw(self, surface):
+        pct = clamp(self.life / self.max_life, 0, 1)
+        alpha = int(235 * min(1.0, pct * 1.45))
+        if alpha <= 0:
+            return
+        self.image.set_alpha(alpha)
+        surface.blit(self.image, self.image.get_rect(center=(round(self.pos.x), round(self.pos.y))))
+
+
 class Particle:
     def __init__(self, pos, vel, color, life=0.45, size=3):
         self.pos = Vec2(pos)
@@ -3201,6 +3803,39 @@ class Particle:
         alpha = clamp(self.life / self.max_life, 0, 1)
         size = max(1, int(self.size * alpha))
         pygame.draw.rect(surface, self.color, (self.pos.x - size, self.pos.y - size, size * 2, size * 2))
+
+
+class BulletTrail:
+    def __init__(self, start, end, color, life=0.12, width=2):
+        self.start = Vec2(start)
+        self.end = Vec2(end)
+        self.color = color
+        self.life = life
+        self.max_life = life
+        self.width = width
+        self.alive = True
+
+    def update(self, dt):
+        self.life -= dt
+        if self.life <= 0:
+            self.alive = False
+
+    def draw(self, surface):
+        pct = clamp(self.life / self.max_life, 0, 1)
+        alpha = int(190 * pct)
+        if alpha <= 0:
+            return
+        rect = pygame.Rect(
+            min(self.start.x, self.end.x) - 8,
+            min(self.start.y, self.end.y) - 8,
+            abs(self.start.x - self.end.x) + 16,
+            abs(self.start.y - self.end.y) + 16,
+        )
+        trail = pygame.Surface((max(1, int(rect.w)), max(1, int(rect.h))), pygame.SRCALPHA)
+        start = self.start - Vec2(rect.topleft)
+        end = self.end - Vec2(rect.topleft)
+        pygame.draw.line(trail, (*self.color, alpha), start, end, self.width)
+        surface.blit(trail, rect.topleft)
 
 
 class PulseRing:
@@ -3317,6 +3952,9 @@ class Game:
         self.sfx_volume = 80
         self.auto_fire = True
         self.dev_mode = False
+        self.save_manager = SaveManager()
+        self.save_data = self.save_manager.load()
+        self.apply_saved_settings()
         self.difficulty_id = "normal"
         self.character_id = "soldier"
         self.map_id = "warehouse"
@@ -3370,16 +4008,21 @@ class Game:
         self.player = Player((self.map_manager.world_w / 2, self.map_manager.world_h / 2), self.character_id)
         self.zombies = []
         self.bullets = []
+        self.bullet_trails = []
         self.lasers = []
         self.acid_projectiles = []
         self.poison_pools = []
         self.structures = []
         self.gold_drops = []
         self.powerups = []
+        self.blood_decals = []
         self.particles = []
         self.rings = []
         self.warning_zones = []
         self.floating_texts = []
+        self.camera_shake_timer = 0.0
+        self.camera_shake_duration = 0.0
+        self.camera_shake_strength = 0.0
         self.teleport_player_to_spawn(effect=True)
         self.wave = 0
         self.wave_active = False
@@ -3388,6 +4031,12 @@ class Game:
         self.spawn_timer = 0
         self.build_mode = None
         self.game_over = False
+        self.run_finalized = False
+        self.new_record = False
+        self.new_record_fields = []
+        self.run_time = 0.0
+        self.score_time_accum = 0.0
+        self.run_gold_collected = 0
         self.bile_timer = 0
         self.message = self.t("press_space_wave")
         self.message_timer = 4
@@ -3402,6 +4051,46 @@ class Game:
         self.flow_field = {}
         self.paused = False
         self.build_mode = None
+
+    def begin_run(self):
+        self.reset_gameplay()
+        self.state = "playing"
+        self.save_data.setdefault("progression", {}).setdefault("total_runs", 0)
+        self.save_data["progression"]["total_runs"] += 1
+        self.save_manager.save()
+
+    def add_score(self, amount, pos=None, color=None):
+        amount = int(round(amount))
+        if amount <= 0:
+            return
+        self.player.score += amount
+        if pos is not None:
+            self.add_floating_text(pos, f"+{amount}", color or COLORS["cyan"], life=0.65)
+
+    def add_gold_collected(self, amount):
+        self.run_gold_collected += int(amount)
+        self.add_score(int(amount), None)
+
+    def current_run_stats(self):
+        return {
+            "wave": self.wave,
+            "score": self.player.score,
+            "kills": self.player.kills,
+            "gold_collected": self.run_gold_collected,
+            "survival_time": self.run_time,
+            "map": self.map_name(self.map_id),
+            "character": self.character_name(self.character_id),
+            "difficulty": self.difficulty_name(self.difficulty_id),
+        }
+
+    def end_run(self):
+        if self.run_finalized:
+            self.game_over = True
+            return
+        self.game_over = True
+        self.run_finalized = True
+        self.new_record_fields = self.save_manager.update_high_score(self.current_run_stats())
+        self.new_record = bool(self.new_record_fields)
 
     def t(self, key):
         return TEXT[self.language].get(key, key)
@@ -3428,6 +4117,18 @@ class Game:
     def weapon_name(self, weapon_name):
         return self.localized_name(WEAPON_NAMES, weapon_name)
 
+    def weapon_description(self, weapon=None):
+        values = (weapon or self.player.weapon).description
+        if isinstance(values, dict):
+            return values.get(self.language) or values.get("en") or ""
+        return str(values or "")
+
+    def weapon_role(self, weapon=None):
+        values = (weapon or self.player.weapon).role
+        if isinstance(values, dict):
+            return values.get(self.language) or values.get("en") or ""
+        return str(values or "")
+
     def structure_name(self, kind):
         return self.t(kind)
 
@@ -3447,7 +4148,7 @@ class Game:
             self.audio_enabled = False
             return
 
-        base_audio_dir = os.path.join(os.path.dirname(__file__), "assets", "audio")
+        base_audio_dir = resource_path(os.path.join("assets", "audio"))
         kenney_dir = os.path.join(base_audio_dir, "kenney_rpg", "OGG")
         synth_dir = os.path.join(base_audio_dir, "synth")
         oga_dir = os.path.join(base_audio_dir, "opengameart")
@@ -3475,6 +4176,7 @@ class Game:
             "gun_m4a1": os.path.join(synth_dir, "gun_m4a1.wav"),
             "gun_benelli_m4": os.path.join(synth_dir, "gun_benelli_m4.wav"),
             "gun_xm_las": os.path.join(synth_dir, "gun_xm_las.wav"),
+            "gun_xm_railbreaker": os.path.join(synth_dir, "gun_xm_railbreaker.wav"),
             "zombie_groan": os.path.join(oga_dir, "monster_groan.wav"),
             "zombie_attack": os.path.join(oga_dir, "monster_attack.wav"),
             "zombie_death": os.path.join(oga_dir, "monster_death.wav"),
@@ -3502,7 +4204,7 @@ class Game:
             self.apply_music_volume()
 
     def load_menu_background(self):
-        asset_dir = os.path.join(os.path.dirname(__file__), "assets")
+        asset_dir = resource_path("assets")
         for filename in ("menu_background.png", "menu_background.jpg", "menu_background.jpeg", "menu_background.webp"):
             path = os.path.join(asset_dir, filename)
             if not os.path.exists(path):
@@ -3528,7 +4230,9 @@ class Game:
             self.sound_cooldowns[name] = now + cooldown
 
     def play_weapon_sound(self):
-        audio = WEAPON_AUDIO.get(self.player.weapon.tier_name, WEAPON_AUDIO["Glock 17"])
+        audio = WEAPON_AUDIO.get(self.player.weapon.tier_name)
+        if audio is None:
+            audio = WEAPON_AUDIO_GROUPS.get(self.player.weapon.group, WEAPON_AUDIO_GROUPS["rifle"])
         self.play_sound(audio["sound"], audio["volume"], audio["cooldown"])
 
     def play_zombie_sound(self, mood, kind="walker", volume=0.38, cooldown=0.35):
@@ -3600,6 +4304,38 @@ class Game:
         self.floating_texts.append(FloatingText(pos + Vec2(0, -54), label, main_color, life=1.1))
         self.play_sound("weapon_upgrade", 0.66 if evolved else 0.52, cooldown=0.12)
 
+    def add_floating_text(self, pos, text, color, life=0.9):
+        self.floating_texts.append(FloatingText(pos, text, color, life=life))
+        if len(self.floating_texts) > MAX_FLOATING_TEXTS:
+            self.floating_texts = self.floating_texts[-MAX_FLOATING_TEXTS:]
+
+    def add_damage_number(self, pos, amount, kind="walker"):
+        if amount <= 0:
+            return
+        color = COLORS["red"] if kind != "titan" else COLORS["orange"]
+        if kind in ("spitter", "boomer"):
+            color = (138, 255, 76)
+        self.add_floating_text(pos, str(int(amount)), color, life=0.58)
+
+    def spawn_blood_decal(self, pos, kind="walker", elite=False):
+        count = 3 if kind == "titan" else (2 if elite else 1)
+        for _ in range(count):
+            self.blood_decals.append(BloodDecal(Vec2(pos) + Vec2(random.uniform(-9, 9), random.uniform(-9, 9)), kind, elite=elite))
+        if len(self.blood_decals) > MAX_BLOOD_DECALS:
+            self.blood_decals = self.blood_decals[-MAX_BLOOD_DECALS:]
+
+    def add_camera_shake(self, strength=4.0, duration=0.18):
+        self.camera_shake_strength = max(self.camera_shake_strength, float(strength))
+        self.camera_shake_duration = max(self.camera_shake_duration, float(duration))
+        self.camera_shake_timer = max(self.camera_shake_timer, float(duration))
+
+    def camera_shake_offset(self):
+        if self.camera_shake_timer <= 0 or self.camera_shake_strength <= 0:
+            return (0, 0)
+        pct = clamp(self.camera_shake_timer / max(0.01, self.camera_shake_duration), 0, 1)
+        strength = self.camera_shake_strength * pct * pct
+        return (int(random.uniform(-strength, strength)), int(random.uniform(-strength, strength)))
+
     def open_options(self, return_state="menu", return_paused=False):
         self.options_return_state = return_state
         self.options_return_paused = return_paused
@@ -3609,6 +4345,36 @@ class Game:
     def close_options(self):
         self.state = self.options_return_state
         self.paused = self.options_return_paused if self.state == "playing" else False
+        self.save_settings()
+
+    def apply_saved_settings(self):
+        settings = self.save_data.get("settings", {})
+        self.language = settings.get("language", self.language)
+        self.music_volume = int(clamp(settings.get("music_volume", self.music_volume), 0, 100))
+        self.sfx_volume = int(clamp(settings.get("sfx_volume", self.sfx_volume), 0, 100))
+        self.auto_fire = bool(settings.get("auto_fire", self.auto_fire))
+        self.dev_mode = bool(settings.get("developer_mode", self.dev_mode))
+
+    def save_settings(self):
+        settings = self.save_data.setdefault("settings", {})
+        settings.update(
+            {
+                "language": self.language,
+                "music_volume": self.music_volume,
+                "sfx_volume": self.sfx_volume,
+                "auto_fire": self.auto_fire,
+                "developer_mode": self.dev_mode,
+            }
+        )
+        self.save_manager.save()
+
+    def high_score(self):
+        return self.save_manager.get_high_score()
+
+    def format_time(self, seconds):
+        seconds = max(0, int(seconds))
+        minutes = seconds // 60
+        return f"{minutes:02d}:{seconds % 60:02d}"
 
     def gold_text(self):
         return self.t("infinite") if self.dev_mode else str(self.player.gold)
@@ -3627,6 +4393,12 @@ class Game:
 
     def difficulty_cfg(self):
         return DIFFICULTIES.get(self.difficulty_id, DIFFICULTIES["normal"])
+
+    def weapon_upgrade_cost(self):
+        base_cost = self.player.weapon.upgrade_cost
+        if base_cost <= 0:
+            return 0
+        return max(1, int(round(base_cost * self.difficulty_cfg().get("weapon_cost", 1.0))))
 
     def structure_balance_cfg(self):
         return STRUCTURE_DIFFICULTY_BALANCE.get(self.difficulty_id, STRUCTURE_DIFFICULTY_BALANCE["normal"])
@@ -3878,22 +4650,30 @@ class Game:
             cell = self.tile_map.world_to_cell(Vec2(position))
         else:
             cell = (int(position[0]), int(position[1]))
+        center = self.tile_map.cell_center(cell)
         if building_type == "turret" and self.turret_count() >= self.turret_limit():
             return False, "turret_limit"
         self.map_manager.update_dynamic_obstacles(self.structures)
         if not self.map_manager.in_bounds(cell) or self.map_manager.is_wall(cell):
             return False, "build_cannot_place"
+        important_spawns = set(self.spawn_cells or self.build_spawn_cells()) | set(self.boss_spawn_cells or self.build_boss_spawn_cells())
+        if cell in important_spawns:
+            return False, "build_spawn_blocked"
         if not self.map_manager.is_buildable(cell[0], cell[1]):
             return False, "build_cannot_place"
-        if self.tile_map.cell_center(cell).distance_to(self.player.pos) < 40:
+        if any(zombie.alive and zombie.pos.distance_to(center) < TILE * 0.85 for zombie in self.zombies):
+            return False, "build_zombie_blocked"
+        if center.distance_to(self.player.pos) < 40:
             return False, "build_cannot_place"
         if not self.can_afford(self.structure_cost(building_type)):
             return False, "not_enough_gold"
-        # Prevent building fences or gates that would fully trap the player (no path to zombie spawns)
+        # Gates are passable for the player, so self-trap checks ignore them.
         if building_type in ("fence", "gate"):
             player_cell = self.tile_map.world_to_cell(self.player.pos)
             spawn_goals = self.spawn_cells or self.build_spawn_cells()
-            blocked = set(self.map_manager.dynamic_obstacles) | {cell}
+            blocked = {structure.cell for structure in self.structures if structure.alive and structure.kind != "gate"}
+            if building_type == "fence":
+                blocked.add(cell)
             path_ok = False
             for goal in (spawn_goals or []):
                 if find_path(self.tile_map, player_cell, goal, blocked=blocked, allow_diagonal=True, weight=1.05, radius=int(self.player.radius)):
@@ -3910,6 +4690,10 @@ class Game:
             return self.t("turret_limit").format(count=self.turret_count(), limit=self.turret_limit())
         if reason == "would_trap_player":
             return self.t("would_trap_player")
+        if reason == "build_spawn_blocked":
+            return self.t("build_spawn_blocked")
+        if reason == "build_zombie_blocked":
+            return self.t("build_zombie_blocked")
         return self.t("build_cannot_place")
 
     def structure_at_world(self, pos):
@@ -4101,7 +4885,8 @@ class Game:
             self.spawn_spark(point, (126, 244, 255))
 
         self.lasers.append(LaserBeam(start, end, width=8, life=0.13))
-        self.add_muzzle_particle(start, direction * 500)
+        self.add_muzzle_particle(start, direction * 500, self.player.weapon)
+        self.add_weapon_fire_feedback(self.player.weapon)
 
     def build_spawn_cells(self):
         return self.map_manager.get_zombie_spawns()
@@ -4457,6 +5242,8 @@ class Game:
         cost = self.structure_cost(kind)
         self.spend_gold(cost)
         self.structures.append(Structure(kind, cell, self.structure_stats(kind)))
+        self.map_manager.update_dynamic_obstacles(self.structures)
+        self.refresh_pathfinding_context()
         self.message = self.t("built").format(name=self.structure_name(kind))
         self.message_timer = 1.2
         self.play_sound("build", 0.55, cooldown=0.12)
@@ -4527,7 +5314,7 @@ class Game:
             self.message = self.t("weapon_max").format(weapon=self.weapon_name(self.player.weapon.tier_name))
             self.message_timer = 1.4
             return
-        cost = self.player.weapon.upgrade_cost
+        cost = self.weapon_upgrade_cost()
         if not self.can_afford(cost):
             self.message = self.t("need_gold").format(cost=cost)
             self.message_timer = 1.3
@@ -4553,8 +5340,12 @@ class Game:
                 scale = 1 - min(1, distance / max(1, radius))
                 zombie.take_damage(max(1, int(damage * (0.45 + scale * 0.55))), self)
 
-    def create_shockwave(self, pos, radius, damage, visual_only=False):
+    def create_shockwave(self, pos, radius, damage, visual_only=False, ring_color=None):
         pos = Vec2(pos)
+        ring_color = ring_color or (242, 166, 69)
+        self.rings.append(PulseRing(pos, ring_color, radius=radius, life=0.42, width=4 if radius >= 90 else 3, start_radius=max(8, int(radius * 0.18))))
+        if damage > 0:
+            self.add_camera_shake(clamp(radius / 18, 4, 11), 0.22)
         for angle_deg in range(0, 360, 9):
             angle = math.radians(angle_deg + random.uniform(-3, 3))
             direction = Vec2(math.cos(angle), math.sin(angle))
@@ -4574,12 +5365,16 @@ class Game:
                 scale = 1 - distance / radius
                 structure.take_damage(max(5, int(damage * (0.45 + scale * 0.55))), self)
 
-    def create_explosion(self, pos, radius, damage, enemy_owned=True, visual_only=False, sound_name="explosion", sound_volume=0.5):
+    def create_explosion(self, pos, radius, damage, enemy_owned=True, visual_only=False, sound_name="explosion", sound_volume=0.5, colors=None, ring_color=None):
         self.play_sound(sound_name, sound_volume, cooldown=0.18)
+        colors = colors or [(248, 126, 62), (244, 210, 93), (172, 68, 64)]
+        ring_color = ring_color or colors[0]
+        self.rings.append(PulseRing(pos, ring_color, radius=radius + 18, life=0.52, width=5, start_radius=12))
+        self.add_camera_shake(clamp(radius / 18, 4, 12), 0.24)
         for _ in range(26):
             angle = random.uniform(0, math.tau)
             speed = random.uniform(45, 190)
-            color = random.choice([(248, 126, 62), (244, 210, 93), (172, 68, 64)])
+            color = random.choice(colors)
             self.particles.append(Particle(pos, Vec2(math.cos(angle), math.sin(angle)) * speed, color, life=0.65, size=4))
         if visual_only:
             return
@@ -4612,10 +5407,59 @@ class Game:
         self.floating_texts.append(FloatingText(pos + Vec2(0, -48), self.t("teleport"), theme["accent"], life=1.0))
         self.play_sound("dash", 0.34, cooldown=0.12)
 
-    def add_muzzle_particle(self, pos, vel):
-        for _ in range(4):
-            direction = vel.normalize().rotate(random.uniform(-26, 26))
-            self.particles.append(Particle(pos, direction * random.uniform(25, 90), COLORS["gold"], life=0.18, size=2))
+    def add_muzzle_particle(self, pos, vel, weapon=None):
+        weapon = weapon or self.player.weapon
+        group = getattr(weapon, "group", "rifle")
+        base = {
+            "pistol": (4, 24, COLORS["gold"], 0.16, 2),
+            "smg": (3, 18, (255, 218, 105), 0.12, 2),
+            "rifle": (5, 18, (255, 196, 74), 0.15, 2),
+            "shotgun": (9, 38, (255, 160, 74), 0.22, 3),
+            "machine_gun": (4, 14, (255, 206, 86), 0.10, 2),
+            "laser": (5, 10, (112, 238, 255), 0.18, 2),
+            "sniper": (7, 9, (255, 238, 168), 0.22, 2),
+            "railgun": (12, 8, (122, 239, 255), 0.24, 3),
+        }.get(group, (4, 22, COLORS["gold"], 0.16, 2))
+        count, spread, color, life, size = base
+        direction_base = vel.normalize() if vel.length_squared() > 0 else Vec2(1, 0)
+        for _ in range(count):
+            direction = direction_base.rotate(random.uniform(-spread, spread))
+            self.particles.append(Particle(pos, direction * random.uniform(35, 145), color, life=life, size=size))
+
+    def add_bullet_trail(self, start, end, weapon):
+        group = getattr(weapon, "group", "rifle")
+        if group in ("shotgun", "smg", "machine_gun") and random.random() > 0.45:
+            return
+        direction = Vec2(end) - Vec2(start)
+        if direction.length_squared() <= 1:
+            return
+        max_len = {
+            "pistol": 78,
+            "smg": 58,
+            "rifle": 118,
+            "shotgun": 62,
+            "machine_gun": 70,
+            "sniper": 320,
+            "railgun": 380,
+        }.get(group, 90)
+        end = Vec2(start) + direction.normalize() * min(max_len, direction.length())
+        color = (126, 237, 255) if group == "railgun" else ((255, 246, 210) if group == "sniper" else (255, 228, 143))
+        width = 3 if group == "railgun" else (1 if group not in ("sniper", "shotgun") else 2)
+        life = 0.18 if group == "railgun" else (0.07 if group in ("smg", "machine_gun") else (0.16 if group == "sniper" else 0.10))
+        self.bullet_trails.append(BulletTrail(start, end, color, life=life, width=width))
+
+    def add_weapon_fire_feedback(self, weapon):
+        group = getattr(weapon, "group", "rifle")
+        if group == "shotgun":
+            self.add_camera_shake(1.65, 0.08)
+        elif group == "sniper":
+            self.add_camera_shake(1.35, 0.07)
+        elif group == "machine_gun":
+            self.add_camera_shake(0.42, 0.045)
+        elif group == "laser":
+            self.add_camera_shake(0.55, 0.06)
+        elif group == "railgun":
+            self.add_camera_shake(2.2, 0.10)
 
     def spawn_spark(self, pos, color):
         for _ in range(5):
@@ -4641,18 +5485,20 @@ class Game:
                 if self.state != "playing":
                     continue
                 if self.game_over and event.key == pygame.K_RETURN:
-                    self.reset_gameplay()
+                    self.begin_run()
                     return True
                 if event.key == pygame.K_p:
                     self.paused = not self.paused
                 elif event.key == pygame.K_f:
                     self.auto_fire = not self.auto_fire
+                    self.save_settings()
                 elif not self.paused and event.key in (pygame.K_LSHIFT, pygame.K_RSHIFT):
                     self.player.start_dash(self)
                 elif event.key == pygame.K_F10:
                     self.dev_mode = not self.dev_mode
                     self.message = self.t("dev_on") if self.dev_mode else self.t("dev_off")
                     self.message_timer = 1.5
+                    self.save_settings()
                 elif not self.paused and event.key == pygame.K_SPACE:
                     self.start_wave()
                 elif not self.paused and event.key == pygame.K_i:
@@ -4684,7 +5530,7 @@ class Game:
                     continue
                 action = self.button_at(event.pos)
                 if action and self.handle_button(action):
-                    if action in ("menu_exit", "exit_game"):
+                    if action in ("menu_exit", "exit_game", "gameover_exit"):
                         return False
                     continue
                 if self.state != "playing" or self.paused:
@@ -4721,8 +5567,7 @@ class Game:
                 if self.setup_step != "character":
                     self.advance_setup_step()
                 else:
-                    self.reset_gameplay()
-                    self.state = "playing"
+                    self.begin_run()
                 return True
             if action == "setup_back":
                 if not self.retreat_setup_step():
@@ -4762,8 +5607,20 @@ class Game:
                 self.sfx_volume = max(0, self.sfx_volume - 10)
             elif action == "sfx_up":
                 self.sfx_volume = min(100, self.sfx_volume + 10)
+            self.save_settings()
             return True
         elif self.state == "playing":
+            if self.game_over:
+                if action == "gameover_retry":
+                    self.begin_run()
+                elif action == "gameover_menu":
+                    self.state = "menu"
+                    self.paused = False
+                elif action == "gameover_exit":
+                    return True
+                else:
+                    return False
+                return True
             if action == "pause_toggle":
                 self.paused = not self.paused
             elif self.paused and action == "pause_resume":
@@ -4795,6 +5652,7 @@ class Game:
                 self.player.start_dash(self)
             elif not self.paused and action == "auto_toggle_game":
                 self.auto_fire = not self.auto_fire
+                self.save_settings()
             elif not self.paused and action == "info_toggle":
                 self.info_panel_open = not self.info_panel_open
             else:
@@ -4820,9 +5678,19 @@ class Game:
             return
         if self.game_over:
             return
+        self.run_time += dt
+        self.score_time_accum += dt
+        if self.score_time_accum >= 1.0:
+            seconds = int(self.score_time_accum)
+            self.add_score(seconds)
+            self.score_time_accum -= seconds
         self.message_timer = max(0, self.message_timer - dt)
         self.wave_banner_timer = max(0, self.wave_banner_timer - dt)
         self.titan_banner_timer = max(0, self.titan_banner_timer - dt)
+        self.camera_shake_timer = max(0, self.camera_shake_timer - dt)
+        if self.camera_shake_timer <= 0:
+            self.camera_shake_strength = 0.0
+            self.camera_shake_duration = 0.0
         self.bile_timer = max(0, self.bile_timer - dt)
         if self.wave_active:
             self.spawn_timer -= dt
@@ -4834,6 +5702,7 @@ class Game:
                 self.wave_break_timer = WAVE_BREAK_SECONDS
                 reward = int(round((25 + self.wave * 7) * self.difficulty_cfg()["reward"]))
                 self.player.gold += reward
+                self.add_score(100 * self.wave, self.player.pos + Vec2(0, -56), COLORS["gold"])
                 self.message = self.t("wave_clear").format(reward=reward)
                 self.message_timer = 3.0
         elif self.wave > 0 and self.wave_break_timer > 0:
@@ -4849,6 +5718,8 @@ class Game:
             zombie.update(dt, self)
         for bullet in self.bullets:
             bullet.update(dt, self)
+        for trail in self.bullet_trails:
+            trail.update(dt)
         for laser in self.lasers:
             laser.update(dt)
         for acid in self.acid_projectiles:
@@ -4859,6 +5730,8 @@ class Game:
             gold.update(dt, self)
         for powerup in self.powerups:
             powerup.update(dt, self)
+        for decal in self.blood_decals:
+            decal.update(dt)
         for particle in self.particles:
             particle.update(dt)
         for ring in self.rings:
@@ -4870,16 +5743,18 @@ class Game:
 
         self.zombies = [z for z in self.zombies if z.alive]
         self.bullets = [b for b in self.bullets if b.alive]
+        self.bullet_trails = [t for t in self.bullet_trails if t.alive][-MAX_BULLET_TRAILS:]
         self.lasers = [l for l in self.lasers if l.alive]
         self.acid_projectiles = [a for a in self.acid_projectiles if a.alive]
         self.poison_pools = [p for p in self.poison_pools if p.alive]
         self.structures = [s for s in self.structures if s.alive]
         self.gold_drops = [g for g in self.gold_drops if g.alive]
         self.powerups = [p for p in self.powerups if p.alive]
-        self.particles = [p for p in self.particles if p.alive]
+        self.blood_decals = [d for d in self.blood_decals if d.alive][-MAX_BLOOD_DECALS:]
+        self.particles = [p for p in self.particles if p.alive][-MAX_PARTICLES:]
         self.rings = [r for r in self.rings if r.alive]
         self.warning_zones = [w for w in self.warning_zones if w.alive]
-        self.floating_texts = [f for f in self.floating_texts if f.alive]
+        self.floating_texts = [f for f in self.floating_texts if f.alive][-MAX_FLOATING_TEXTS:]
 
     def draw_bar(self, surface, rect, pct, fill, back=(52, 38, 43)):
         self.ui.draw_progress_bar(surface, rect, pct, fill, back, COLORS["hud_line"])
@@ -4887,6 +5762,8 @@ class Game:
     def draw_world(self):
         world = self.world_surface
         self.map_manager.render(world)
+        for decal in self.blood_decals:
+            decal.draw(world)
         for pool in self.poison_pools:
             pool.draw(world)
         for gold in self.gold_drops:
@@ -4897,6 +5774,8 @@ class Game:
             structure.draw(world)
         for warning in self.warning_zones:
             warning.draw(world)
+        for trail in self.bullet_trails:
+            trail.draw(world)
         for bullet in self.bullets:
             bullet.draw(world)
         for laser in self.lasers:
@@ -4914,7 +5793,8 @@ class Game:
             floating.draw(world, self.tiny_font)
         self.draw_build_preview()
         scaled_world = pygame.transform.scale(world, self.world_rect.size)
-        self.screen.blit(scaled_world, self.world_rect)
+        draw_rect = self.world_rect.move(*self.camera_shake_offset())
+        self.screen.blit(scaled_world, draw_rect)
 
     def draw_build_preview(self):
         if self.build_mode is None:
@@ -5017,7 +5897,7 @@ class Game:
         start_x = sw // 2 - total_w // 2
         y = panel.y + max(10, (self.bottom_ui_h - slot_h) // 2)
 
-        upgrade_value = self.t("max") if weapon.is_maxed else (self.t("free") if self.dev_mode else f"{weapon.upgrade_cost}g")
+        upgrade_value = self.t("max") if weapon.is_maxed else (self.t("free") if self.dev_mode else f"{self.weapon_upgrade_cost()}g")
         self.draw_hotbar_slot("hotbar_upgrade", pygame.Rect(start_x, y, slot_w, slot_h), "1", self.t("upgrade"), upgrade_value, COLORS["gold"], active=weapon.is_maxed)
         turret_cost = self.t("free") if self.dev_mode else f"{self.structure_cost('turret')}g"
         turret_value = f"{turret_cost} {self.turret_count()}/{self.turret_limit()}"
@@ -5054,7 +5934,7 @@ class Game:
             return
         sw, sh, s = self.screen_w, self.screen_h, self.ui_scale
         panel_w = min(int(520 * s), sw - self.margin * 2)
-        panel_h = max(360, int(390 * s))
+        panel_h = max(430, int(470 * s))
         panel = pygame.Rect(sw - panel_w - self.margin, self.top_ui_h + int(18 * s), panel_w, panel_h)
         self.draw_panel(panel, alpha=232)
 
@@ -5071,10 +5951,22 @@ class Game:
             if value > 0
         ]
         dash = self.t("ready") if self.player.dash_cooldown <= 0 else f"{self.player.dash_cooldown:.1f}s"
+        if weapon.is_maxed:
+            next_weapon_text = self.t("max_weapon")
+        elif weapon.next_tier_name != weapon.tier_name:
+            next_weapon_text = f"{self.t('next_weapon')}: {self.weapon_name(weapon.next_tier_name)} ({self.weapon_upgrade_cost()}g)"
+        else:
+            next_weapon_text = f"{self.t('next_weapon')}: {self.t('level_short')} {weapon.level + 1} ({self.weapon_upgrade_cost()}g)"
+        spin_text = ""
+        if weapon.spin_up_time > 0:
+            spin_text = f" | {self.t('spin_up')} {int(clamp(weapon.spin / weapon.spin_up_time, 0, 1) * 100)}%"
         lines = [
             (self.t("info"), COLORS["gold"], self.font),
             (f"{self.character_name()} | {self.difficulty_name()} | {self.t('level_short')} {self.player.level}", COLORS["cyan"], self.small_font),
-            (f"{self.weapon_name(weapon.tier_name)} {self.t('level_short')} {weapon.level}: {self.t('dmg')} {weapon_damage} | {self.t('rate')} {fire_rate:.1f}/s | {self.t('range_short')} {weapon.bullet_range}", COLORS["text"], self.small_font),
+            (f"[{weapon.icon}] {self.weapon_name(weapon.tier_name)} | {self.t('weapon_tier')} {weapon.tier_number}/{len(WEAPON_TIERS)} | {self.t('level_short')} {weapon.level}", COLORS["text"], self.small_font),
+            (f"{self.t('dmg')} {weapon_damage} | {self.t('rate')} {fire_rate:.1f}/s | {self.t('range_short')} {weapon.bullet_range}{spin_text}", COLORS["text"], self.small_font),
+            (f"{self.weapon_role(weapon)}: {self.weapon_description(weapon)}", COLORS["muted"], self.tiny_font),
+            (next_weapon_text, COLORS["gold"], self.tiny_font),
             (f"{self.weapon_ammo_text()} | {self.weapon_reload_text()} | {self.t('shots')} {weapon.bullet_count} | {self.t('pierce')} {weapon.pierce}", COLORS["muted"], self.small_font),
             (f"{self.t('armor')} {self.player.armor} | {self.t('magnet')} {int(self.player.pickup_radius)}", COLORS["muted"], self.small_font),
             (f"{self.t('turrets')} {self.turret_count()}/{self.turret_limit()} | {self.t('cost')} {self.structure_cost('turret')}g | {self.t('hp')} {turret['hp']} | {self.t('dmg')} {turret['damage']}", COLORS["cyan"], self.small_font),
@@ -5110,13 +6002,47 @@ class Game:
             self.screen.blit(image, rect)
         if self.game_over:
             veil = pygame.Surface((sw, sh), pygame.SRCALPHA)
-            veil.fill((0, 0, 0, 165))
+            veil.fill((0, 0, 0, 176))
             self.screen.blit(veil, (0, 0))
-            title = self.big_font.render(self.t("game_over"), True, COLORS["red"])
-            title_rect = title.get_rect(center=(sw // 2, sh // 2 - int(38 * self.ui_scale)))
-            self.screen.blit(title, title_rect)
-            sub = self.font.render(self.t("restart_hint"), True, COLORS["text"])
-            self.screen.blit(sub, sub.get_rect(center=(sw // 2, sh // 2 + int(28 * self.ui_scale))))
+            s = self.ui_scale
+            panel_w = min(int(620 * s), sw - self.margin * 2)
+            panel_h = min(int(560 * s), sh - self.margin * 2)
+            panel = pygame.Rect(0, 0, panel_w, panel_h)
+            panel.center = (sw // 2, sh // 2)
+            self.draw_panel(panel, alpha=235)
+            y = panel.y + int(26 * s)
+            self.draw_text_center(self.t("game_over"), pygame.Rect(panel.x, y, panel.w, int(66 * s)), COLORS["red"], self.big_font)
+            y += int(72 * s)
+            if self.new_record:
+                self.draw_text_center(self.t("new_record"), pygame.Rect(panel.x, y, panel.w, int(38 * s)), COLORS["gold"], self.font)
+                y += int(42 * s)
+            stats = self.current_run_stats()
+            rows = (
+                (self.t("run_results"), ""),
+                (self.t("highest_wave"), stats["wave"]),
+                (self.t("score"), stats["score"]),
+                (self.t("kills"), stats["kills"]),
+                (self.t("gold"), stats["gold_collected"]),
+                (self.t("survival_time"), self.format_time(stats["survival_time"])),
+                (self.t("best_map"), stats["map"]),
+                (self.t("best_class"), stats["character"]),
+                (self.t("best_difficulty"), stats["difficulty"]),
+            )
+            label_w = int(230 * s)
+            for label, value in rows:
+                color = COLORS["gold"] if value == "" else COLORS["muted"]
+                self.draw_text(label, panel.x + int(42 * s), y, color, self.small_font)
+                if value != "":
+                    self.draw_text(str(value), panel.x + int(42 * s) + label_w, y, COLORS["text"], self.small_font)
+                y += int(31 * s)
+            self.draw_text_center(self.t("restart_hint"), pygame.Rect(panel.x, y + int(6 * s), panel.w, int(28 * s)), COLORS["muted"], self.tiny_font)
+            button_w = int((panel.w - int(78 * s)) / 3)
+            button_h = max(38, int(46 * s))
+            by = panel.bottom - button_h - int(28 * s)
+            bx = panel.x + int(28 * s)
+            self.draw_button("gameover_retry", pygame.Rect(bx, by, button_w, button_h), self.t("retry"), active=True, font=self.small_font)
+            self.draw_button("gameover_menu", pygame.Rect(bx + button_w + int(11 * s), by, button_w, button_h), self.t("main_menu"), font=self.small_font)
+            self.draw_button("gameover_exit", pygame.Rect(bx + (button_w + int(11 * s)) * 2, by, button_w, button_h), self.t("exit"), font=self.small_font)
         if self.paused:
             self.draw_pause_overlay()
 

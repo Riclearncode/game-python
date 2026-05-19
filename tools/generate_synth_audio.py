@@ -93,6 +93,33 @@ def laser_shot():
     return samples
 
 
+def railbreaker_shot():
+    total = int(0.58 * SAMPLE_RATE)
+    samples = [0.0] * total
+    rng = random.Random(25)
+    charge_len = int(0.14 * SAMPLE_RATE)
+    blast_start = int(0.10 * SAMPLE_RATE)
+    for i in range(total):
+        t = i / SAMPLE_RATE
+        sample = 0.0
+        if i < charge_len:
+            pct = i / max(1, charge_len)
+            env = pct * pct
+            sample += sine(220 + 1280 * pct, t) * env * 0.22
+            sample += sine(440 + 2100 * pct, t) * env * 0.08
+        if i >= blast_start:
+            local = (i - blast_start) / SAMPLE_RATE
+            env_fast = math.exp(-local * 22)
+            env_body = math.exp(-local * 5.4)
+            crack = square(3100, local) * env_fast * 0.28
+            thump = sine(64 * max(0.4, 1 - local * 2.8), local) * env_body * 0.96
+            coil = sine(760 + 220 * math.exp(-local * 7), local) * env_body * 0.24
+            noise = rng.uniform(-1, 1) * env_fast * 0.58
+            sample += crack + thump + coil + noise
+        samples[i] = sample
+    return samples
+
+
 def reload_click():
     total = int(0.62 * SAMPLE_RATE)
     samples = [0.0] * total
@@ -234,6 +261,7 @@ def main():
     write_wav("gun_m4a1.wav", gunshot(0.28, 118, 3020, 0.86, 5, 0.82))
     write_wav("gun_benelli_m4.wav", gunshot(0.38, 96, 1980, 0.95, 6, 1.02))
     write_wav("gun_xm_las.wav", laser_shot())
+    write_wav("gun_xm_railbreaker.wav", railbreaker_shot())
     write_wav("reload_mag.wav", reload_click())
     write_wav("level_up.wav", rising_chime())
     write_wav("weapon_upgrade.wav", upgrade_swell())

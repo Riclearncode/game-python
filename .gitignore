@@ -1,0 +1,11 @@
+__pycache__/
+*.py[cod]
+
+build/
+dist/
+*.spec
+
+save/*.json
+save/*.tmp
+save/*.bak
+save/*.corrupt_*.bak
