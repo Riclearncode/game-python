@@ -43,7 +43,7 @@ def run_test():
         ('Gate in STRUCTURE_TYPES', '"gate":' in content),
         ('Gate hotbar handler', 'action == "hotbar_gate"' in content),
         ('Gate draw method', 'elif self.kind == "gate":' in content),
-        ('Player walkthrough gate', 's.kind != "gate"' in content),
+        ('Player walkthrough open gate', 's.blocks_path()' in content and 'return not self.open' in content),
         ('Self-trap prevention', '"would_trap_player"' in content),
     ]
     
@@ -92,8 +92,8 @@ def run_test():
         print("   - Gate hotbar button appears with custom icon")
         print("   - Ghost preview shows when placing gate")
         print("   - Gate renders as two posts + center bar")
-        print("   - Player can walk through gate")
-        print("   - Zombie cannot walk through gate (attack instead)")
+        print("   - Player can walk through opened gate")
+        print("   - Zombie cannot walk through closed gate (attack instead)")
         print("   - Self-trap prevention works (cant seal yourself in)")
         print("   - Gate has HP and can be damaged/repaired")
     else:

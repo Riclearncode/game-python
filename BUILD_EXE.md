@@ -78,3 +78,21 @@ Use `user_data_path()` whenever code writes player data.
 ## Optional Onefile Build
 
 `onedir` is easier to debug and is recommended. If you later want `onefile`, keep using `resource_path()` and keep save files in `%APPDATA%`.
+
+## GitHub Actions Build
+
+The repository includes `.github/workflows/build-exe.yml`.
+
+It builds a Windows package when:
+
+- you run the workflow manually with `workflow_dispatch`;
+- you push a tag like `v1.0.0`;
+- you publish a GitHub Release.
+
+The workflow:
+
+1. Installs `requirements.txt`.
+2. Runs `py main.py --smoke` in dummy video/audio mode.
+3. Runs `build_exe.ps1`.
+4. Zips `dist\PixelZombieSiege\`.
+5. Uploads `PixelZombieSiege-windows.zip` as a workflow artifact.

@@ -1,159 +1,342 @@
 # Pixel Zombie Siege
 
-Game RPG/survival 2D viet bang Python + Pygame. Ban dau nguoi choi co sung luc, giet zombie de nhat vang, sau do dung vang de:
+Pixel Zombie Siege là game top-down 2D zombie survival viết bằng Python + Pygame. Người chơi sinh tồn theo từng wave, bắn zombie, nhặt vàng, lên cấp, chọn perk, nâng cấp vũ khí, xây công trình phòng thủ và chiến đấu với Titan Boss.
 
-- nang cap sung luc thanh nhieu dong vu khi manh hon;
-- dat tru sung tu dong;
-- dat hang rao chan co do ben;
-- sua cong trinh khi bi zombie tan cong.
+Game tập trung vào 3 trụ cột:
 
-AI cua zombie dung flow-field BFS va A* tren ban do o luoi. Zombie thuong se tim duong den nguoi choi, ton trong tuong/cong trinh, va khi bi chan thi tan cong hang rao/tru sung thay vi di xuyen qua phong tuyen.
+- Combat: nhiều loại súng, đạn giới hạn, reload, auto-fire, power-up và hiệu ứng bắn.
+- Defense: turret, hàng rào, cổng, bẫy, mìn, tường thép và sửa/nâng cấp công trình.
+- AI/Pathfinding: flow-field, A*, collision grid, dynamic obstacle và boss phase.
 
-## Cai dat
+## Cài Đặt
 
 ```powershell
 py -m pip install -r requirements.txt
 ```
 
-## Chay game
+## Chạy Game
 
 ```powershell
 py main.py
 ```
 
-Game se mo o che do full screen va tu can theo do phan giai man hinh hien tai. Man hinh dau tien la menu chinh:
-
-- `Start`: mo man chuan bi tran de chon do kho, nhan vat va ban do, sau do bam `Vao tran`.
-- `Option`: chinh ngon ngu, am luong nhac/SFX va bat/tat auto fire.
-- `Exit`: thoat game.
-
-Menu chinh se uu tien dung anh nen `assets/menu_background.png`. Anh duoc scale/crop full man hinh va phu lop toi nhe de chu/nut van de doc.
-
-Kiem tra nhanh khong mo cua so:
+Smoke test không mở cửa sổ:
 
 ```powershell
 py main.py --smoke
 ```
 
-## Dieu khien
+Game mặc định chạy fullscreen/adaptive resolution, có menu chính, option, màn chọn độ khó, chọn map, chọn nhân vật và màn chơi chính.
 
-- `WASD`: di chuyen
-- Chuot trai: ban sung
-- `Space`: bat dau dot zombie tiep theo hoac bo qua 30 giay nghi giua wave
-- `1`: nang cap vu khi, hoac bam nut 1 o hotbar duoi man hinh
-- `2`: chon dat tru sung, hoac bam nut 2 o hotbar
-- `3`: chon dat hang rao, hoac bam nut 3 o hotbar
-- `F`: bat/tat auto fire
-- `Shift`: dash/luot nhanh ngan de ne vong vay
-- `I`: bat/tat bang thong tin chi tiet ve nhan vat, vu khi, buff va cong trinh
-- `F10`: bat/tat Developer Mode de test nhanh
-- `P` hoac nut Pause: tam dung game
-- Chuot trai khi dang chon cong trinh: dat cong trinh
-- Chuot phai hoac `B`: huy che do dat cong trinh
-- `R`: sua cong trinh gan nhat; neu hang rao gan nhat khong bi hong va tech da mo, phim nay se nang cap hang rao
-- `Esc`: thoat game
+## Điều Khiển
 
-UI moi chi giu HP/XP, vang/wave va hotbar quan trong tren man hinh. Cac chi so chi tiet duoc an trong nut `Chi so`/phim `I`, con hotbar hien truc tiep cooldown dash, auto fire, nang cap va xay dung.
+- `WASD` hoặc phím mũi tên: di chuyển.
+- Chuột trái: bắn/đặt công trình.
+- Chuột phải hoặc `B`: hủy chế độ xây.
+- `Space`: bắt đầu wave hoặc bỏ qua countdown giữa wave.
+- `1`: nâng cấp vũ khí.
+- `2`: xây turret thường.
+- `3`: xây hàng rào.
+- `4`: xây cổng.
+- `5`: bẫy gai.
+- `6`: mìn.
+- `7`: tường thép.
+- `8`: machine turret.
+- `9`: laser turret.
+- `0`: slow turret.
+- `G`: mở/đóng cổng gần nhất.
+- `R`: nạp đạn.
+- `E`: sửa công trình gần nhất.
+- `Shift`: dash.
+- `F`: bật/tắt auto-fire.
+- `I`: bật/tắt bảng chỉ số.
+- `P` hoặc nút Pause: tạm dừng.
+- `F10`: Developer Mode, vô hạn vàng để test.
 
-Man hinh chuan bi tran duoc thiet ke lai thanh bo chon co preview: ben trai hien class nhan vat dang chon, ben phai hien mini-map/mau sac map dang chon, o giua la cac nut chon do kho, nhan vat va ban do.
+## Algorithm Demo
 
-Trong `Option` co `Che do nha phat trien`. Khi bat che do nay, vang hien thi `VO HAN`, mua nang cap/dat tru/dat hang rao/sua cong trinh se khong tru vang, nhung gioi han so tru sung van duoc giu de test can bang.
+Game có chế độ hỗ trợ demo thuật toán để dùng khi thuyết trình hoặc viết báo cáo.
 
-Game co SFX cho nut bam, ban sung, laser, nhat vang, xay dung, nang cap, trung don, no, doc/bile va bat dau wave. Audio dung bo Kenney RPG Audio trong `assets/audio/kenney_rpg`, nguon CC0: https://opengameart.org/content/50-rpg-sound-effects
+- `F1`: bật/tắt Algorithm Demo Overlay.
+- `F2`: đổi lớp hiển thị.
+- `F3`: bật/tắt panel giải thích.
 
-Zombie SFX dung them goi OpenGameArt CC0 trong `assets/audio/opengameart`, gom groan/attack/death va Titan roar lay tu Monster Sound Effects Pack. File `assets/audio/SOURCES.md` ghi ro cac nguon Kenney, OpenGameArt, Mixkit va Sonniss; Mixkit/Sonniss duoc de dang mo rong them asset ngoai, nhung khong bundle truc tiep vi goi Sonniss rat lon.
+Các lớp hiển thị:
 
-Ngoai ra game co bo audio synth tu tao trong `assets/audio/synth`: tieng sung rieng cho tung vu khi, tieng reload, level-up, nang cap vu khi va 3 track nhac nen cho menu, tran chien va boss. Co the tao lai bo audio nay bang:
+- `All`: toàn bộ lớp demo.
+- `Collision`: tường, vật cản động, hàng rào, cổng, turret.
+- `Spawns`: điểm spawn zombie thường và boss.
+- `Flow Field`: mũi tên flow-field BFS cho Walker.
+- `A* Paths`: đường đi A* của zombie.
+- `AI Roles`: nhãn hành vi từng zombie như Flow BFS, Flank A*, Keep Range, Dash Priority, Dodge LOS, Titan Phase.
+
+Xem thêm: [ALGORITHM_DEMO_GUIDE.md](ALGORITHM_DEMO_GUIDE.md)
+
+## Hệ Thống Zombie
+
+- Walker: zombie chậm, đi theo flow-field BFS dùng chung.
+- Runner: zombie nhanh, ưu tiên flank/đường vòng bằng A*.
+- Spitter: giữ khoảng cách, phun độc tạo vùng AOE gây sát thương theo thời gian.
+- Boomer: dash vào người chơi hoặc cụm công trình, phun dịch xanh làm zombie tăng tốc, chết sẽ nổ AOE.
+- Stalker: flank và né đường bắn nếu nằm trong line-of-fire.
+- Titan Boss: kích thước lớn, dùng clearance A*, có charge, stomp, summon, leap khi bị kẹt và phase theo HP.
+
+Titan phase:
+
+- Trên 70% HP: đánh và di chuyển bình thường.
+- Dưới 70% HP: charge thường xuyên hơn.
+- Dưới 40% HP: summon zombie.
+- Dưới 20% HP: stomp liên tục hơn nhưng có warning circle để né.
+
+## AI Và Pathfinding
+
+Game dùng nhiều thuật toán theo từng mục tiêu gameplay:
+
+- Flow-field BFS cho Walker để xử lý số lượng zombie lớn hiệu quả.
+- Weighted A* cho Runner/Boomer/Stalker/Spitter.
+- Clearance A* cho Titan vì boss có bán kính lớn.
+- Collision grid từ MapManager.
+- Dynamic obstacles từ hàng rào, cổng đóng, turret và tường thép.
+- Path cache để tránh tính A* cho mọi zombie mỗi frame.
+
+Zombie không đi xuyên tường, container, xe hỏng, hàng rào, cổng đóng hoặc turret. Khi bị chặn, zombie có thể đánh công trình hoặc đi vòng nếu có đường hợp lý.
+
+## Vũ Khí
+
+Vũ khí có tier, magazine, reload time, fire rate, spread, pierce và vai trò riêng. Người chơi nâng cấp bằng vàng:
+
+1. Glock 17
+2. Dual Beretta 92FS
+3. HK MP5
+4. Mossberg 500
+5. M4A1 Carbine
+6. AK-47
+7. Benelli M4
+8. RPK
+9. XM-LAS Prototype
+10. M134 Minigun
+11. Barrett M82A1
+12. XM-Railbreaker
+
+Mỗi nhóm súng có SFX/feedback riêng: pistol, SMG, shotgun, rifle, machine gun, sniper, laser và railgun. Shotgun có pellet/spread rõ, laser có beam, railgun có trail mạnh và Minigun có spin-up.
+
+## Level, Perk Và Meta Progression
+
+Trong trận:
+
+- Mỗi lần lên level, người chơi chọn 1 trong 3 perk.
+- Perk gồm tăng máu, tăng tốc, giảm reload, tăng hút vàng, tăng sát thương turret, giảm giá xây.
+
+Sau mỗi run:
+
+- Người chơi nhận meta point.
+- Meta point tạo bonus vĩnh viễn nhẹ cho HP, damage, hút vàng và giảm giá xây.
+- SaveManager lưu progression, achievement, unlock class/map/weapon và high score.
+
+## Xây Dựng
+
+Công trình hiện có:
+
+- Turret thường.
+- Machine turret.
+- Laser turret.
+- Slow turret.
+- Hàng rào.
+- Cổng mở/đóng bằng `G`.
+- Bẫy gai.
+- Mìn.
+- Tường thép.
+
+UI xây dựng có ghost preview:
+
+- Màu xanh: đặt được.
+- Màu đỏ: không đặt được.
+- Hiển thị giá vàng, lý do không đặt được và tầm bắn turret.
+- Hover công trình hiện HP và chi phí sửa.
+
+Hàng rào và cổng có giá trị chiến thuật: chặn zombie thường, có HP, có thể bị phá, có thể sửa, nhưng Titan vẫn có công cụ phá tuyến phòng thủ.
+
+## Map Và Tiled
+
+Game có 3 map chính:
+
+- Warehouse / Nhà kho.
+- Crossfire Yard / Sân giao tranh.
+- Split Ruins / Tàn tích chia cắt.
+
+MapManager chịu trách nhiệm:
+
+- Load map builtin.
+- Load Tiled JSON nếu có.
+- Render layer map.
+- Quản lý collision grid.
+- Quản lý buildable grid.
+- Quản lý spawn point.
+- Cập nhật dynamic obstacles.
+
+Thư mục map:
+
+- `assets/maps/`
+- `assets/tilesets/`
+
+Hướng dẫn tạo map bằng Tiled: [MAP_GUIDE.md](MAP_GUIDE.md)
+
+## UI/HUD
+
+Game có:
+
+- Main menu với background.
+- Option menu cho ngôn ngữ, music, SFX, auto-fire, Developer Mode.
+- Flow chọn difficulty -> map -> character.
+- HUD HP/XP, vàng, wave, enemy count.
+- Hotbar đầy đủ phím tắt.
+- Minimap góc màn hình.
+- Boss HP bar.
+- Mission tracker.
+- Game Over screen có thống kê run và New Record.
+
+## Mission, Loot Và Power-Up
+
+Mission trong trận:
+
+- Sống sót 3 phút.
+- Hạ 20 Runner.
+- Giữ ít nhất 1 turret sống qua wave.
+
+Power-up:
+
+- Medkit.
+- Overdrive.
+- Shield.
+- Haste.
+- Shock Core.
+- Double Damage.
+- Ammo Pack.
+- Repair Pulse.
+- Supply Crate.
+
+Elite/Titan có thể rơi loot hiếm.
+
+## Audio
+
+Game có mixer riêng cho:
+
+- UI.
+- Weapon.
+- Zombie.
+- World/SFX.
+
+Nhạc nền đổi khi Titan xuất hiện. Có cảnh báo âm thanh khi HP thấp và khi wave bắt đầu.
+
+Nguồn audio:
+
+- Kenney RPG Audio.
+- OpenGameArt monster/explosion SFX.
+- Bộ synth audio tự tạo trong `assets/audio/synth`.
+
+Tạo lại synth audio:
 
 ```powershell
 py tools\generate_synth_audio.py
 ```
 
-## Tinh nang moi
+Chi tiết nguồn: `assets/audio/SOURCES.md`
 
-- Power-up tiep te se xuat hien tren map hoac roi tu zombie Elite: Medkit hoi mau, Overdrive tang damage/toc ban, Shield giam sat thuong, Haste tang toc chay, Shock Core gay no dien quanh nguoi choi.
-- Zombie Elite bat dau xuat hien tu wave 3, co vong cam, mau/sat thuong/toc do cao hon, nhung roi vang/XP va co ti le roi power-up tot hon. Elite hien tai manh hon truoc de tao ap luc ro hon o Hard/Nightmare.
-- Dash bang `Shift` co cooldown ngan va mot khoanh khac bat tu ngan, dung de cat khoi vong vay hoac thoat doc/bile.
-- Nhan vat duoc ve lai theo style concept hero/anime tactical: moi class co silhouette, mau ao giap, vu khi, ao choang/phu kien rieng va animation 4 huong ro rang khi di chuyen/ban sung.
-- Tat ca zombie duoc ve lai cung style voi outline dam, mat phat sang, chi tiet rieng cho tung loai va animation theo huong di chuyen.
-- Khi vao tran, nguoi choi se duoc teleport vao mot o spawn an toan co khoang trong xung quanh, tranh bi ket trong dia hinh.
+## Save Và High Score
 
-## Ban do
+SaveManager lưu JSON an toàn:
 
-Sau khi bam `Start`, nguoi choi co the chon mot trong cac ban do:
+- Settings.
+- High score tổng.
+- High score theo difficulty/map/class.
+- Total runs.
+- Total kills.
+- Total gold.
+- Meta points.
+- Unlocks.
+- Achievements.
 
-- Warehouse/Nha kho: map can bang mac dinh, tong mau kim loai/toi, tuong nha kho, san co crate, ong va dau vet cong nghiep.
-- Crossfire Yard/San giao tranh: tong mau dat be-tong nong hon, tuong barricade, vet canh bao va dau vet chien dau.
-- Split Ruins/Tan tich chia cat: tong xanh reu, tuong da co, vet nut, co/reu/phien da de tao cam giac tan tich.
+Khi chạy từ source, save ở:
 
-## He thong zombie
+```text
+save/save_data.json
+```
 
-- Walker/Shambler: cham, mau vua, di theo so dong.
-- Runner/Infected: nhanh, mau it hon, gay ap luc bat ngo.
-- Spitter: khac doc tu xa tao vung AOE gay sat thuong theo thoi gian.
-- Boomer: di nhanh hon, co dash, khac dich xanh. Neu trung nguoi choi, zombie se bi kich dong va tang toc manh trong vai giay.
-- Boomer khi chet hoac den gan muc tieu se no AOE.
-- Stalker: di nhanh, kho thay hon, co cu lao ngan.
-- Titan Boss: kich thuoc lon, dung duong di rieng theo kich thuoc than, co the pha cong trinh, charge, stomp, shockwave, goi them zombie va leap/vuot tuong khi that su bi ket.
+Khi chạy bản EXE, save ở:
 
-AI di chuyen duoc tach chien thuat theo chung loai: Walker dung flow-field BFS chia se de xu ly so dong; Runner dung weighted A* co duong cheo va smoothing de lao nhanh; Spitter tim vi tri giu tam khac doc co line-of-sight; Boomer danh chan vi tri du doan cua nguoi choi; Stalker tim diem flank sau/ben hong va co the vuot hang rao cap thap; Titan dung clearance A* theo ban kinh than, khong di xuyen tuong/hang rao trong di chuyen thuong, va chi leap khi bi ket duong du lau.
+```text
+%APPDATA%/PixelZombieSiege/save_data.json
+```
 
-Moi loai zombie co theme animation rieng: Runner nghieng nguoi lao nhanh, Spitter co tui doc/phun dich, Boomer co bung doc phat sang, Stalker co ao/bong ma mo, Titan co giap vai, xich va hieu ung khi charge/leap.
+Nếu save bị lỗi/corrupt, game backup file lỗi và tạo save mới, không crash.
 
-Zombie van tang mau, sat thuong va toc do theo wave/do kho, nhung he so scale da duoc ha lai de Nightmare bot qua kho so voi ban buff truoc. Tu cac wave sau, chi so zombie van du ap luc de nguoi choi can dung tru sung va hang rao thay vi chi dua vao vu khi. Moi wave sau khi clear se co 30 giay nghi de mua/nang cap/dat cong trinh; het gio game tu vao wave tiep theo, hoac bam `Space` de vao ngay.
+## Balance Tools
 
-Do kho anh huong truc tiep den mau, sat thuong, toc do, so luong zombie, vang thuong va sat thuong nguoi choi:
+Chạy audit cân bằng weapon/zombie/economy:
 
-- Easy: de test/choi nhe, zombie yeu hon va roi nhieu vang hon.
-- Normal: can bang mac dinh.
-- Hard: zombie dong, khoe, nhanh va dau hon.
-- Nightmare: zombie van rat nguy hiem, vang it hon, nguoi choi gay sat thuong it hon, nhung khong con bi day scale qua cao nhu ban truoc.
+```powershell
+py tools\balance_audit.py
+```
 
-Tru sung va hang rao cung duoc can bang theo do kho. Easy lam cong trinh re/yeu hon mot chut vi zombie khong qua ap luc; Hard va Nightmare tang HP cong trinh, sat thuong/tam ban/toc ban cua tru, dong thoi tang gia nhe de cong trinh dang mua nhung khong the spam vo toi va. So tru sung bi gioi han theo do kho: Easy 5, Normal 4, Hard 3, Nightmare 2; Engineer duoc them 1 slot tru.
+Ghi chú cân bằng: [BALANCE_NOTES.md](BALANCE_NOTES.md)
 
-Hang rao co 5 cap theo tien trinh level/wave: cap cao hon co nhieu HP hon, lam cham zombie khi ap sat, co gai phan sat thuong, cap 4 co mot lan chan Titan charge, va cap 5 co xung dien lam choang zombie nho theo cooldown. Hang rao moi se xay theo cap tech hien tai; hang rao da dat co the nang cap bang `R` khi dung gan.
+## Build EXE
 
-## Level va vu khi
+Build bản Windows onedir:
 
-Len level khong chi tang mau. Nguoi choi se nhan cac loi ich that su trong tran:
+```powershell
+.\build_exe.ps1
+```
 
-- tang max HP va hoi mot phan HP;
-- tang sat thuong vu khi;
-- tang toc ban;
-- tang giap giam sat thuong nhan vao;
-- tang tam hut vang va bonus vang;
-- mo hoi mau cham o cac moc cao.
+Hoặc:
 
-Nang cap vu khi bang vang se tien hoa theo cac moc:
+```bat
+build_exe.bat
+```
 
-- Glock 17: bang 17 vien, nap nhanh, on dinh dau game.
-- Dual Beretta 92FS: hai bang 15 vien, moi lan boc coi ton 2 vien.
-- HK MP5: bang 30 vien, toc ban cao nhung phai kiem soat reload.
-- Mossberg 500: 6 vien dan shotgun, sat thuong gan manh, nap vua phai.
-- M4A1 Carbine: bang 30 vien, rifle can bang tam trung/xa.
-- Benelli M4: 7 vien shotgun chien dau, clear gan tot nhung khong spam lien tuc.
-- XM-LAS Prototype: 6 charge nang luong, xuyen muc tieu manh nhung toc ban cham hon va reload lau hon de tranh qua OP.
+Output:
 
-Moi tier vu khi co model rieng duoc ve truc tiep tren tay nhan vat: pistol ngan, song luc, SMG, shotgun bom, rifle, shotgun chien dau va sung laser deu co body/nong/bang dan/stock/hieu ung dau nong khac nhau theo dung loai sung.
+```text
+dist/PixelZombieSiege/PixelZombieSiege.exe
+```
 
-Tieng ban cung thay doi theo tier vu khi: Glock ngan gon, song Beretta co double-tap, MP5 gat nhanh, shotgun no tram, rifle sac hon va XM-LAS co am laser/sci-fi rieng.
+Hướng dẫn chi tiết: [BUILD_EXE.md](BUILD_EXE.md)
 
-Vu khi co gioi han cap toi da la 18. Cap nguoi choi cung bi gioi han de tranh viec nguoi choi manh vuot zombie qua xa. Tat ca vu khi nay co gioi han bang dan/charge va tu dong nap khi het dan; HUD se hien `Dan x/y` hoac `Dang nap` de nguoi choi can nhac nhip ban.
+## GitHub Actions
 
-Tam ban cua nguoi choi da bi rut ngan de zombie tao ap luc that hon: pistol/SMG phai chien dau gan hon, shotgun la vu khi tam gan, rifle/laser van co loi the tam xa nhung khong con quet gan het ban do.
+Workflow `.github/workflows/build-exe.yml` tự build EXE Windows khi:
 
-## Nhan vat
+- chạy thủ công bằng `workflow_dispatch`;
+- push tag dạng `v*`;
+- publish GitHub Release.
 
-- Tat ca class co sprite rieng va animation di chuyen theo 4 huong: xuong, len, trai, phai.
-- Soldier: chi so can bang, phu hop mac dinh.
-- Scout: chay nhanh, hut vang xa hon, ban nhanh hon nhung mau va damage thap hon.
-- Engineer: duoc giam gia xay tru/hang rao/sua chua, co bonus vang nho, hop loi choi phong thu.
-- Tank: nhieu mau va giap, damage tot hon, nhung di cham va toc ban kem hon.
+Workflow sẽ:
 
-## Meo choi
+1. Cài dependency.
+2. Chạy smoke test.
+3. Build EXE bằng PyInstaller.
+4. Zip thư mục `dist/PixelZombieSiege`.
+5. Upload artifact `PixelZombieSiege-windows.zip`.
 
-Dung hang rao de lam cham zombie va dat tru sung sau lop chan. Tru sung co the tu dong ban zombie trong tam, nhung ca tru sung va hang rao deu co do ben va co the bi pha.
+## Cấu Trúc Chính
 
-Khi gap Titan, dung hang rao de cau them thoi gian nhung dung dung yen sau mot lop chan duy nhat: Titan co the dam charge pha mot lop phong tuyen, nhung charge se bi dung/khung khi gap hang rao, dac biet la hang rao cap cao. Nen vua lui vua dat tru, tranh duong thang khi thay thong bao `Titan charge!`.
+- `main.py`: game loop, gameplay, zombie, player, weapon, building, UI hooks.
+- `ui_manager.py`: UI/menu/HUD/hotbar.
+- `map_manager.py`: map, collision, Tiled JSON, spawn/build grid.
+- `save_manager.py`: save, high score, meta progression.
+- `path_utils.py`: xử lý đường dẫn source/EXE.
+- `tools/balance_audit.py`: audit cân bằng.
+- `tools/generate_synth_audio.py`: tạo audio synth.
+- `ALGORITHM_DEMO_GUIDE.md`: hướng dẫn demo thuật toán.
+- `MAP_GUIDE.md`: hướng dẫn tạo map bằng Tiled.
+- `BUILD_EXE.md`: hướng dẫn build EXE.
 
-Khong nen dua vao hanh lang 1 o de chan Titan nua: Titan co the leap/vuot tuong khi bi ket 3-5 giay tuy do kho, nhung diem dap phai cach nguoi choi it nhat 120px, co it nhat hai huong thoat va khong nam trong khu phong thu bi bao kin.
+## Test Nhanh Trước Khi Nộp/Release
+
+```powershell
+py -m py_compile main.py ui_manager.py map_manager.py save_manager.py path_utils.py tools\balance_audit.py test_gate_and_fence.py
+py main.py --smoke
+py test_gate_and_fence.py
+py tools\balance_audit.py
+```
+

@@ -407,7 +407,18 @@ class MapManager:
         return cells
 
     def update_dynamic_obstacles(self, buildings):
-        self.dynamic_obstacles = {building.cell for building in buildings if getattr(building, "alive", False)}
+        obstacles = set()
+        for building in buildings:
+            if not getattr(building, "alive", False):
+                continue
+            blocks_path = getattr(building, "blocks_path", None)
+            if callable(blocks_path):
+                if blocks_path():
+                    obstacles.add(building.cell)
+                continue
+            if getattr(building, "stats", {}).get("blocks_path", True):
+                obstacles.add(building.cell)
+        self.dynamic_obstacles = obstacles
 
     def get_player_spawn(self, radius=0):
         cache_key = int(radius)

@@ -202,6 +202,8 @@ SCORE_VALUES = {
     "elite": 50,
     "titan": 500,
 }
+GOLD_DROP_RANDOM_CAP = 7
+GOLD_DROP_LATE_BONUS_STEP = 4
 TITAN_LEAP_COOLDOWNS = {
     "easy": 18.0,
     "normal": 16.0,
@@ -272,6 +274,17 @@ TEXT = {
         "language": "Language",
         "auto_fire": "Auto Fire",
         "dev_mode": "Developer Mode",
+        "algo_demo": "Algorithm Demo",
+        "algo_demo_on": "Algorithm Demo: ON",
+        "algo_demo_off": "Algorithm Demo: OFF",
+        "algo_layer": "Layer",
+        "algo_all": "All",
+        "algo_flow": "Flow Field",
+        "algo_paths": "A* Paths",
+        "algo_collision": "Collision",
+        "algo_spawns": "Spawns",
+        "algo_ai": "AI Roles",
+        "algo_help": "F1 toggle | F2 layer | F3 panel",
         "infinite": "INF",
         "difficulty": "Difficulty",
         "character": "Character",
@@ -295,8 +308,17 @@ TEXT = {
         "pause": "Pause",
         "upgrade": "Upgrade",
         "turret": "Turret",
+        "machine_turret": "MG Turret",
+        "laser_turret": "Laser Turret",
+        "slow_turret": "Slow Turret",
         "fence": "Fence",
+        "steel_wall": "Steel Wall",
         "gate": "Gate",
+        "spike_trap": "Spike Trap",
+        "mine": "Mine",
+        "gate_open": "Gate opened",
+        "gate_closed": "Gate closed",
+        "toggle_gate": "Press G to toggle gate",
         "repair": "Repair",
         "hp": "HP",
         "xp": "XP",
@@ -338,6 +360,15 @@ TEXT = {
         "best_class": "Best Class",
         "best_difficulty": "Best Difficulty",
         "survival_time": "Survival Time",
+        "weapon": "Weapon",
+        "weapon_tier_result": "Weapon Tier",
+        "meta_points": "Meta Points",
+        "meta_earned": "Meta +{points}",
+        "achievements": "Achievements",
+        "unlocks": "Unlocks",
+        "combo_record": "New map/class/difficulty record!",
+        "minimap": "Minimap",
+        "hp_low": "Low HP!",
         "subtitle": "2D RPG SURVIVAL",
         "start_hint": "Press SPACE to start the next wave",
         "skip_hint": "SPACE skips the countdown",
@@ -350,6 +381,9 @@ TEXT = {
         "titan_approaching": "TITAN APPROACHING!",
         "level_up": "LEVEL {level}",
         "level_message": "Level {level}: {perks}",
+        "choose_perk": "Choose a perk",
+        "perk_pending": "Choose a perk to continue",
+        "perk_selected": "Perk selected: {perk}",
         "turret_limit": "Turret limit {count}/{limit}",
         "cannot_build_wall": "Cannot build on wall",
         "tile_occupied": "Tile occupied",
@@ -386,6 +420,17 @@ TEXT = {
         "titan_vault": "Titan vaults the wall!",
         "titan_charge": "Titan charge!",
         "titan_roar": "Titan roar summons infected!",
+        "titan_phase_2": "Titan enraged: charge phase!",
+        "titan_phase_3": "Titan calls the horde!",
+        "titan_phase_4": "Titan critical: stomp frenzy!",
+        "boss_hp": "BOSS",
+        "mission": "Mission",
+        "mission_complete": "Mission complete: {mission} +{gold}g",
+        "mission_survive": "Survive 3 minutes",
+        "mission_runner": "Kill 20 Runners",
+        "mission_turret": "Keep 1 turret alive through a wave",
+        "supply_crate": "Supply Crate",
+        "rare_loot": "Rare loot!",
         "elite_down": "ELITE DOWN",
         "broken": "BROKEN",
         "repair_float": "+repair",
@@ -402,6 +447,16 @@ TEXT = {
         "perk_magnet_gold": "+magnet/gold",
         "perk_armor_regen": "+armor/regen",
         "perk_armor_magnet": "+armor/magnet",
+        "perk_speed": "+move speed",
+        "perk_reload": "-reload time",
+        "perk_turret_damage": "+turret damage",
+        "perk_build_discount": "-build cost",
+        "perk_choice_hp": "Field Medic",
+        "perk_choice_speed": "Light Boots",
+        "perk_choice_reload": "Quick Hands",
+        "perk_choice_magnet": "Gold Magnet",
+        "perk_choice_turret": "Turret Tuning",
+        "perk_choice_build": "Engineer Kit",
     },
     "vi": {
         "title": "PIXEL ZOMBIE SIEGE",
@@ -423,6 +478,17 @@ TEXT = {
         "language": "Ngôn ngữ",
         "auto_fire": "Tự động bắn",
         "dev_mode": "Chế độ nhà phát triển",
+        "algo_demo": "Demo thuật toán",
+        "algo_demo_on": "Demo thuật toán: BẬT",
+        "algo_demo_off": "Demo thuật toán: TẮT",
+        "algo_layer": "Lớp",
+        "algo_all": "Tất cả",
+        "algo_flow": "Flow-field",
+        "algo_paths": "Đường A*",
+        "algo_collision": "Va chạm",
+        "algo_spawns": "Điểm spawn",
+        "algo_ai": "Vai trò AI",
+        "algo_help": "F1 bật/tắt | F2 đổi lớp | F3 panel",
         "infinite": "VÔ HẠN",
         "difficulty": "Độ khó",
         "character": "Nhân vật",
@@ -446,8 +512,17 @@ TEXT = {
         "pause": "Dừng",
         "upgrade": "Nâng cấp",
         "turret": "Trụ súng",
+        "machine_turret": "Trụ liên thanh",
+        "laser_turret": "Trụ laser",
+        "slow_turret": "Trụ làm chậm",
         "fence": "Hàng rào",
+        "steel_wall": "Tường thép",
         "gate": "Cổng",
+        "spike_trap": "Bẫy gai",
+        "mine": "Mìn",
+        "gate_open": "Đã mở cổng",
+        "gate_closed": "Đã đóng cổng",
+        "toggle_gate": "Nhấn G để mở/đóng cổng",
         "repair": "Sửa",
         "hp": "Máu",
         "xp": "KN",
@@ -489,6 +564,15 @@ TEXT = {
         "best_class": "Class tốt nhất",
         "best_difficulty": "Độ khó tốt nhất",
         "survival_time": "Thời gian sống",
+        "weapon": "Vũ khí",
+        "weapon_tier_result": "Bậc vũ khí",
+        "meta_points": "Điểm meta",
+        "meta_earned": "Meta +{points}",
+        "achievements": "Thành tựu",
+        "unlocks": "Mở khóa",
+        "combo_record": "Kỷ lục mới theo map/class/độ khó!",
+        "minimap": "Bản đồ nhỏ",
+        "hp_low": "Máu thấp!",
         "subtitle": "SINH TỒN RPG 2D",
         "start_hint": "Nhấn SPACE để bắt đầu đợt tiếp theo",
         "skip_hint": "SPACE bỏ qua đếm ngược",
@@ -501,6 +585,9 @@ TEXT = {
         "titan_approaching": "TITAN ĐANG TỚI!",
         "level_up": "LÊN CẤP {level}",
         "level_message": "Cấp {level}: {perks}",
+        "choose_perk": "Chọn perk",
+        "perk_pending": "Chọn perk để tiếp tục",
+        "perk_selected": "Đã chọn perk: {perk}",
         "turret_limit": "Giới hạn trụ {count}/{limit}",
         "cannot_build_wall": "Không thể xây trên tường",
         "tile_occupied": "Ô này đã bị chiếm",
@@ -537,6 +624,17 @@ TEXT = {
         "titan_vault": "Titan vượt tường!",
         "titan_charge": "Titan xung phong!",
         "titan_roar": "Titan gầm gọi thêm quái!",
+        "titan_phase_2": "Titan cuồng nộ: xung phong!",
+        "titan_phase_3": "Titan gọi bầy zombie!",
+        "titan_phase_4": "Titan nguy kịch: giẫm liên tục!",
+        "boss_hp": "TRÙM",
+        "mission": "Nhiệm vụ",
+        "mission_complete": "Hoàn thành: {mission} +{gold}v",
+        "mission_survive": "Sống sót 3 phút",
+        "mission_runner": "Hạ 20 Runner",
+        "mission_turret": "Giữ 1 trụ sống qua đợt",
+        "supply_crate": "Hòm tiếp tế",
+        "rare_loot": "Loot hiếm!",
         "elite_down": "HẠ TINH ANH",
         "broken": "BỊ PHÁ",
         "repair_float": "+sửa",
@@ -553,6 +651,16 @@ TEXT = {
         "perk_magnet_gold": "+hút vàng/vàng",
         "perk_armor_regen": "+giáp/hồi máu",
         "perk_armor_magnet": "+giáp/hút vàng",
+        "perk_speed": "+tốc chạy",
+        "perk_reload": "-thời gian nạp",
+        "perk_turret_damage": "+sát thương trụ",
+        "perk_build_discount": "-giá xây",
+        "perk_choice_hp": "Quân y",
+        "perk_choice_speed": "Giày nhẹ",
+        "perk_choice_reload": "Tay nhanh",
+        "perk_choice_magnet": "Nam châm vàng",
+        "perk_choice_turret": "Tinh chỉnh trụ",
+        "perk_choice_build": "Bộ kỹ sư",
     },
 }
 
@@ -693,11 +801,11 @@ CHARACTERS = {
 ZOMBIE_TYPES = {
     "walker": {
         "label": "Walker",
-        "hp": 50,
+        "hp": 52,
         "speed": 42,
         "damage": 8,
         "attack_rate": 0.85,
-        "reward": 8,
+        "reward": 7,
         "xp": 12,
         "radius": 12,
         "color": (91, 166, 82),
@@ -706,11 +814,11 @@ ZOMBIE_TYPES = {
     },
     "runner": {
         "label": "Runner",
-        "hp": 38,
+        "hp": 42,
         "speed": 92,
         "damage": 8,
         "attack_rate": 0.58,
-        "reward": 12,
+        "reward": 10,
         "xp": 17,
         "radius": 11,
         "color": (173, 95, 76),
@@ -719,11 +827,11 @@ ZOMBIE_TYPES = {
     },
     "spitter": {
         "label": "Spitter",
-        "hp": 70,
+        "hp": 76,
         "speed": 50,
         "damage": 9,
         "attack_rate": 0.86,
-        "reward": 18,
+        "reward": 16,
         "xp": 24,
         "radius": 12,
         "color": (96, 176, 122),
@@ -732,11 +840,11 @@ ZOMBIE_TYPES = {
     },
     "boomer": {
         "label": "Boomer",
-        "hp": 62,
+        "hp": 70,
         "speed": 78,
         "damage": 9,
         "attack_rate": 0.78,
-        "reward": 16,
+        "reward": 15,
         "xp": 22,
         "radius": 14,
         "color": (177, 151, 67),
@@ -745,11 +853,11 @@ ZOMBIE_TYPES = {
     },
     "stalker": {
         "label": "Stalker",
-        "hp": 48,
+        "hp": 56,
         "speed": 80,
         "damage": 13,
         "attack_rate": 0.68,
-        "reward": 22,
+        "reward": 20,
         "xp": 30,
         "radius": 11,
         "color": (116, 114, 162),
@@ -758,11 +866,11 @@ ZOMBIE_TYPES = {
     },
     "titan": {
         "label": "Titan",
-        "hp": 430,
+        "hp": 480,
         "speed": 38,
         "damage": 28,
         "attack_rate": 1.05,
-        "reward": 95,
+        "reward": 105,
         "xp": 130,
         "radius": 24,
         "color": (111, 84, 97),
@@ -807,7 +915,7 @@ WEAPON_DEFS = [
         "group": "pistol",
         "min_level": 3,
         "name": "Dual Beretta 92FS",
-        "cost": 145,
+        "cost": 165,
         "damage": 17,
         "damage_per_level": 2,
         "cooldown": 0.22,
@@ -835,7 +943,7 @@ WEAPON_DEFS = [
         "group": "smg",
         "min_level": 5,
         "name": "HK MP5",
-        "cost": 215,
+        "cost": 255,
         "damage": 15,
         "damage_per_level": 2,
         "cooldown": 0.090,
@@ -863,7 +971,7 @@ WEAPON_DEFS = [
         "group": "shotgun",
         "min_level": 7,
         "name": "Mossberg 500",
-        "cost": 295,
+        "cost": 360,
         "damage": 17,
         "damage_per_level": 2,
         "cooldown": 0.56,
@@ -891,7 +999,7 @@ WEAPON_DEFS = [
         "group": "rifle",
         "min_level": 9,
         "name": "M4A1 Carbine",
-        "cost": 385,
+        "cost": 510,
         "damage": 27,
         "damage_per_level": 3,
         "cooldown": 0.145,
@@ -919,7 +1027,7 @@ WEAPON_DEFS = [
         "group": "rifle",
         "min_level": 11,
         "name": "AK-47",
-        "cost": 485,
+        "cost": 670,
         "damage": 35,
         "damage_per_level": 3,
         "cooldown": 0.175,
@@ -947,11 +1055,11 @@ WEAPON_DEFS = [
         "group": "shotgun",
         "min_level": 13,
         "name": "Benelli M4",
-        "cost": 595,
-        "damage": 24,
+        "cost": 850,
+        "damage": 21,
         "damage_per_level": 2,
-        "cooldown": 0.42,
-        "min_cooldown": 0.36,
+        "cooldown": 0.44,
+        "min_cooldown": 0.38,
         "magazine": 8,
         "ammo_per_shot": 1,
         "reload_time": 1.55,
@@ -975,8 +1083,8 @@ WEAPON_DEFS = [
         "group": "machine_gun",
         "min_level": 15,
         "name": "RPK",
-        "cost": 720,
-        "damage": 25,
+        "cost": 1080,
+        "damage": 27,
         "damage_per_level": 2,
         "cooldown": 0.082,
         "min_cooldown": 0.070,
@@ -1006,8 +1114,8 @@ WEAPON_DEFS = [
         "group": "laser",
         "min_level": 17,
         "name": "XM-LAS Prototype",
-        "cost": 860,
-        "damage": 92,
+        "cost": 1360,
+        "damage": 88,
         "damage_per_level": 6,
         "cooldown": 0.34,
         "min_cooldown": 0.30,
@@ -1034,14 +1142,14 @@ WEAPON_DEFS = [
         "group": "machine_gun",
         "min_level": 19,
         "name": "M134 Minigun",
-        "cost": 1040,
+        "cost": 1700,
         "damage": 20,
         "damage_per_level": 2,
-        "cooldown": 0.050,
-        "min_cooldown": 0.044,
+        "cooldown": 0.054,
+        "min_cooldown": 0.048,
         "magazine": 140,
         "ammo_per_shot": 1,
-        "reload_time": 3.25,
+        "reload_time": 3.45,
         "bullet_speed": 690,
         "range": 380,
         "spread": 0.125,
@@ -1069,8 +1177,8 @@ WEAPON_DEFS = [
         "group": "sniper",
         "min_level": 21,
         "name": "Barrett M82A1",
-        "cost": 1240,
-        "damage": 130,
+        "cost": 2150,
+        "damage": 146,
         "damage_per_level": 8,
         "cooldown": 0.54,
         "min_cooldown": 0.48,
@@ -1097,20 +1205,20 @@ WEAPON_DEFS = [
         "group": "railgun",
         "min_level": 23,
         "name": "XM-Railbreaker",
-        "cost": 1550,
-        "damage": 168,
+        "cost": 2700,
+        "damage": 158,
         "damage_per_level": 10,
-        "cooldown": 0.46,
-        "min_cooldown": 0.40,
-        "magazine": 12,
+        "cooldown": 0.50,
+        "min_cooldown": 0.44,
+        "magazine": 10,
         "ammo_per_shot": 1,
-        "reload_time": 2.35,
+        "reload_time": 2.55,
         "bullet_speed": 980,
         "range": 700,
         "spread": 0.006,
         "shots": 1,
-        "pierce": 8,
-        "explosion_radius": 54,
+        "pierce": 7,
+        "explosion_radius": 48,
         "style": "single",
         "role": {"en": "Rail cannon finisher", "vi": "Pháo railgun cuối game"},
         "description": {
@@ -1130,6 +1238,41 @@ STRUCTURE_TYPES = {
         "range": 305,
         "damage": 20,
         "cooldown": 0.38,
+        "turret_type": "single",
+        "blocks_path": True,
+    },
+    "machine_turret": {
+        "label": "MG Turret",
+        "cost": 145,
+        "hp": 125,
+        "range": 285,
+        "damage": 11,
+        "cooldown": 0.13,
+        "turret_type": "machine",
+        "blocks_path": True,
+    },
+    "laser_turret": {
+        "label": "Laser Turret",
+        "cost": 210,
+        "hp": 118,
+        "range": 360,
+        "damage": 23,
+        "cooldown": 0.72,
+        "turret_type": "laser",
+        "pierce": 4,
+        "blocks_path": True,
+    },
+    "slow_turret": {
+        "label": "Slow Turret",
+        "cost": 165,
+        "hp": 135,
+        "range": 300,
+        "damage": 8,
+        "cooldown": 0.48,
+        "turret_type": "slow",
+        "slow": 0.45,
+        "slow_time": 1.6,
+        "blocks_path": True,
     },
     "fence": {
         "label": "Fence",
@@ -1146,6 +1289,36 @@ STRUCTURE_TYPES = {
         "range": 0,
         "damage": 0,
         "cooldown": 0,
+        "blocks_path": True,
+    },
+    "steel_wall": {
+        "label": "Steel Wall",
+        "cost": 95,
+        "hp": 760,
+        "range": 0,
+        "damage": 0,
+        "cooldown": 0,
+        "damage_reduction": 0.24,
+        "blocks_path": True,
+    },
+    "spike_trap": {
+        "label": "Spike Trap",
+        "cost": 55,
+        "hp": 130,
+        "range": 0,
+        "damage": 18,
+        "cooldown": 0.65,
+        "blocks_path": False,
+    },
+    "mine": {
+        "label": "Mine",
+        "cost": 70,
+        "hp": 1,
+        "range": 0,
+        "damage": 95,
+        "cooldown": 0,
+        "radius": 92,
+        "blocks_path": False,
     },
 }
 
@@ -1180,7 +1353,46 @@ POWER_UP_TYPES = {
         "accent": (230, 255, 252),
         "message": "Shock Core blasts nearby zombies",
     },
+    "double_damage": {
+        "label": "Double Damage",
+        "color": (255, 92, 70),
+        "accent": (255, 222, 160),
+        "message": "Double damage for a short time",
+    },
+    "ammo_pack": {
+        "label": "Ammo Pack",
+        "color": (94, 158, 255),
+        "accent": (220, 238, 255),
+        "message": "Ammo refilled",
+    },
+    "repair_pulse": {
+        "label": "Repair Pulse",
+        "color": (82, 220, 180),
+        "accent": (222, 255, 236),
+        "message": "Nearby buildings repaired",
+    },
+    "supply_crate": {
+        "label": "Supply Crate",
+        "color": (184, 126, 64),
+        "accent": (255, 215, 112),
+        "message": "Supply crate opened",
+    },
 }
+
+PERK_DEFS = [
+    {"id": "hp", "name_key": "perk_choice_hp", "desc_key": "perk_hp", "weight": 1.15},
+    {"id": "speed", "name_key": "perk_choice_speed", "desc_key": "perk_speed", "weight": 1.0},
+    {"id": "reload", "name_key": "perk_choice_reload", "desc_key": "perk_reload", "weight": 1.0},
+    {"id": "magnet", "name_key": "perk_choice_magnet", "desc_key": "perk_magnet_gold", "weight": 1.0},
+    {"id": "turret_damage", "name_key": "perk_choice_turret", "desc_key": "perk_turret_damage", "weight": 0.9},
+    {"id": "build_discount", "name_key": "perk_choice_build", "desc_key": "perk_build_discount", "weight": 0.85},
+]
+
+MISSION_DEFS = [
+    {"id": "survive_180", "label_key": "mission_survive", "target": 180, "reward_gold": 180, "reward_powerup": "shield"},
+    {"id": "kill_runners", "label_key": "mission_runner", "target": 20, "reward_gold": 150, "reward_powerup": "double_damage"},
+    {"id": "turret_wave", "label_key": "mission_turret", "target": 1, "reward_gold": 170, "reward_powerup": "repair_pulse"},
+]
 
 DIFFICULTY_NAMES = {
     "easy": {"en": "Easy", "vi": "Dễ"},
@@ -1438,12 +1650,17 @@ POWER_UP_MESSAGES = {
     "shield": {"en": "Shield: damage reduced", "vi": "Lá chắn: giảm sát thương nhận vào"},
     "haste": {"en": "Haste: faster movement", "vi": "Tăng tốc: di chuyển nhanh hơn"},
     "shock": {"en": "Shock Core blasts nearby zombies", "vi": "Lõi điện giật nổ quanh người chơi"},
+    "double_damage": {"en": "Double damage", "vi": "Gấp đôi sát thương"},
+    "ammo_pack": {"en": "Ammo refilled", "vi": "Đã nạp đầy đạn"},
+    "repair_pulse": {"en": "Repair pulse", "vi": "Xung sửa chữa"},
+    "supply_crate": {"en": "Supply crate opened", "vi": "Đã mở hòm tiếp tế"},
 }
 
 BUFF_NAMES = {
     "overdrive": {"en": "OD", "vi": "QT"},
     "shield": {"en": "SH", "vi": "CK"},
     "haste": {"en": "HS", "vi": "TC"},
+    "double_damage": {"en": "2X", "vi": "2X"},
 }
 
 
@@ -2008,6 +2225,7 @@ class Weapon:
     heat: float = 0.0
     spin: float = 0.0
     trigger_held: bool = False
+    reload_bonus: float = 0.0
 
     def __post_init__(self):
         if self.ammo <= 0:
@@ -2020,7 +2238,7 @@ class Weapon:
         next_tier = weapon_tier_for_level(self.level + 1)
         if next_tier["name"] != self.tier_name:
             return next_tier.get("cost", 0)
-        return 45 + self.level * 36 + (self.level // 3) * 18 + self.tier.get("tier", 1) * 8
+        return 55 + self.level * 44 + (self.level // 3) * 28 + self.tier.get("tier", 1) * 16
 
     @property
     def is_maxed(self):
@@ -2079,7 +2297,8 @@ class Weapon:
 
     @property
     def reload_time(self):
-        return max(0.8, self.tier["reload_time"] - self.tier_rank * self.tier.get("reload_improve", 0.04))
+        base = self.tier["reload_time"] - self.tier_rank * self.tier.get("reload_improve", 0.04)
+        return max(0.65, base * (1 - min(0.35, self.reload_bonus)))
 
     @property
     def is_reloading(self):
@@ -2214,9 +2433,10 @@ class Player:
         self.pickup_radius = character["pickup_radius"]
         self.armor = character["armor"]
         self.build_discount = character["build_discount"]
+        self.turret_damage_bonus = 0.0
         self.regen_rate = 0.0
         self.level_notes = []
-        self.buff_timers = {"overdrive": 0.0, "shield": 0.0, "haste": 0.0}
+        self.buff_timers = {"overdrive": 0.0, "shield": 0.0, "haste": 0.0, "double_damage": 0.0}
         self.heal_cooldown = 0.0
         self.dash_cooldown = 0.0
         self.dash_time = 0.0
@@ -2285,7 +2505,7 @@ class Player:
             self.shoot_at(mouse_world, game)
 
     def try_move(self, delta, game):
-        blockers = [s for s in game.structures if s.alive and s.kind != "gate"]
+        blockers = [s for s in game.structures if s.alive and s.blocks_path()]
         if self.dash_time > 0:
             blockers = [s for s in blockers if s.kind != "fence" or s.level >= 4]
         new_pos = self.pos + delta
@@ -2318,8 +2538,9 @@ class Player:
             return
         base_angle = math.atan2(direction.y, direction.x)
         overdrive_damage = 1.35 if self.buff_timers["overdrive"] > 0 else 1.0
+        double_damage = 1.85 if self.buff_timers["double_damage"] > 0 else 1.0
         fire_rate_mult = 1 + self.fire_rate_bonus + (0.45 if self.buff_timers["overdrive"] > 0 else 0)
-        damage = int(self.weapon.damage * (1 + self.damage_bonus) * overdrive_damage * game.difficulty_cfg()["player_damage"])
+        damage = int(self.weapon.damage * (1 + self.damage_bonus) * overdrive_damage * double_damage * game.difficulty_cfg()["player_damage"])
         if not self.weapon.spend_ammo():
             if self.weapon.start_reload():
                 game.play_sound("reload", 0.42, cooldown=0.12)
@@ -2426,10 +2647,32 @@ class Player:
             self.buff_timers["shield"] = max(self.buff_timers["shield"], 8.0)
         elif kind == "haste":
             self.buff_timers["haste"] = max(self.buff_timers["haste"], 6.0)
+        elif kind == "double_damage":
+            self.buff_timers["double_damage"] = max(self.buff_timers["double_damage"], 9.0)
+        elif kind == "ammo_pack":
+            self.weapon.reload_timer = 0
+            self.weapon.ammo = self.weapon.magazine_size
+            game.floating_texts.append(FloatingText(self.pos + Vec2(0, -36), game.t("ammo"), COLORS["blue"], life=1.0))
+        elif kind == "repair_pulse":
+            repaired = 0
+            for structure in game.structures:
+                if structure.alive and structure.hp < structure.max_hp:
+                    structure.repair(int(structure.max_hp * 0.45))
+                    repaired += 1
+            game.create_shockwave(self.pos, 150, 0, visual_only=True, ring_color=COLORS["green"])
+            game.floating_texts.append(FloatingText(self.pos + Vec2(0, -36), f"+{repaired} {game.t('repair')}", COLORS["green"], life=1.0))
         elif kind == "shock":
             damage = 52 + game.wave * 7
             game.damage_zombies_in_radius(self.pos, 128, damage)
             game.create_shockwave(self.pos, 128, 0, visual_only=True)
+        elif kind == "supply_crate":
+            bonus_gold = 90 + game.wave * 12
+            self.gold += bonus_gold
+            game.add_gold_collected(bonus_gold)
+            self.weapon.reload_timer = 0
+            self.weapon.ammo = self.weapon.magazine_size
+            game.spawn_powerup(self.pos + Vec2(34, -10), random.choice(["medkit", "ammo_pack", "double_damage", "repair_pulse", "shield"]))
+            game.add_floating_text(self.pos, f"+{bonus_gold}g", COLORS["gold"], life=0.95)
         game.message = game.powerup_message(kind)
         game.message_timer = 2.0
         game.play_sound("powerup", 0.58, cooldown=0.08)
@@ -2443,11 +2686,11 @@ class Player:
             self.xp -= self.next_xp
             self.level += 1
             self.next_xp = int(self.next_xp * 1.25 + 30)
-            perks = self.apply_level_perks(game)
+            game.queue_perk_choice(self.level)
             game.floating_texts.append(
                 FloatingText(self.pos + Vec2(0, -44), game.t("level_up").format(level=self.level), COLORS["cyan"], life=1.4)
             )
-            game.message = game.t("level_message").format(level=self.level, perks=", ".join(perks))
+            game.message = game.t("perk_pending")
             game.message_timer = 2.6
             game.create_level_up_effect(self.pos, self.level)
         if self.level >= PLAYER_MAX_LEVEL:
@@ -2854,17 +3097,46 @@ class Structure:
         self.level = self.stats.get("level", 0)
         self.electric_timer = 0.0
         self.titan_guard_ready = bool(self.stats.get("titan_guard", False))
+        self.open = False
         self.fire_timer = random.uniform(0, 0.2)
         self.rect = pygame.Rect(cell[0] * TILE + 4, cell[1] * TILE + 4, TILE - 8, TILE - 8)
         self.alive = True
 
+    def blocks_path(self):
+        if self.kind == "gate":
+            return not self.open
+        return self.stats.get("blocks_path", True)
+
     def update(self, dt, game):
         if not self.alive:
             return
-        if self.kind in ("fence", "gate"):
+        if self.kind in ("fence", "gate", "steel_wall"):
             self.electric_timer = max(0, self.electric_timer - dt)
             return
-        if self.kind != "turret":
+        if self.kind == "spike_trap":
+            self.fire_timer = max(0, self.fire_timer - dt)
+            if self.fire_timer <= 0:
+                center = Vec2(self.rect.center)
+                for zombie in game.zombies:
+                    if zombie.alive and zombie.kind != "titan" and dist_point_rect((zombie.pos.x, zombie.pos.y), self.rect) < zombie.radius + 6:
+                        zombie.take_damage(self.stats["damage"], game)
+                        zombie.slow_timer = max(getattr(zombie, "slow_timer", 0.0), 0.75)
+                        zombie.slow_mult = min(getattr(zombie, "slow_mult", 1.0), 0.62)
+                        self.fire_timer = self.stats["cooldown"]
+                        game.spawn_spark(center, COLORS["orange"])
+                        break
+            return
+        if self.kind == "mine":
+            center = Vec2(self.rect.center)
+            for zombie in game.zombies:
+                if zombie.alive and zombie.pos.distance_to(center) < zombie.radius + 10:
+                    game.damage_zombies_in_radius(center, self.stats.get("radius", 92), self.stats["damage"])
+                    game.create_explosion(center, self.stats.get("radius", 92), 0, visual_only=True, colors=[COLORS["orange"], COLORS["gold"], COLORS["red"]], ring_color=COLORS["orange"])
+                    game.add_camera_shake(3.5, 0.12)
+                    self.alive = False
+                    return
+            return
+        if self.stats.get("turret_type") is None:
             return
         self.fire_timer = max(0, self.fire_timer - dt)
         if self.fire_timer > 0:
@@ -2884,12 +3156,23 @@ class Structure:
         direction = target.pos - center
         if direction.length_squared() == 0:
             return
-        vel = direction.normalize() * 500
-        game.bullets.append(Bullet(center + vel.normalize() * 18, vel, self.stats["damage"], self.stats["range"] + 40, "turret"))
+        turret_type = self.stats.get("turret_type", "single")
+        damage = max(1, int(round(self.stats["damage"] * (1 + game.player.turret_damage_bonus))))
+        if turret_type == "laser":
+            laser_dir = direction.normalize()
+            game.fire_laser(center + laser_dir * 16, laser_dir, damage, self.stats["range"] + 20, self.stats.get("pierce", 4))
+            game.add_bullet_trail(center, target.pos, game.player.weapon)
+            game.play_sound("laser", 0.20, cooldown=0.12)
+        else:
+            vel = direction.normalize() * (620 if turret_type == "machine" else 500)
+            game.bullets.append(Bullet(center + vel.normalize() * 18, vel, damage, self.stats["range"] + 40, "turret"))
+            if turret_type == "slow":
+                target.slow_timer = max(getattr(target, "slow_timer", 0.0), self.stats.get("slow_time", 1.6))
+                target.slow_mult = min(getattr(target, "slow_mult", 1.0), self.stats.get("slow", 0.45))
         self.fire_timer = self.stats["cooldown"]
 
     def take_damage(self, amount, game):
-        if self.kind in ("fence", "gate"):
+        if self.kind in ("fence", "gate", "steel_wall"):
             amount = max(1, int(round(amount * (1 - self.stats.get("damage_reduction", 0.0)))))
         self.hp -= amount
         game.spawn_spark(Vec2(self.rect.center), (210, 92, 73))
@@ -2910,7 +3193,7 @@ class Structure:
         self.electric_timer = 0.0
 
     def on_zombie_attack(self, zombie, game):
-        if self.kind != "fence" or not zombie.alive:
+        if self.kind not in ("fence", "steel_wall") or not zombie.alive:
             return
         spike = self.stats.get("spike_damage", 0)
         if spike > 0 and zombie.kind != "titan":
@@ -2927,13 +3210,46 @@ class Structure:
             game.play_sound("laser", 0.28, cooldown=0.18)
 
     def draw(self, surface):
-        if self.kind == "turret":
+        if self.stats.get("turret_type") is not None:
+            turret_type = self.stats.get("turret_type", "single")
+            accents = {
+                "single": COLORS["cyan"],
+                "machine": COLORS["orange"],
+                "laser": (105, 230, 255),
+                "slow": (142, 170, 255),
+            }
+            accent = accents.get(turret_type, COLORS["cyan"])
             base = pygame.Rect(self.rect)
             pygame.draw.rect(surface, (55, 65, 76), base)
             pygame.draw.rect(surface, (121, 134, 145), base.inflate(-6, -6))
             center = Vec2(base.center)
             pygame.draw.circle(surface, (45, 49, 55), center, 8)
-            pygame.draw.rect(surface, COLORS["cyan"], (center.x - 4, center.y - 15, 8, 18))
+            if turret_type == "machine":
+                pygame.draw.rect(surface, accent, (center.x - 8, center.y - 15, 5, 18))
+                pygame.draw.rect(surface, accent, (center.x + 3, center.y - 15, 5, 18))
+            elif turret_type == "laser":
+                pygame.draw.rect(surface, accent, (center.x - 3, center.y - 18, 6, 22))
+                pygame.draw.circle(surface, (225, 255, 255), center, 4)
+            elif turret_type == "slow":
+                pygame.draw.circle(surface, accent, center, 10, 2)
+                pygame.draw.rect(surface, accent, (center.x - 3, center.y - 15, 6, 16))
+            else:
+                pygame.draw.rect(surface, accent, (center.x - 4, center.y - 15, 8, 18))
+        elif self.kind == "spike_trap":
+            pygame.draw.rect(surface, (56, 45, 38), self.rect)
+            for x in range(self.rect.left + 4, self.rect.right - 2, 7):
+                pygame.draw.polygon(surface, COLORS["orange"], [(x, self.rect.bottom - 4), (x + 3, self.rect.top + 5), (x + 6, self.rect.bottom - 4)])
+            pygame.draw.rect(surface, (92, 72, 55), self.rect, 2)
+        elif self.kind == "mine":
+            center = Vec2(self.rect.center)
+            pygame.draw.circle(surface, (42, 45, 48), center, 11)
+            pygame.draw.circle(surface, COLORS["red"], center, 6)
+            pygame.draw.circle(surface, COLORS["gold"], center, 2)
+        elif self.kind == "steel_wall":
+            pygame.draw.rect(surface, (62, 68, 72), self.rect)
+            pygame.draw.rect(surface, (132, 142, 145), self.rect.inflate(-4, -4))
+            pygame.draw.line(surface, (38, 42, 46), self.rect.topleft, self.rect.bottomright, 3)
+            pygame.draw.line(surface, (38, 42, 46), self.rect.topright, self.rect.bottomleft, 3)
         elif self.kind == "gate":
             base = pygame.Rect(self.rect)
             post_w = max(4, self.rect.width // 6)
@@ -2942,8 +3258,12 @@ class Structure:
             pygame.draw.rect(surface, (83, 58, 41), left_post)
             pygame.draw.rect(surface, (83, 58, 41), right_post)
             center_rect = pygame.Rect(self.rect.left + post_w, self.rect.top, self.rect.width - post_w * 2, self.rect.height)
-            pygame.draw.rect(surface, (62, 63, 64), center_rect)
-            pygame.draw.rect(surface, (36, 38, 42), center_rect.inflate(-4, -4))
+            if self.open:
+                pygame.draw.rect(surface, (38, 48, 44), center_rect)
+                pygame.draw.line(surface, COLORS["green"], (center_rect.left + 2, center_rect.centery), (center_rect.right - 2, center_rect.centery), 2)
+            else:
+                pygame.draw.rect(surface, (62, 63, 64), center_rect)
+                pygame.draw.rect(surface, (36, 38, 42), center_rect.inflate(-4, -4))
             pygame.draw.rect(surface, (143, 108, 64), (base.left + 3, base.top + 4, base.w - 6, 5), border_radius=2)
             pygame.draw.rect(surface, (143, 108, 64), (base.left + 3, base.bottom - 9, base.w - 6, 5), border_radius=2)
             for x in (base.left + base.w // 3, base.left + base.w * 2 // 3):
@@ -2988,9 +3308,16 @@ class Zombie:
         self.difficulty_id = difficulty_id
         self.elite = elite and kind != "titan"
         self.pos = Vec2(pos)
-        hp_scale = 1.0 + max(0, wave - 1) * 0.18
+        hp_scale = (
+            1.0
+            + max(0, wave - 1) * 0.17
+            + max(0, wave - 8) * 0.025
+            + max(0, wave - 16) * 0.035
+        )
+        if kind in ("runner", "spitter", "boomer", "stalker"):
+            hp_scale *= 1.0 + min(0.16, wave * 0.006)
         if kind == "titan":
-            hp_scale += wave * 0.08
+            hp_scale += wave * 0.085
         self.max_hp = int(self.cfg["hp"] * hp_scale * difficulty["hp"])
         self.hp = self.max_hp
         self.radius = self.cfg["radius"]
@@ -3027,10 +3354,13 @@ class Zombie:
         self.wall_leap_duration = 0.7
         self.wall_leap_start = Vec2(self.pos)
         self.wall_leap_target = Vec2(self.pos)
-        self.summon_thresholds = [0.72, 0.48, 0.24] if kind == "titan" else []
+        self.summon_thresholds = [0.40, 0.20] if kind == "titan" else []
         self.last_pos = Vec2(self.pos)
         self.stuck_timer = 0
         self.stun_timer = 0.0
+        self.slow_timer = 0.0
+        self.slow_mult = 1.0
+        self.titan_phase = 1
         self.facing = "down"
         self.anim_phase = random.uniform(0, 4)
 
@@ -3048,11 +3378,14 @@ class Zombie:
         self.alive = False
         game.spawn_blood_decal(self.pos, self.kind, elite=self.elite)
         game.play_zombie_sound("death", self.kind, volume=0.48 if self.kind != "titan" else 0.82, cooldown=0.12)
-        reward = int(round((self.cfg["reward"] + random.randint(0, 3 + game.wave)) * game.difficulty_cfg()["reward"]))
+        random_cap = min(GOLD_DROP_RANDOM_CAP, 2 + game.wave // 3)
+        late_bonus = max(0, (game.wave - 10) // GOLD_DROP_LATE_BONUS_STEP)
+        reward = int(round((self.cfg["reward"] + random.randint(0, random_cap) + late_bonus) * game.difficulty_cfg()["reward"]))
         if self.elite:
-            reward = int(round(reward * 1.65))
+            reward = int(round(reward * 1.55))
         game.drop_gold(self.pos, reward)
         game.player.kills += 1
+        game.on_zombie_killed(self)
         score_value = SCORE_VALUES["elite"] if self.elite else SCORE_VALUES.get(self.kind, 10)
         game.add_score(score_value, self.pos + Vec2(0, -40), COLORS["cyan"] if not self.elite else COLORS["orange"])
         game.player.add_xp(int(round(self.cfg["xp"] * (1.55 if self.elite else 1.0))), game)
@@ -3083,6 +3416,9 @@ class Zombie:
             return
         self.flash = max(0, self.flash - dt)
         self.stun_timer = max(0, self.stun_timer - dt)
+        self.slow_timer = max(0, self.slow_timer - dt)
+        if self.slow_timer <= 0:
+            self.slow_mult = 1.0
         self.attack_timer = max(0, self.attack_timer - dt)
         self.special_timer = max(0, self.special_timer - dt)
         self.lunge_boost = max(0, self.lunge_boost - dt)
@@ -3137,6 +3473,9 @@ class Zombie:
     def update_titan(self, dt, game):
         self.flash = max(0, self.flash - dt)
         self.stun_timer = max(0, self.stun_timer - dt)
+        self.slow_timer = max(0, self.slow_timer - dt)
+        if self.slow_timer <= 0:
+            self.slow_mult = 1.0
         self.attack_timer = max(0, self.attack_timer - dt)
         self.special_timer = max(0, self.special_timer - dt)
         self.trample_timer = max(0, self.trample_timer - dt)
@@ -3145,6 +3484,7 @@ class Zombie:
         self.wall_leap_timer = max(0, self.wall_leap_timer - dt)
 
         self.ensure_titan_clear(game)
+        self.update_titan_phase(game)
         self.try_titan_summon(game)
 
         if self.wall_leap_time > 0:
@@ -3166,9 +3506,11 @@ class Zombie:
             self.attack_timer = self.cfg["attack_rate"]
             return
 
-        if self.shockwave_timer <= 0 and player_dist < 340:
+        phase = getattr(self, "titan_phase", 1)
+        stomp_range = 430 if phase >= 4 else 340
+        if self.shockwave_timer <= 0 and player_dist < stomp_range:
             self.titan_stomp(game, radius=150, damage=self.damage + 2)
-            self.shockwave_timer = random.uniform(5.2, 7.2)
+            self.shockwave_timer = random.uniform(2.6, 3.6) if phase >= 4 else (random.uniform(3.8, 5.0) if phase >= 3 else random.uniform(5.2, 7.2))
             self.attack_timer = max(self.attack_timer, 0.65)
             return
 
@@ -3186,6 +3528,23 @@ class Zombie:
             else:
                 self.nudge_titan_out(game)
                 self.stuck_timer = max(0, self.stuck_timer - 1.0)
+
+    def update_titan_phase(self, game):
+        hp_pct = self.hp / max(1, self.max_hp)
+        phase = 4 if hp_pct <= 0.20 else (3 if hp_pct <= 0.40 else (2 if hp_pct <= 0.70 else 1))
+        if phase <= self.titan_phase:
+            return
+        self.titan_phase = phase
+        key = {2: "titan_phase_2", 3: "titan_phase_3", 4: "titan_phase_4"}[phase]
+        game.message = game.t(key)
+        game.message_timer = 2.0
+        game.titan_banner_timer = 1.5
+        game.create_shockwave(self.pos, 130 + phase * 18, 0, visual_only=True, ring_color=COLORS["red"] if phase >= 4 else COLORS["orange"])
+        game.add_camera_shake(4.5 + phase, 0.22)
+        if phase >= 2:
+            self.charge_timer = min(self.charge_timer, 1.0)
+        if phase >= 4:
+            self.shockwave_timer = min(self.shockwave_timer, 0.8)
 
     def can_titan_leap(self, game):
         if self.wall_leap_timer > 0 or self.stuck_timer < game.titan_stuck_threshold():
@@ -3326,7 +3685,8 @@ class Zombie:
         self.charge_hit_player = False
         self.charge_structure_hits = 0
         self.charge_hit_structure_ids = set()
-        self.charge_timer = random.uniform(5.4, 7.0)
+        phase = getattr(self, "titan_phase", 1)
+        self.charge_timer = random.uniform(3.2, 4.6) if phase >= 2 else random.uniform(5.4, 7.0)
         self.path.clear()
         game.message = game.t("titan_charge")
         game.message_timer = 1.2
@@ -3462,15 +3822,15 @@ class Zombie:
             return
         if self.dash_timer > 0:
             return
-        target = game.player.pos
+        target = game.boomer_dash_target(self.pos)
         dist = self.pos.distance_to(target)
-        if 70 < dist < 255:
+        if 70 < dist < 315 and has_wall_line(game.tile_map, self.pos, target):
             direction = target - self.pos
             if direction.length_squared() > 1:
                 self.dash_dir = direction.normalize()
                 self.facing = facing_from_vector(self.dash_dir)
-                self.dash_time = 0.28
-                self.dash_timer = random.uniform(2.1, 3.2)
+                self.dash_time = 0.34
+                self.dash_timer = random.uniform(1.55, 2.55)
                 game.spawn_spark(self.pos, (135, 255, 71))
                 game.play_sound("dash", 0.42, cooldown=0.2)
 
@@ -3537,7 +3897,7 @@ class Zombie:
         return fence.stats.get("slow", 1.0)
 
     def follow_path(self, dt, game):
-        speed = self.speed * game.zombie_speed_multiplier(self.kind) * self.fence_slow_multiplier(game)
+        speed = self.speed * game.zombie_speed_multiplier(self.kind) * self.fence_slow_multiplier(game) * self.slow_mult
         if self.lunge_boost > 0:
             speed *= 1.9
         if self.dash_time > 0 and self.dash_dir.length_squared() > 0:
@@ -3550,6 +3910,22 @@ class Zombie:
             if flow_dir is not None:
                 self.facing = facing_from_vector(flow_dir)
                 self.try_move(flow_dir * speed * dt, game)
+                return
+
+        if self.kind == "spitter":
+            player_delta = self.pos - game.player.pos
+            if player_delta.length_squared() > 1 and self.pos.distance_to(game.player.pos) < 145:
+                retreat = player_delta.normalize()
+                self.facing = facing_from_vector(-retreat)
+                self.try_move(retreat * speed * 1.08 * dt, game)
+                return
+
+        if self.kind == "stalker" and game.position_in_player_fire_lane(self.pos):
+            dodge = game.stalker_dodge_vector(self.pos)
+            if dodge.length_squared() > 0:
+                self.facing = facing_from_vector(dodge)
+                self.try_move(dodge.normalize() * speed * 1.26 * dt, game)
+                self.path_timer = min(self.path_timer, 0.08)
                 return
 
         if self.kind == "runner" and has_wall_line(game.tile_map, self.pos, game.player.pos):
@@ -3588,11 +3964,11 @@ class Zombie:
             goal = game.spitter_goal_cell(self.pos)
             path = game.cached_path("spitter_keep_range", start, goal, allow_diagonal=True, weight=1.08, max_nodes=620, smooth=True)
         elif self.kind == "boomer":
-            goal = game.predicted_player_cell(lead_tiles=2) or player_cell
+            goal = game.boomer_priority_cell(self.pos) or game.predicted_player_cell(lead_tiles=2) or player_cell
             path = game.cached_path("boomer_intercept", start, goal, allow_diagonal=True, weight=1.28, max_nodes=520, smooth=True)
         elif self.kind == "runner":
-            goal = game.predicted_player_cell(lead_tiles=3) or player_cell
-            path = game.cached_path("runner_weighted_astar", start, goal, allow_diagonal=True, weight=1.45, max_nodes=360, smooth=True)
+            goal = game.runner_flank_cell(self.pos) or game.predicted_player_cell(lead_tiles=3) or player_cell
+            path = game.cached_path("runner_flank_astar", start, goal, allow_diagonal=True, weight=1.38, max_nodes=480, smooth=True)
         elif self.kind == "stalker":
             goal = game.stalker_flank_cell(self.pos)
             stalker_blockers = {s.cell for s in game.structures if s.alive and (s.kind != "fence" or s.level >= 3)}
@@ -3952,6 +4328,10 @@ class Game:
         self.sfx_volume = 80
         self.auto_fire = True
         self.dev_mode = False
+        self.algo_demo = False
+        self.algo_demo_layer = "all"
+        self.algo_demo_show_panel = True
+        self.algo_demo_layers = ("all", "flow", "paths", "collision", "spawns", "ai")
         self.save_manager = SaveManager()
         self.save_data = self.save_manager.load()
         self.apply_saved_settings()
@@ -3975,8 +4355,10 @@ class Game:
         self.audio_enabled = False
         self.sounds = {}
         self.sound_cooldowns = {}
+        self.audio_groups = {}
         self.music_tracks = {}
         self.current_music_key = None
+        self.low_hp_warning_timer = 0.0
         self.wave_banner_text = ""
         self.wave_banner_timer = 0.0
         self.titan_banner_timer = 0.0
@@ -4006,6 +4388,7 @@ class Game:
         self.tile_map = self.map_manager
         self.refresh_world_layout()
         self.player = Player((self.map_manager.world_w / 2, self.map_manager.world_h / 2), self.character_id)
+        self.apply_meta_progression()
         self.zombies = []
         self.bullets = []
         self.bullet_trails = []
@@ -4038,11 +4421,20 @@ class Game:
         self.score_time_accum = 0.0
         self.run_gold_collected = 0
         self.bile_timer = 0
+        self.perk_choices = []
+        self.perk_level = 0
+        self.pending_perk_levels = []
+        self.missions = self.create_missions()
+        self.runner_kills = 0
+        self.titan_kills = 0
+        self.turret_wave_start = False
+        self.turret_wave_number = 0
         self.message = self.t("press_space_wave")
         self.message_timer = 4
         self.wave_banner_text = ""
         self.wave_banner_timer = 0.0
         self.titan_banner_timer = 0.0
+        self.low_hp_warning_timer = 0.0
         self.spawn_cells = self.build_spawn_cells()
         self.boss_spawn_cells = self.build_boss_spawn_cells()
         self.path_blockers = set()
@@ -4059,6 +4451,38 @@ class Game:
         self.save_data["progression"]["total_runs"] += 1
         self.save_manager.save()
 
+    def progression(self):
+        return self.save_manager.get_progression()
+
+    def apply_meta_progression(self):
+        progression = self.save_data.setdefault("progression", {})
+        upgrades = progression.get("meta_upgrades", {})
+        total_meta = int(progression.get("meta_points", 0)) + int(progression.get("spent_meta_points", 0))
+        passive = min(40, total_meta)
+        if passive:
+            self.player.max_hp += passive * 2
+            self.player.hp = self.player.max_hp
+            self.player.damage_bonus += passive * 0.0025
+            self.player.pickup_radius += passive * 2
+            self.player.build_discount = min(0.50, self.player.build_discount + passive * 0.002)
+        health = int(upgrades.get("health", 0))
+        damage = int(upgrades.get("damage", 0))
+        economy = int(upgrades.get("economy", 0))
+        build = int(upgrades.get("build", 0))
+        if health:
+            self.player.max_hp += health * 7
+            self.player.hp = self.player.max_hp
+            self.player.armor += health // 2
+        if damage:
+            self.player.damage_bonus += damage * 0.018
+            self.player.fire_rate_bonus += damage * 0.006
+        if economy:
+            self.player.gold_bonus += economy * 0.018
+            self.player.pickup_radius += economy * 7
+        if build:
+            self.player.build_discount = min(0.50, self.player.build_discount + build * 0.018)
+            self.player.turret_damage_bonus += build * 0.025
+
     def add_score(self, amount, pos=None, color=None):
         amount = int(round(amount))
         if amount <= 0:
@@ -4071,16 +4495,123 @@ class Game:
         self.run_gold_collected += int(amount)
         self.add_score(int(amount), None)
 
+    def create_missions(self):
+        return [
+            {
+                "id": item["id"],
+                "label_key": item["label_key"],
+                "target": item["target"],
+                "progress": 0,
+                "completed": False,
+                "reward_gold": item["reward_gold"],
+                "reward_powerup": item.get("reward_powerup"),
+            }
+            for item in MISSION_DEFS
+        ]
+
+    def mission_label(self, mission):
+        return self.t(mission["label_key"])
+
+    def complete_mission(self, mission):
+        if mission["completed"]:
+            return
+        mission["completed"] = True
+        mission["progress"] = mission["target"]
+        gold = mission["reward_gold"]
+        self.player.gold += gold
+        self.add_gold_collected(gold)
+        self.add_score(gold, self.player.pos + Vec2(0, -70), COLORS["gold"])
+        powerup = mission.get("reward_powerup")
+        if powerup:
+            self.spawn_powerup(self.player.pos + Vec2(random.uniform(-36, 36), random.uniform(-36, 36)), powerup)
+        self.message = self.t("mission_complete").format(mission=self.mission_label(mission), gold=gold)
+        self.message_timer = 2.5
+        self.create_level_up_effect(self.player.pos, self.player.level)
+
+    def update_missions(self):
+        for mission in self.missions:
+            if mission["completed"]:
+                continue
+            if mission["id"] == "survive_180":
+                mission["progress"] = min(mission["target"], int(self.run_time))
+            elif mission["id"] == "kill_runners":
+                mission["progress"] = min(mission["target"], self.runner_kills)
+            elif mission["id"] == "turret_wave":
+                mission["progress"] = 1 if self.turret_wave_start else 0
+                continue
+            if mission["progress"] >= mission["target"]:
+                self.complete_mission(mission)
+
+    def on_zombie_killed(self, zombie):
+        if zombie.kind == "runner":
+            self.runner_kills += 1
+        if zombie.kind == "titan":
+            self.titan_kills += 1
+        if zombie.elite and random.random() < 0.18:
+            self.spawn_powerup(zombie.pos, random.choice(["supply_crate", "double_damage", "ammo_pack"]))
+        if zombie.kind == "titan":
+            self.spawn_powerup(zombie.pos, "supply_crate")
+            self.spawn_powerup(zombie.pos + Vec2(24, -20), random.choice(["repair_pulse", "double_damage", "shield"]))
+
+    def queue_perk_choice(self, level):
+        self.pending_perk_levels.append(level)
+        if not self.perk_choices:
+            self.open_next_perk_choice()
+
+    def open_next_perk_choice(self):
+        if not self.pending_perk_levels:
+            self.perk_choices = []
+            self.perk_level = 0
+            return
+        self.perk_level = self.pending_perk_levels.pop(0)
+        choices = random.sample(PERK_DEFS, k=min(3, len(PERK_DEFS)))
+        self.perk_choices = [dict(choice) for choice in choices]
+
+    def apply_perk(self, perk):
+        player = self.player
+        perk_id = perk["id"]
+        if perk_id == "hp":
+            player.max_hp += 26
+            player.hp = min(player.max_hp, player.hp + 55)
+            player.armor += 1
+        elif perk_id == "speed":
+            player.speed += 9
+            player.dash_cooldown = max(0, player.dash_cooldown - 0.35)
+        elif perk_id == "reload":
+            player.weapon.reload_bonus = min(0.35, player.weapon.reload_bonus + 0.08)
+            player.fire_rate_bonus += 0.02
+        elif perk_id == "magnet":
+            player.pickup_radius += 24
+            player.gold_bonus += 0.06
+        elif perk_id == "turret_damage":
+            player.turret_damage_bonus += 0.14
+        elif perk_id == "build_discount":
+            player.build_discount = min(0.42, player.build_discount + 0.06)
+            player.regen_rate += 0.12
+        label = self.t(perk["desc_key"])
+        player.level_notes = [label] + player.level_notes[:2]
+        self.message = self.t("perk_selected").format(perk=self.t(perk["name_key"]))
+        self.message_timer = 1.8
+        self.create_level_up_effect(player.pos, player.level)
+        self.open_next_perk_choice()
+
     def current_run_stats(self):
         return {
             "wave": self.wave,
             "score": self.player.score,
             "kills": self.player.kills,
+            "runner_kills": self.runner_kills,
+            "titan_kills": self.titan_kills,
             "gold_collected": self.run_gold_collected,
             "survival_time": self.run_time,
             "map": self.map_name(self.map_id),
             "character": self.character_name(self.character_id),
             "difficulty": self.difficulty_name(self.difficulty_id),
+            "map_id": self.map_id,
+            "character_id": self.character_id,
+            "difficulty_id": self.difficulty_id,
+            "weapon": self.weapon_name(self.player.weapon.tier_name),
+            "weapon_tier": self.player.weapon.tier_number,
         }
 
     def end_run(self):
@@ -4090,6 +4621,10 @@ class Game:
         self.game_over = True
         self.run_finalized = True
         self.new_record_fields = self.save_manager.update_high_score(self.current_run_stats())
+        rewards = self.progression().get("last_rewards", {})
+        meta_points = int(rewards.get("meta_points", 0))
+        if meta_points:
+            self.floating_texts.append(FloatingText(self.player.pos + Vec2(0, -88), self.t("meta_earned").format(points=meta_points), COLORS["purple"], life=1.4))
         self.new_record = bool(self.new_record_fields)
 
     def t(self, key):
@@ -4144,6 +4679,13 @@ class Game:
         try:
             if not pygame.mixer.get_init():
                 pygame.mixer.init()
+            pygame.mixer.set_num_channels(24)
+            self.audio_groups = {
+                "ui": [pygame.mixer.Channel(0), pygame.mixer.Channel(1)],
+                "weapon": [pygame.mixer.Channel(i) for i in range(2, 8)],
+                "zombie": [pygame.mixer.Channel(i) for i in range(8, 14)],
+                "world": [pygame.mixer.Channel(i) for i in range(14, 20)],
+            }
         except pygame.error:
             self.audio_enabled = False
             return
@@ -4215,7 +4757,7 @@ class Game:
                 continue
         return None
 
-    def play_sound(self, name, volume=1.0, cooldown=0.0):
+    def play_sound(self, name, volume=1.0, cooldown=0.0, group="world"):
         if not self.audio_enabled or self.sfx_volume <= 0:
             return
         sound = self.sounds.get(name)
@@ -4225,15 +4767,26 @@ class Game:
         if cooldown > 0 and now < self.sound_cooldowns.get(name, 0):
             return
         sound.set_volume(clamp(volume * self.sfx_volume / 100, 0, 1))
-        sound.play()
+        channel = self._free_audio_channel(group)
+        if channel is not None:
+            channel.play(sound)
+        else:
+            sound.play()
         if cooldown > 0:
             self.sound_cooldowns[name] = now + cooldown
+
+    def _free_audio_channel(self, group):
+        channels = self.audio_groups.get(group) or self.audio_groups.get("world") or []
+        for channel in channels:
+            if not channel.get_busy():
+                return channel
+        return channels[0] if channels else None
 
     def play_weapon_sound(self):
         audio = WEAPON_AUDIO.get(self.player.weapon.tier_name)
         if audio is None:
             audio = WEAPON_AUDIO_GROUPS.get(self.player.weapon.group, WEAPON_AUDIO_GROUPS["rifle"])
-        self.play_sound(audio["sound"], audio["volume"], audio["cooldown"])
+        self.play_sound(audio["sound"], audio["volume"], audio["cooldown"], group="weapon")
 
     def play_zombie_sound(self, mood, kind="walker", volume=0.38, cooldown=0.35):
         if kind == "titan" or mood == "titan":
@@ -4244,7 +4797,7 @@ class Game:
             key = "zombie_attack"
         else:
             key = "zombie_groan"
-        self.play_sound(key, volume, cooldown)
+        self.play_sound(key, volume, cooldown, group="zombie")
 
     def apply_music_volume(self):
         if self.headless or not pygame.mixer.get_init():
@@ -4436,35 +4989,40 @@ class Game:
                 "damage": 0,
                 "cooldown": 0,
                 "damage_reduction": 0.18,
+                "blocks_path": True,
             }
         hp_multiplier = balance["hp"]
-        return {
+        stats = {
             "hp": max(1, int(round(cfg["hp"] * hp_multiplier))),
             "range": max(0, int(round(cfg["range"] * balance["turret_range"]))),
             "damage": max(0, int(round(cfg["damage"] * balance["turret_damage"]))),
             "cooldown": max(0.08, cfg["cooldown"] * balance["turret_cooldown"]),
         }
+        for key in ("turret_type", "blocks_path", "pierce", "slow", "slow_time", "radius", "damage_reduction"):
+            if key in cfg:
+                stats[key] = cfg[key]
+        return stats
 
     def structure_cost(self, kind):
         base_cost = STRUCTURE_TYPES[kind]["cost"]
         if kind == "fence":
             base_cost = int(round(base_cost * (1 + (self.fence_level() - 1) * 0.32)))
         difficulty_cost = self.structure_balance_cfg()["cost"]
-        discount = CHARACTERS.get(self.character_id, CHARACTERS["soldier"])["build_discount"]
+        discount = getattr(self.player, "build_discount", CHARACTERS.get(self.character_id, CHARACTERS["soldier"])["build_discount"])
         return max(1, int(round(base_cost * difficulty_cost * (1 - discount))))
 
     def fence_upgrade_cost(self, target_level):
         difficulty_cost = self.structure_balance_cfg()["cost"]
-        discount = CHARACTERS.get(self.character_id, CHARACTERS["soldier"])["build_discount"]
+        discount = getattr(self.player, "build_discount", CHARACTERS.get(self.character_id, CHARACTERS["soldier"])["build_discount"])
         return max(1, int(round((28 + target_level * 26) * difficulty_cost * (1 - discount))))
 
     def repair_cost(self):
         difficulty_cost = self.structure_balance_cfg()["repair_cost"]
-        discount = CHARACTERS.get(self.character_id, CHARACTERS["soldier"])["build_discount"]
+        discount = getattr(self.player, "build_discount", CHARACTERS.get(self.character_id, CHARACTERS["soldier"])["build_discount"])
         return max(1, int(round(15 * difficulty_cost * (1 - discount))))
 
     def turret_count(self):
-        return len([s for s in self.structures if s.alive and s.kind == "turret"])
+        return len([s for s in self.structures if s.alive and s.stats.get("turret_type") is not None])
 
     def turret_limit(self):
         base = TURRET_LIMITS.get(self.difficulty_id, TURRET_LIMITS["normal"])
@@ -4651,7 +5209,7 @@ class Game:
         else:
             cell = (int(position[0]), int(position[1]))
         center = self.tile_map.cell_center(cell)
-        if building_type == "turret" and self.turret_count() >= self.turret_limit():
+        if STRUCTURE_TYPES[building_type].get("turret_type") is not None and self.turret_count() >= self.turret_limit():
             return False, "turret_limit"
         self.map_manager.update_dynamic_obstacles(self.structures)
         if not self.map_manager.in_bounds(cell) or self.map_manager.is_wall(cell):
@@ -4659,6 +5217,8 @@ class Game:
         important_spawns = set(self.spawn_cells or self.build_spawn_cells()) | set(self.boss_spawn_cells or self.build_boss_spawn_cells())
         if cell in important_spawns:
             return False, "build_spawn_blocked"
+        if any(structure.alive and structure.cell == cell for structure in self.structures):
+            return False, "build_cannot_place"
         if not self.map_manager.is_buildable(cell[0], cell[1]):
             return False, "build_cannot_place"
         if any(zombie.alive and zombie.pos.distance_to(center) < TILE * 0.85 for zombie in self.zombies):
@@ -4668,11 +5228,11 @@ class Game:
         if not self.can_afford(self.structure_cost(building_type)):
             return False, "not_enough_gold"
         # Gates are passable for the player, so self-trap checks ignore them.
-        if building_type in ("fence", "gate"):
+        if building_type in ("fence", "gate", "steel_wall"):
             player_cell = self.tile_map.world_to_cell(self.player.pos)
             spawn_goals = self.spawn_cells or self.build_spawn_cells()
             blocked = {structure.cell for structure in self.structures if structure.alive and structure.kind != "gate"}
-            if building_type == "fence":
+            if building_type in ("fence", "steel_wall"):
                 blocked.add(cell)
             path_ok = False
             for goal in (spawn_goals or []):
@@ -4713,6 +5273,31 @@ class Game:
         if not damaged:
             return None
         return min(damaged, key=lambda structure: Vec2(structure.rect.center).distance_squared_to(self.player.pos))
+
+    def nearby_gate(self, distance=92):
+        gates = [
+            structure
+            for structure in self.structures
+            if structure.alive and structure.kind == "gate" and Vec2(structure.rect.center).distance_to(self.player.pos) <= distance
+        ]
+        if not gates:
+            return None
+        return min(gates, key=lambda structure: Vec2(structure.rect.center).distance_squared_to(self.player.pos))
+
+    def toggle_nearest_gate(self):
+        gate = self.nearby_gate()
+        if gate is None:
+            self.message = self.t("toggle_gate")
+            self.message_timer = 1.1
+            return False
+        gate.open = not gate.open
+        self.map_manager.update_dynamic_obstacles(self.structures)
+        self.refresh_pathfinding_context()
+        self.message = self.t("gate_open") if gate.open else self.t("gate_closed")
+        self.message_timer = 1.2
+        self.create_shockwave(Vec2(gate.rect.center), 42, 0, visual_only=True, ring_color=COLORS["green"] if gate.open else COLORS["orange"])
+        self.play_sound("build", 0.35, cooldown=0.12)
+        return True
 
     def pointer_over_ui(self):
         x, y = pygame.mouse.get_pos()
@@ -5015,8 +5600,8 @@ class Game:
         if direction.length_squared() <= 0:
             direction = Vec2(0, 1)
         target_pos = self.player.pos + direction.normalize() * TILE * lead_tiles
-        target_pos.x = clamp(target_pos.x, TILE * 1.5, WORLD_W - TILE * 1.5)
-        target_pos.y = clamp(target_pos.y, TILE * 1.5, WORLD_H - TILE * 1.5)
+        target_pos.x = clamp(target_pos.x, TILE * 1.5, self.map_manager.world_w - TILE * 1.5)
+        target_pos.y = clamp(target_pos.y, TILE * 1.5, self.map_manager.world_h - TILE * 1.5)
         return self.nearest_walkable_cell(self.tile_map.world_to_cell(target_pos), max_distance=7, prefer_pos=self.player.pos)
 
     def spitter_goal_cell(self, zombie_pos):
@@ -5042,6 +5627,59 @@ class Game:
                         best_score = score
         return best or self.predicted_player_cell(1) or player_cell
 
+    def runner_flank_cell(self, zombie_pos):
+        self.refresh_pathfinding_context()
+        to_player = Vec2(self.player.pos) - Vec2(zombie_pos)
+        if to_player.length_squared() <= 1:
+            to_player = Vec2(self.player.last_move_dir)
+        if to_player.length_squared() <= 1:
+            to_player = Vec2(1, 0)
+        forward = to_player.normalize()
+        side = Vec2(-forward.y, forward.x)
+        candidates = []
+        for dist_tiles in (3, 4, 5):
+            for side_mult in (-1, 1):
+                candidates.append(self.player.pos - forward * TILE * 1.4 + side * TILE * dist_tiles * side_mult)
+                candidates.append(self.player.pos + side * TILE * dist_tiles * side_mult)
+        best = None
+        best_score = 1_000_000
+        for pos in candidates:
+            pos.x = clamp(pos.x, TILE * 1.5, self.map_manager.world_w - TILE * 1.5)
+            pos.y = clamp(pos.y, TILE * 1.5, self.map_manager.world_h - TILE * 1.5)
+            cell = self.nearest_walkable_cell(self.tile_map.world_to_cell(pos), max_distance=5, prefer_pos=zombie_pos)
+            if cell is None:
+                continue
+            center = self.tile_map.cell_center(cell)
+            path = find_path(self.tile_map, self.tile_map.world_to_cell(zombie_pos), cell, self.path_blockers, allow_diagonal=True, weight=1.25, max_nodes=360)
+            if not path:
+                continue
+            score = len(path) * 10 - abs(center.distance_to(self.player.pos) - TILE * 3.4)
+            if score < best_score:
+                best = cell
+                best_score = score
+        return best
+
+    def boomer_priority_cell(self, zombie_pos):
+        target = self.boomer_dash_target(zombie_pos)
+        return self.nearest_walkable_cell(self.tile_map.world_to_cell(target), max_distance=6, prefer_pos=zombie_pos)
+
+    def boomer_dash_target(self, zombie_pos):
+        targets = [(self.player.pos, 80)]
+        for structure in self.structures:
+            if not structure.alive:
+                continue
+            cluster = 1
+            center = Vec2(structure.rect.center)
+            for other in self.structures:
+                if other is not structure and other.alive and Vec2(other.rect.center).distance_to(center) < 118:
+                    cluster += 1
+            targets.append((center, 58 + cluster * 34 + (30 if structure.stats.get("turret_type") is not None else 0)))
+        best_pos, _score = max(
+            targets,
+            key=lambda item: item[1] - Vec2(item[0]).distance_to(zombie_pos) * 0.08,
+        )
+        return Vec2(best_pos)
+
     def stalker_flank_cell(self, zombie_pos):
         direction = Vec2(self.player.last_move_dir)
         if direction.length_squared() <= 0:
@@ -5059,8 +5697,8 @@ class Game:
         best = None
         best_score = 1_000_000
         for pos in candidates:
-            pos.x = clamp(pos.x, TILE * 1.5, WORLD_W - TILE * 1.5)
-            pos.y = clamp(pos.y, TILE * 1.5, WORLD_H - TILE * 1.5)
+            pos.x = clamp(pos.x, TILE * 1.5, self.map_manager.world_w - TILE * 1.5)
+            pos.y = clamp(pos.y, TILE * 1.5, self.map_manager.world_h - TILE * 1.5)
             cell = self.nearest_walkable_cell(self.tile_map.world_to_cell(pos), max_distance=5, prefer_pos=zombie_pos)
             if cell is None:
                 continue
@@ -5069,6 +5707,35 @@ class Game:
                 best = cell
                 best_score = score
         return best or self.tile_map.world_to_cell(self.player.pos)
+
+    def position_in_player_fire_lane(self, pos, lane_width=38):
+        aim = Vec2(self.player.aim_dir)
+        if aim.length_squared() <= 0:
+            return False
+        aim = aim.normalize()
+        to_pos = Vec2(pos) - self.player.pos
+        forward = to_pos.dot(aim)
+        if forward < 18 or forward > self.player.weapon.bullet_range:
+            return False
+        lateral = abs(to_pos.cross(aim))
+        return lateral <= lane_width and has_wall_line(self.tile_map, self.player.pos, pos)
+
+    def stalker_dodge_vector(self, pos):
+        aim = Vec2(self.player.aim_dir)
+        if aim.length_squared() <= 0:
+            return Vec2(0, 0)
+        aim = aim.normalize()
+        side = Vec2(-aim.y, aim.x)
+        if (Vec2(pos) - self.player.pos).dot(side) < 0:
+            side *= -1
+        candidates = [side, -side, (side + aim * 0.25), (-side + aim * 0.25)]
+        for candidate in candidates:
+            if candidate.length_squared() <= 0:
+                continue
+            test_pos = Vec2(pos) + candidate.normalize() * 28
+            if not self.tile_map.collides_circle(test_pos, ZOMBIE_TYPES["stalker"]["radius"], [s for s in self.structures if s.alive]):
+                return candidate
+        return Vec2(0, 0)
 
     def nearest_structure(self, pos):
         alive = [s for s in self.structures if s.alive]
@@ -5085,11 +5752,13 @@ class Game:
         random.shuffle(self.spawn_queue)
         self.spawn_timer = 0.4
         self.wave_active = True
+        self.turret_wave_start = any(s.alive and s.stats.get("turret_type") is not None for s in self.structures)
+        self.turret_wave_number = self.wave if self.turret_wave_start else 0
         self.message = self.t("wave_label").format(wave=self.wave)
         self.message_timer = 2.0
         self.wave_banner_text = self.t("wave_start_banner").format(wave=self.wave)
         self.wave_banner_timer = 2.0
-        self.play_sound("wave", 0.42, cooldown=0.5)
+        self.play_sound("wave", 0.42, cooldown=0.5, group="ui")
         if self.wave == 1 or random.random() < 0.72:
             self.spawn_powerup()
 
@@ -5216,6 +5885,10 @@ class Game:
             weights = ["medkit", "overdrive", "shield", "haste", "shock"]
             if self.player.hp < self.player.max_hp * 0.55:
                 weights += ["medkit", "medkit"]
+            if self.wave >= 4:
+                weights += ["ammo_pack"]
+            if self.wave >= 7:
+                weights += ["double_damage", "repair_pulse"]
             kind = random.choice(weights)
         if pos is None:
             pos = self.random_floor_position()
@@ -5466,6 +6139,25 @@ class Game:
             angle = random.uniform(0, math.tau)
             self.particles.append(Particle(pos, Vec2(math.cos(angle), math.sin(angle)) * random.uniform(30, 115), color, life=0.28, size=2))
 
+    def cycle_algorithm_demo_layer(self):
+        layers = self.algo_demo_layers
+        try:
+            index = layers.index(self.algo_demo_layer)
+        except ValueError:
+            index = 0
+        self.algo_demo_layer = layers[(index + 1) % len(layers)]
+        self.algo_demo = True
+        label = self.algorithm_layer_name(self.algo_demo_layer)
+        self.message = f"{self.t('algo_layer')}: {label}"
+        self.message_timer = 1.3
+
+    def algorithm_layer_name(self, layer=None):
+        layer = layer or self.algo_demo_layer
+        return self.t(f"algo_{layer}") if layer in self.algo_demo_layers else str(layer)
+
+    def algorithm_visible(self, layer):
+        return self.algo_demo and (self.algo_demo_layer == "all" or self.algo_demo_layer == layer)
+
     def handle_events(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -5487,6 +6179,12 @@ class Game:
                 if self.game_over and event.key == pygame.K_RETURN:
                     self.begin_run()
                     return True
+                if self.perk_choices:
+                    if event.key in (pygame.K_1, pygame.K_2, pygame.K_3):
+                        index = (pygame.K_1, pygame.K_2, pygame.K_3).index(event.key)
+                        if index < len(self.perk_choices):
+                            self.apply_perk(self.perk_choices[index])
+                    continue
                 if event.key == pygame.K_p:
                     self.paused = not self.paused
                 elif event.key == pygame.K_f:
@@ -5499,6 +6197,14 @@ class Game:
                     self.message = self.t("dev_on") if self.dev_mode else self.t("dev_off")
                     self.message_timer = 1.5
                     self.save_settings()
+                elif event.key == pygame.K_F1:
+                    self.algo_demo = not self.algo_demo
+                    self.message = self.t("algo_demo_on") if self.algo_demo else self.t("algo_demo_off")
+                    self.message_timer = 1.5
+                elif event.key == pygame.K_F2:
+                    self.cycle_algorithm_demo_layer()
+                elif event.key == pygame.K_F3:
+                    self.algo_demo_show_panel = not self.algo_demo_show_panel
                 elif not self.paused and event.key == pygame.K_SPACE:
                     self.start_wave()
                 elif not self.paused and event.key == pygame.K_i:
@@ -5517,6 +6223,32 @@ class Game:
                     self.build_mode = "gate"
                     self.message = self.t("build_mode").format(name=self.structure_name("gate"))
                     self.message_timer = 1.0
+                elif not self.paused and event.key == pygame.K_5:
+                    self.build_mode = "spike_trap"
+                    self.message = self.t("build_mode").format(name=self.structure_name("spike_trap"))
+                    self.message_timer = 1.0
+                elif not self.paused and event.key == pygame.K_6:
+                    self.build_mode = "mine"
+                    self.message = self.t("build_mode").format(name=self.structure_name("mine"))
+                    self.message_timer = 1.0
+                elif not self.paused and event.key == pygame.K_7:
+                    self.build_mode = "steel_wall"
+                    self.message = self.t("build_mode").format(name=self.structure_name("steel_wall"))
+                    self.message_timer = 1.0
+                elif not self.paused and event.key == pygame.K_8:
+                    self.build_mode = "machine_turret"
+                    self.message = self.t("build_mode").format(name=self.structure_name("machine_turret"))
+                    self.message_timer = 1.0
+                elif not self.paused and event.key == pygame.K_9:
+                    self.build_mode = "laser_turret"
+                    self.message = self.t("build_mode").format(name=self.structure_name("laser_turret"))
+                    self.message_timer = 1.0
+                elif not self.paused and event.key == pygame.K_0:
+                    self.build_mode = "slow_turret"
+                    self.message = self.t("build_mode").format(name=self.structure_name("slow_turret"))
+                    self.message_timer = 1.0
+                elif not self.paused and event.key == pygame.K_g:
+                    self.toggle_nearest_gate()
                 elif event.key == pygame.K_b:
                     self.build_mode = None
                 elif not self.paused and event.key == pygame.K_r:
@@ -5621,6 +6353,15 @@ class Game:
                 else:
                     return False
                 return True
+            if action.startswith("perk_"):
+                try:
+                    index = int(action.removeprefix("perk_"))
+                except ValueError:
+                    return False
+                if 0 <= index < len(self.perk_choices):
+                    self.apply_perk(self.perk_choices[index])
+                    return True
+                return False
             if action == "pause_toggle":
                 self.paused = not self.paused
             elif self.paused and action == "pause_resume":
@@ -5644,6 +6385,19 @@ class Game:
                 self.build_mode = "gate"
                 self.message = self.t("build_mode").format(name=self.structure_name("gate"))
                 self.message_timer = 1.0
+            elif not self.paused and action in (
+                "hotbar_spike_trap",
+                "hotbar_mine",
+                "hotbar_steel_wall",
+                "hotbar_machine_turret",
+                "hotbar_laser_turret",
+                "hotbar_slow_turret",
+            ):
+                self.build_mode = action.removeprefix("hotbar_")
+                self.message = self.t("build_mode").format(name=self.structure_name(self.build_mode))
+                self.message_timer = 1.0
+            elif not self.paused and action == "gate_toggle":
+                self.toggle_nearest_gate()
             elif not self.paused and action == "hotbar_reload":
                 self.reload_weapon()
             elif not self.paused and action == "hotbar_repair":
@@ -5678,6 +6432,10 @@ class Game:
             return
         if self.game_over:
             return
+        if self.perk_choices:
+            self.message = self.t("perk_pending")
+            self.message_timer = max(self.message_timer, 0.2)
+            return
         self.run_time += dt
         self.score_time_accum += dt
         if self.score_time_accum >= 1.0:
@@ -5685,6 +6443,12 @@ class Game:
             self.add_score(seconds)
             self.score_time_accum -= seconds
         self.message_timer = max(0, self.message_timer - dt)
+        self.low_hp_warning_timer = max(0, self.low_hp_warning_timer - dt)
+        if self.player.hp / max(1, self.player.max_hp) < 0.25 and self.low_hp_warning_timer <= 0:
+            self.low_hp_warning_timer = 4.0
+            self.message = self.t("hp_low")
+            self.message_timer = max(self.message_timer, 1.0)
+            self.play_sound("hurt", 0.48, cooldown=1.0, group="ui")
         self.wave_banner_timer = max(0, self.wave_banner_timer - dt)
         self.titan_banner_timer = max(0, self.titan_banner_timer - dt)
         self.camera_shake_timer = max(0, self.camera_shake_timer - dt)
@@ -5692,6 +6456,7 @@ class Game:
             self.camera_shake_strength = 0.0
             self.camera_shake_duration = 0.0
         self.bile_timer = max(0, self.bile_timer - dt)
+        self.update_missions()
         if self.wave_active:
             self.spawn_timer -= dt
             if self.spawn_queue and self.spawn_timer <= 0:
@@ -5700,10 +6465,21 @@ class Game:
             if not self.spawn_queue and not any(z.alive for z in self.zombies):
                 self.wave_active = False
                 self.wave_break_timer = WAVE_BREAK_SECONDS
-                reward = int(round((25 + self.wave * 7) * self.difficulty_cfg()["reward"]))
+                if self.turret_wave_start and any(s.alive and s.stats.get("turret_type") is not None for s in self.structures):
+                    for mission in self.missions:
+                        if mission["id"] == "turret_wave" and not mission["completed"]:
+                            mission["progress"] = mission["target"]
+                            self.complete_mission(mission)
+                            break
+                self.turret_wave_start = False
+                reward = int(round((22 + self.wave * 5 + (self.wave // 5) * 6) * self.difficulty_cfg()["reward"]))
                 self.player.gold += reward
                 self.add_score(100 * self.wave, self.player.pos + Vec2(0, -56), COLORS["gold"])
-                self.message = self.t("wave_clear").format(reward=reward)
+                crate_text = ""
+                if self.wave % 3 == 0:
+                    self.spawn_powerup(self.random_floor_position(min_player_distance=90), "supply_crate")
+                    crate_text = f" | {self.t('rare_loot')}"
+                self.message = self.t("wave_clear").format(reward=reward) + crate_text
                 self.message_timer = 3.0
         elif self.wave > 0 and self.wave_break_timer > 0:
             self.wave_break_timer -= dt
@@ -5792,9 +6568,159 @@ class Game:
         for floating in self.floating_texts:
             floating.draw(world, self.tiny_font)
         self.draw_build_preview()
+        self.draw_light_overlay(world)
+        self.draw_algorithm_demo_world(world)
         scaled_world = pygame.transform.scale(world, self.world_rect.size)
         draw_rect = self.world_rect.move(*self.camera_shake_offset())
         self.screen.blit(scaled_world, draw_rect)
+
+    def draw_algorithm_demo_world(self, world):
+        if not self.algo_demo:
+            return
+        if not self.flow_field:
+            self.refresh_pathfinding_context()
+        if self.algorithm_visible("collision"):
+            self.draw_algorithm_collision(world)
+        if self.algorithm_visible("spawns"):
+            self.draw_algorithm_spawns(world)
+        if self.algorithm_visible("flow"):
+            self.draw_algorithm_flow_field(world)
+        if self.algorithm_visible("paths"):
+            self.draw_algorithm_paths(world)
+        if self.algorithm_visible("ai"):
+            self.draw_algorithm_ai_roles(world)
+
+    def draw_algorithm_collision(self, world):
+        overlay = pygame.Surface(world.get_size(), pygame.SRCALPHA)
+        blocked = self.blocked_cells()
+        for y in range(self.tile_map.grid_h):
+            for x in range(self.tile_map.grid_w):
+                cell = (x, y)
+                if self.tile_map.is_wall(cell):
+                    pygame.draw.rect(overlay, (255, 78, 78, 82), (x * TILE, y * TILE, TILE, TILE))
+                elif cell in blocked:
+                    pygame.draw.rect(overlay, (255, 165, 56, 74), (x * TILE, y * TILE, TILE, TILE))
+        for structure in self.structures:
+            if structure.alive:
+                color = (255, 204, 82, 175) if structure.blocks_path() else (92, 235, 164, 135)
+                pygame.draw.rect(overlay, color, structure.rect, 2, border_radius=3)
+        world.blit(overlay, (0, 0))
+
+    def draw_algorithm_spawns(self, world):
+        overlay = pygame.Surface(world.get_size(), pygame.SRCALPHA)
+        for cell in self.spawn_cells:
+            center = self.tile_map.cell_center(cell)
+            pygame.draw.circle(overlay, (95, 222, 120, 155), (round(center.x), round(center.y)), 9)
+            pygame.draw.circle(overlay, (95, 222, 120, 230), (round(center.x), round(center.y)), 14, 2)
+        for cell in self.boss_spawn_cells:
+            center = self.tile_map.cell_center(cell)
+            pygame.draw.circle(overlay, (183, 92, 255, 170), (round(center.x), round(center.y)), 12)
+            pygame.draw.circle(overlay, (230, 188, 255, 235), (round(center.x), round(center.y)), 18, 2)
+        world.blit(overlay, (0, 0))
+
+    def draw_algorithm_flow_field(self, world):
+        overlay = pygame.Surface(world.get_size(), pygame.SRCALPHA)
+        player_cell = self.tile_map.world_to_cell(self.player.pos)
+        for cell, value in self.flow_field.items():
+            x, y = cell
+            if (x + y) % 2 != 0 or cell == player_cell:
+                continue
+            best = cell
+            best_score = value
+            for dx, dy in DIAGONAL_NEIGHBORS:
+                nxt = (x + dx, y + dy)
+                score = self.flow_field.get(nxt)
+                if score is not None and score < best_score:
+                    best = nxt
+                    best_score = score
+            if best == cell:
+                continue
+            start = self.tile_map.cell_center(cell)
+            end = start + (self.tile_map.cell_center(best) - start) * 0.42
+            pygame.draw.line(overlay, (78, 196, 255, 135), start, end, 2)
+            pygame.draw.circle(overlay, (154, 235, 255, 170), (round(end.x), round(end.y)), 2)
+        pygame.draw.circle(overlay, (255, 235, 88, 190), self.player.pos, 20, 2)
+        world.blit(overlay, (0, 0))
+
+    def draw_algorithm_paths(self, world):
+        colors = {
+            "walker": (80, 205, 255),
+            "runner": (255, 210, 76),
+            "spitter": (85, 255, 112),
+            "boomer": (153, 255, 70),
+            "stalker": (184, 124, 255),
+            "titan": (255, 82, 72),
+        }
+        for zombie in self.zombies:
+            if not zombie.alive:
+                continue
+            color = colors.get(zombie.kind, COLORS["cyan"])
+            points = [Vec2(zombie.pos)]
+            points.extend(self.tile_map.cell_center(cell) for cell in zombie.path[:18])
+            if len(points) >= 2:
+                pygame.draw.lines(world, color, False, [(round(p.x), round(p.y)) for p in points], 2 if zombie.kind != "titan" else 4)
+                for p in points[1:]:
+                    pygame.draw.circle(world, color, (round(p.x), round(p.y)), 3)
+            if zombie.kind == "walker":
+                target = zombie.pos + (self.flow_direction(zombie.pos) or Vec2(0, 0)) * 28
+                pygame.draw.line(world, color, zombie.pos, target, 2)
+
+    def draw_algorithm_ai_roles(self, world):
+        for zombie in self.zombies:
+            if not zombie.alive:
+                continue
+            label, color = self.algorithm_label_for_zombie(zombie)
+            start = Vec2(zombie.pos)
+            target = Vec2(self.player.pos)
+            if zombie.kind == "runner":
+                cell = self.runner_flank_cell(zombie.pos)
+                if cell:
+                    target = self.tile_map.cell_center(cell)
+            elif zombie.kind == "spitter":
+                target = self.tile_map.cell_center(self.spitter_goal_cell(zombie.pos))
+            elif zombie.kind == "boomer":
+                target = self.boomer_dash_target(zombie.pos)
+            elif zombie.kind == "stalker":
+                target = self.tile_map.cell_center(self.stalker_flank_cell(zombie.pos))
+            pygame.draw.line(world, color, start, target, 1)
+            pygame.draw.circle(world, color, (round(target.x), round(target.y)), 6, 2)
+            text = self.tiny_font.render(label, True, color)
+            world.blit(text, (round(start.x + 10), round(start.y - zombie.radius - 20)))
+
+    def algorithm_label_for_zombie(self, zombie):
+        if zombie.kind == "walker":
+            return "Flow BFS", (80, 205, 255)
+        if zombie.kind == "runner":
+            return "Flank A*", (255, 210, 76)
+        if zombie.kind == "spitter":
+            return "Keep range", (85, 255, 112)
+        if zombie.kind == "boomer":
+            return "Dash priority", (153, 255, 70)
+        if zombie.kind == "stalker":
+            return "Dodge LOS", (184, 124, 255)
+        if zombie.kind == "titan":
+            return f"Titan P{getattr(zombie, 'titan_phase', 1)}", (255, 82, 72)
+        return zombie.kind, COLORS["cyan"]
+
+    def draw_light_overlay(self, world):
+        glow = pygame.Surface(world.get_size(), pygame.SRCALPHA)
+        self.draw_radial_glow(glow, self.player.pos, 135, (130, 205, 255, 34))
+        for structure in self.structures:
+            if not structure.alive:
+                continue
+            if structure.stats.get("turret_type") is not None:
+                color = (100, 240, 255, 26) if structure.stats.get("turret_type") == "laser" else (255, 200, 95, 20)
+                self.draw_radial_glow(glow, Vec2(structure.rect.center), 95, color)
+            elif structure.kind == "gate" and structure.open:
+                self.draw_radial_glow(glow, Vec2(structure.rect.center), 54, (105, 235, 130, 22))
+        world.blit(glow, (0, 0), special_flags=pygame.BLEND_RGBA_ADD)
+
+    def draw_radial_glow(self, surface, pos, radius, color):
+        pos = Vec2(pos)
+        for i in range(4, 0, -1):
+            r = int(radius * i / 4)
+            alpha = max(4, int(color[3] * (i / 4) ** 1.7))
+            pygame.draw.circle(surface, (*color[:3], alpha), (round(pos.x), round(pos.y)), r)
 
     def draw_build_preview(self):
         if self.build_mode is None:
@@ -5809,7 +6735,7 @@ class Game:
         center = self.tile_map.cell_center(cell)
         stats = self.structure_stats(self.build_mode)
 
-        if self.build_mode == "turret":
+        if stats.get("turret_type") is not None:
             radius = stats["range"]
             diameter = int(radius * 2 + 8)
             ring = pygame.Surface((diameter, diameter), pygame.SRCALPHA)
@@ -5820,9 +6746,15 @@ class Game:
         overlay = pygame.Surface((TILE, TILE), pygame.SRCALPHA)
         overlay.fill((*accent, 88 if valid else 118))
         pygame.draw.rect(overlay, (*accent, 230), overlay.get_rect(), 2)
-        if self.build_mode == "turret":
+        if stats.get("turret_type") is not None:
             pygame.draw.circle(overlay, (*accent, 210), (TILE // 2, TILE // 2), 9)
             pygame.draw.rect(overlay, (235, 245, 245, 180), (TILE // 2 - 3, 7, 6, 15))
+        elif self.build_mode == "mine":
+            pygame.draw.circle(overlay, (*accent, 210), (TILE // 2, TILE // 2), 9)
+            pygame.draw.circle(overlay, (255, 230, 120, 210), (TILE // 2, TILE // 2), 3)
+        elif self.build_mode == "spike_trap":
+            for x in range(6, TILE - 4, 8):
+                pygame.draw.polygon(overlay, (*accent, 210), [(x, TILE - 6), (x + 3, 6), (x + 6, TILE - 6)])
         elif self.build_mode == "gate":
             pygame.draw.rect(overlay, (*accent, 210), (5, 5, 7, TILE - 10), border_radius=2)
             pygame.draw.rect(overlay, (*accent, 210), (TILE - 12, 5, 7, TILE - 10), border_radius=2)
@@ -5983,8 +6915,14 @@ class Game:
 
     def draw_overlay(self):
         sw, sh = self.screen_w, self.screen_h
+        self.draw_boss_bar()
+        self.draw_mission_tracker()
+        self.draw_minimap()
+        self.draw_algorithm_demo_panel()
         self.draw_info_panel()
         self.draw_build_screen_feedback()
+        if self.perk_choices:
+            self.draw_perk_choices()
         if self.message_timer > 0 and self.message:
             image = self.font.render(self.message, True, COLORS["text"])
             rect = image.get_rect(center=(sw // 2, self.top_ui_h + 20))
@@ -6017,6 +6955,7 @@ class Game:
                 self.draw_text_center(self.t("new_record"), pygame.Rect(panel.x, y, panel.w, int(38 * s)), COLORS["gold"], self.font)
                 y += int(42 * s)
             stats = self.current_run_stats()
+            rewards = self.progression().get("last_rewards", {})
             rows = (
                 (self.t("run_results"), ""),
                 (self.t("highest_wave"), stats["wave"]),
@@ -6024,6 +6963,9 @@ class Game:
                 (self.t("kills"), stats["kills"]),
                 (self.t("gold"), stats["gold_collected"]),
                 (self.t("survival_time"), self.format_time(stats["survival_time"])),
+                (self.t("weapon"), stats["weapon"]),
+                (self.t("weapon_tier_result"), stats["weapon_tier"]),
+                (self.t("meta_points"), f"+{rewards.get('meta_points', 0)}"),
                 (self.t("best_map"), stats["map"]),
                 (self.t("best_class"), stats["character"]),
                 (self.t("best_difficulty"), stats["difficulty"]),
@@ -6035,6 +6977,10 @@ class Game:
                 if value != "":
                     self.draw_text(str(value), panel.x + int(42 * s) + label_w, y, COLORS["text"], self.small_font)
                 y += int(31 * s)
+            if self.new_record_fields:
+                record_text = ", ".join(str(field).replace("_", " ") for field in self.new_record_fields[:3])
+                self.draw_text_center(self.fit_text(record_text, self.tiny_font, panel.w - int(70 * s)), pygame.Rect(panel.x + int(32 * s), y, panel.w - int(64 * s), int(24 * s)), COLORS["gold"], self.tiny_font)
+                y += int(26 * s)
             self.draw_text_center(self.t("restart_hint"), pygame.Rect(panel.x, y + int(6 * s), panel.w, int(28 * s)), COLORS["muted"], self.tiny_font)
             button_w = int((panel.w - int(78 * s)) / 3)
             button_h = max(38, int(46 * s))
@@ -6045,6 +6991,130 @@ class Game:
             self.draw_button("gameover_exit", pygame.Rect(bx + (button_w + int(11 * s)) * 2, by, button_w, button_h), self.t("exit"), font=self.small_font)
         if self.paused:
             self.draw_pause_overlay()
+
+    def draw_boss_bar(self):
+        titans = [z for z in self.zombies if z.alive and z.kind == "titan"]
+        if not titans:
+            return
+        titan = max(titans, key=lambda z: z.hp)
+        s = self.ui_scale
+        rect = pygame.Rect(0, 0, min(int(720 * s), self.screen_w - self.margin * 2), max(22, int(28 * s)))
+        rect.centerx = self.screen_w // 2
+        rect.y = self.top_ui_h + int(8 * s)
+        pct = clamp(titan.hp / max(1, titan.max_hp), 0, 1)
+        phase = getattr(titan, "titan_phase", 1)
+        fill = COLORS["red"] if phase >= 4 else (COLORS["orange"] if phase >= 2 else (190, 64, 68))
+        pygame.draw.rect(self.screen, (35, 14, 20), rect, border_radius=7)
+        pygame.draw.rect(self.screen, fill, (rect.x, rect.y, int(rect.w * pct), rect.h), border_radius=7)
+        pygame.draw.rect(self.screen, COLORS["gold"], rect, 2, border_radius=7)
+        self.draw_text_center(f"{self.t('boss_hp')} P{phase}  {int(titan.hp)}/{titan.max_hp}", rect, COLORS["text"], self.tiny_font)
+
+    def draw_minimap(self):
+        if self.info_panel_open or self.game_over or self.paused:
+            return
+        s = self.ui_scale
+        size = max(132, int(164 * s))
+        rect = pygame.Rect(self.screen_w - self.margin - size, self.top_ui_h + int(138 * s), size, size)
+        self.draw_panel(rect, alpha=176)
+        inner = rect.inflate(-int(12 * s), -int(26 * s))
+        inner.y += int(14 * s)
+        pygame.draw.rect(self.screen, (8, 11, 15), inner, border_radius=5)
+        pygame.draw.rect(self.screen, COLORS["hud_line"], inner, 1, border_radius=5)
+        world_w = max(1, self.map_manager.world_w)
+        world_h = max(1, self.map_manager.world_h)
+
+        def map_point(pos):
+            px = inner.x + int(clamp(Vec2(pos).x / world_w, 0, 1) * inner.w)
+            py = inner.y + int(clamp(Vec2(pos).y / world_h, 0, 1) * inner.h)
+            return px, py
+
+        for structure in self.structures:
+            if not structure.alive:
+                continue
+            color = COLORS["cyan"] if structure.stats.get("turret_type") is not None else (170, 146, 100)
+            pygame.draw.rect(self.screen, color, pygame.Rect(0, 0, 4, 4).move(map_point(structure.rect.center)), border_radius=1)
+        for zombie in self.zombies:
+            if not zombie.alive:
+                continue
+            dist = zombie.pos.distance_to(self.player.pos)
+            if zombie.kind != "titan" and dist > 520:
+                continue
+            color = COLORS["red"] if zombie.kind == "titan" else ((236, 86, 78) if zombie.elite else (178, 76, 68))
+            radius = 4 if zombie.kind == "titan" else (3 if zombie.elite else 2)
+            pygame.draw.circle(self.screen, color, map_point(zombie.pos), radius)
+        pygame.draw.circle(self.screen, COLORS["green"], map_point(self.player.pos), 4)
+        self.draw_text(self.t("minimap"), rect.x + int(10 * s), rect.y + int(6 * s), COLORS["muted"], self.tiny_font)
+
+    def draw_algorithm_demo_panel(self):
+        if not self.algo_demo or not self.algo_demo_show_panel or self.game_over:
+            return
+        s = self.ui_scale
+        w = max(350, int(430 * s))
+        h = max(190, int(230 * s))
+        x = self.margin
+        y = self.top_ui_h + int(154 * s)
+        if self.missions and not self.info_panel_open:
+            y += int(132 * s)
+        rect = pygame.Rect(x, y, w, h)
+        self.draw_panel(rect, alpha=218)
+        pad = int(14 * s)
+        self.draw_text(f"{self.t('algo_demo')} - {self.t('algo_layer')}: {self.algorithm_layer_name()}", rect.x + pad, rect.y + pad, COLORS["gold"], self.small_font)
+        lines = [
+            ("Flow-field BFS", f"{len(self.flow_field)} cells", COLORS["cyan"]),
+            ("A* cache", f"{len(self.path_cache)} paths", COLORS["gold"]),
+            ("Collision grid", f"{len(self.blocked_cells())} blockers", COLORS["orange"]),
+            ("Spawn points", f"{len(self.spawn_cells)} normal / {len(self.boss_spawn_cells)} boss", COLORS["green"]),
+            ("AI roles", "Walker/Runner/Spitter/Boomer/Stalker/Titan", COLORS["purple"]),
+            (self.t("algo_help"), "", COLORS["muted"]),
+        ]
+        yy = rect.y + pad + int(34 * s)
+        for label, value, color in lines:
+            text = f"{label}: {value}" if value else label
+            self.draw_text(self.fit_text(text, self.tiny_font, rect.w - pad * 2), rect.x + pad, yy, color, self.tiny_font)
+            yy += int(24 * s)
+
+    def draw_mission_tracker(self):
+        if self.info_panel_open or self.game_over:
+            return
+        active = [mission for mission in self.missions if not mission["completed"]]
+        if not active:
+            return
+        s = self.ui_scale
+        w = max(260, int(330 * s))
+        h = max(94, int(120 * s))
+        rect = pygame.Rect(self.margin, self.top_ui_h + int(18 * s), w, h)
+        self.draw_panel(rect, alpha=190)
+        self.draw_text(self.t("mission"), rect.x + int(14 * s), rect.y + int(10 * s), COLORS["gold"], self.small_font)
+        y = rect.y + int(42 * s)
+        for mission in active[:3]:
+            progress = min(mission["progress"], mission["target"])
+            text = f"{self.mission_label(mission)} {int(progress)}/{mission['target']}"
+            self.draw_text(self.fit_text(text, self.tiny_font, rect.w - int(28 * s)), rect.x + int(14 * s), y, COLORS["text"], self.tiny_font)
+            y += int(24 * s)
+
+    def draw_perk_choices(self):
+        s = self.ui_scale
+        sw, sh = self.screen_w, self.screen_h
+        panel_w = min(int(760 * s), sw - self.margin * 2)
+        panel_h = max(142, int(168 * s))
+        panel = pygame.Rect(0, 0, panel_w, panel_h)
+        panel.center = (sw // 2, self.top_ui_h + int(118 * s))
+        self.draw_panel(panel, alpha=232)
+        title = f"{self.t('choose_perk')} - {self.t('level_short')} {self.perk_level}"
+        self.draw_text_center(title, pygame.Rect(panel.x, panel.y + int(10 * s), panel.w, int(34 * s)), COLORS["gold"], self.small_font)
+        gap = int(12 * s)
+        card_w = (panel.w - int(36 * s) - gap * 2) // 3
+        card_h = int(88 * s)
+        y = panel.y + int(58 * s)
+        for index, perk in enumerate(self.perk_choices):
+            rect = pygame.Rect(panel.x + int(18 * s) + index * (card_w + gap), y, card_w, card_h)
+            hover = rect.collidepoint(pygame.mouse.get_pos())
+            fill = (47, 56, 62) if hover else (30, 34, 42)
+            pygame.draw.rect(self.screen, fill, rect, border_radius=8)
+            pygame.draw.rect(self.screen, COLORS["cyan"] if hover else COLORS["hud_line"], rect, 2, border_radius=8)
+            self.draw_text_center(f"{index + 1}. {self.t(perk['name_key'])}", pygame.Rect(rect.x + 8, rect.y + 8, rect.w - 16, int(28 * s)), COLORS["text"], self.tiny_font)
+            self.draw_text_center(self.t(perk["desc_key"]), pygame.Rect(rect.x + 8, rect.y + int(40 * s), rect.w - 16, int(34 * s)), COLORS["cyan"], self.tiny_font)
+            self.ui_buttons[f"perk_{index}"] = rect
 
     def draw_build_screen_feedback(self):
         if self.state != "playing" or self.game_over or self.paused:
@@ -6070,11 +7140,11 @@ class Game:
         ]
         if not valid:
             lines.append((self.building_block_reason_text(reason), COLORS["red"], self.tiny_font))
-        elif self.build_mode == "turret":
-            stats = self.structure_stats("turret")
-            lines.append((f"{self.t('range_short')} {stats['range']} | {self.t('dmg')} {stats['damage']}", COLORS["cyan"], self.tiny_font))
         else:
             stats = self.structure_stats(self.build_mode)
+        if valid and stats.get("turret_type") is not None:
+            lines.append((f"{self.t('range_short')} {stats['range']} | {self.t('dmg')} {stats['damage']}", COLORS["cyan"], self.tiny_font))
+        elif valid:
             lines.append((f"{self.t('hp')}: {stats['hp']}", color, self.tiny_font))
         self.draw_tooltip(lines, (mouse_pos[0] + 18, mouse_pos[1] + 18), accent=color)
 
@@ -6088,6 +7158,8 @@ class Game:
             (self.structure_name(structure.kind), COLORS["gold"], self.small_font),
             (f"{self.t('hp')}: {hp}", COLORS["text"], self.tiny_font),
         ]
+        if structure.kind == "gate":
+            lines.append((self.t("gate_open") if structure.open else self.t("gate_closed"), COLORS["green"] if structure.open else COLORS["orange"], self.tiny_font))
         if structure.hp < structure.max_hp:
             cost = self.t("free") if self.dev_mode else f"{self.repair_cost()}g"
             lines.append((f"{self.t('repair')}: {cost}", COLORS["green"] if self.can_afford(self.repair_cost()) else COLORS["red"], self.tiny_font))
@@ -6095,7 +7167,19 @@ class Game:
 
     def draw_repair_prompt(self):
         structure = self.nearby_damaged_structure()
-        if structure is None or self.build_mode is not None:
+        gate = self.nearby_gate()
+        if self.build_mode is not None:
+            return
+        if gate is not None:
+            text = self.t("toggle_gate")
+            pos = self.world_to_screen(self.player.pos + Vec2(0, -70))
+            image = self.small_font.render(text, True, COLORS["gold"])
+            rect = image.get_rect(center=(int(pos.x), int(pos.y)))
+            rect.clamp_ip(pygame.Rect(8, self.top_ui_h, self.screen_w - 16, self.screen_h - self.top_ui_h - self.bottom_ui_h))
+            box = rect.inflate(24, 12)
+            self.draw_panel(box, color=(13, 16, 22), alpha=224, border=True)
+            self.screen.blit(image, rect)
+        if structure is None:
             return
         cost = self.t("free") if self.dev_mode else f"{self.repair_cost()}g"
         text = f"{self.t('repair_prompt')}  |  {cost}"

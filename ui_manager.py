@@ -89,9 +89,11 @@ class UIManager:
         if high_score_fn is None:
             return
         high = high_score_fn()
+        progression_fn = getattr(state, "progression", None)
+        progression = progression_fn() if progression_fn is not None else {}
         sw, sh = screen.get_size()
         panel_w = max(290, int(330 * scale))
-        panel_h = max(210, int(250 * scale))
+        panel_h = max(248, int(292 * scale))
         if sw - menu_panel.right > panel_w + int(52 * scale):
             rect = pygame.Rect(menu_panel.right + int(34 * scale), menu_panel.y + int(12 * scale), panel_w, panel_h)
         else:
@@ -111,6 +113,8 @@ class UIManager:
             (state.t("best_map"), high.get("best_map", "-")),
             (state.t("best_class"), high.get("best_class", "-")),
             (state.t("best_difficulty"), high.get("best_difficulty", "-")),
+            (state.t("meta_points"), progression.get("meta_points", 0)),
+            (state.t("achievements"), len(progression.get("achievements", []))),
         )
         label_w = int(142 * scale)
         for label, value in rows:
@@ -699,6 +703,24 @@ class UIManager:
         fence_cost = state.structure_cost("fence")
         gate_cost = state.structure_cost("gate")
         turret_full = state.turret_count() >= state.turret_limit()
+        nearby_gate = getattr(state, "nearby_gate", lambda: None)()
+        def build_slot(kind, shortcut, icon, accent):
+            cost = state.structure_cost(kind)
+            is_turret = getattr(state, "structure_stats")(kind).get("turret_type") is not None
+            disabled = (is_turret and turret_full) or not can_afford(cost)
+            value = state.t("free") if state.dev_mode else f"{cost}g"
+            if is_turret:
+                value += f" {state.turret_count()}/{state.turret_limit()}"
+            return {
+                "key": f"hotbar_{kind}",
+                "shortcut": shortcut,
+                "label": state.t(kind),
+                "value": value,
+                "accent": accent,
+                "icon": icon,
+                "active": state.build_mode == kind,
+                "disabled": disabled,
+            }
         slots = [
             {
                 "key": "hotbar_upgrade",
@@ -741,6 +763,22 @@ class UIManager:
                 "disabled": not can_afford(gate_cost),
             },
             {
+                "key": "gate_toggle",
+                "shortcut": "G",
+                "label": state.t("gate"),
+                "value": state.t("on") if getattr(nearby_gate, "open", False) else state.t("off"),
+                "accent": colors["green"],
+                "icon": "gate",
+                "active": bool(getattr(nearby_gate, "open", False)),
+                "disabled": nearby_gate is None,
+            },
+            build_slot("spike_trap", "5", "spike", colors["orange"]),
+            build_slot("mine", "6", "mine", colors["red"]),
+            build_slot("steel_wall", "7", "steel", (155, 165, 170)),
+            build_slot("machine_turret", "8", "machine", colors["orange"]),
+            build_slot("laser_turret", "9", "laser", colors["cyan"]),
+            build_slot("slow_turret", "0", "slow", colors["blue"]),
+            {
                 "key": "hotbar_reload",
                 "shortcut": "R",
                 "label": state.t("reload"),
@@ -782,9 +820,19 @@ class UIManager:
                 "active": state.auto_fire,
                 "disabled": False,
             },
+            {
+                "key": "info_toggle",
+                "shortcut": "I",
+                "label": state.t("info"),
+                "value": state.t("on") if getattr(state, "info_panel_open", False) else state.t("off"),
+                "accent": colors["blue"],
+                "icon": "info",
+                "active": getattr(state, "info_panel_open", False),
+                "disabled": False,
+            },
         ]
         slot_count = len(slots)
-        slot_w = min(int(126 * scale), max(82, (sw - getattr(state, "margin", 16) * 2 - gap * (slot_count - 1)) // slot_count))
+        slot_w = min(int(108 * scale), max(58, (sw - getattr(state, "margin", 16) * 2 - gap * (slot_count - 1)) // slot_count))
         total_w = slot_w * slot_count + gap * (slot_count - 1)
         x = sw // 2 - total_w // 2
         back = pygame.Rect(x - int(14 * scale), y - int(10 * scale), total_w + int(28 * scale), slot_h + int(20 * scale))
@@ -884,6 +932,27 @@ class UIManager:
             for x in (frame.left + frame.w // 3, frame.left + frame.w * 2 // 3):
                 pygame.draw.line(screen, color, (x, frame.top + 4), (x, frame.bottom - 4), 3)
             pygame.draw.circle(screen, dark, (frame.centerx + frame.w // 5, frame.centery), max(2, frame.w // 18))
+        elif icon == "spike":
+            for x in range(rect.left + 4, rect.right - 4, max(7, rect.w // 5)):
+                pygame.draw.polygon(screen, color, [(x, rect.bottom - 4), (x + rect.w // 12, rect.top + 4), (x + rect.w // 6, rect.bottom - 4)])
+        elif icon == "mine":
+            pygame.draw.circle(screen, color, (cx, cy), max(9, rect.w // 4))
+            pygame.draw.circle(screen, dark, (cx, cy), max(4, rect.w // 9))
+            pygame.draw.circle(screen, color, (cx, cy), max(2, rect.w // 16))
+        elif icon == "steel":
+            pygame.draw.rect(screen, color, rect.inflate(-6, -8), border_radius=2)
+            pygame.draw.line(screen, dark, (rect.left + 8, rect.top + 8), (rect.right - 8, rect.bottom - 8), 3)
+            pygame.draw.line(screen, dark, (rect.right - 8, rect.top + 8), (rect.left + 8, rect.bottom - 8), 3)
+        elif icon == "machine":
+            pygame.draw.rect(screen, color, (cx - 11, rect.top + 5, 7, rect.h - 10), border_radius=2)
+            pygame.draw.rect(screen, color, (cx + 4, rect.top + 5, 7, rect.h - 10), border_radius=2)
+            pygame.draw.circle(screen, dark, (cx, cy), max(5, rect.w // 9))
+        elif icon == "laser":
+            pygame.draw.rect(screen, color, (cx - 4, rect.top + 3, 8, rect.h - 6), border_radius=3)
+            pygame.draw.circle(screen, (225, 255, 255), (cx, cy), max(4, rect.w // 9))
+        elif icon == "slow":
+            pygame.draw.circle(screen, color, (cx, cy), max(12, rect.w // 3), 3)
+            pygame.draw.circle(screen, color, (cx, cy), max(5, rect.w // 8))
         elif icon == "reload":
             mag = pygame.Rect(rect.x + rect.w // 3, rect.y + 3, rect.w // 3, rect.h - 6)
             pygame.draw.rect(screen, color, mag, border_radius=3)
@@ -899,6 +968,10 @@ class UIManager:
             pygame.draw.circle(screen, dark, (rect.x + 10, rect.bottom - 8), max(2, rect.w // 13))
         elif icon == "dash":
             pygame.draw.polygon(screen, color, [(rect.x + 5, cy), (rect.centerx, rect.y + 4), (rect.centerx, rect.y + rect.h // 3), (rect.right - 5, rect.h // 2 + rect.y), (rect.centerx, rect.bottom - 4), (rect.centerx, rect.bottom - rect.h // 3)])
+        elif icon == "info":
+            pygame.draw.circle(screen, color, (cx, cy), max(13, rect.w // 3), 3)
+            pygame.draw.circle(screen, color, (cx, rect.top + max(8, rect.h // 5)), max(3, rect.w // 14))
+            pygame.draw.rect(screen, color, (cx - 3, cy - 2, 6, rect.h // 3), border_radius=3)
         else:
             pygame.draw.circle(screen, color, (cx, cy), max(8, rect.w // 4), 3)
             pygame.draw.line(screen, color, (cx - rect.w // 3, cy), (cx + rect.w // 3, cy), 2)

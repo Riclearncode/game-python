@@ -1,0 +1,45 @@
+name: Build Windows EXE
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+  release:
+    types: [published]
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: py -m pip install -r requirements.txt
+
+      - name: Smoke test source
+        env:
+          SDL_VIDEODRIVER: dummy
+          SDL_AUDIODRIVER: dummy
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: py main.py --smoke
+
+      - name: Build EXE
+        run: .\build_exe.ps1
+
+      - name: Package EXE folder
+        run: Compress-Archive -Path dist\PixelZombieSiege\* -DestinationPath PixelZombieSiege-windows.zip -Force
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: PixelZombieSiege-windows
+          path: PixelZombieSiege-windows.zip
+          if-no-files-found: error
