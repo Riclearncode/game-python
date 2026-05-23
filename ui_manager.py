@@ -596,6 +596,19 @@ class UIManager:
         return str(int(round(value)))
 
     def _draw_map_preview_fallback(self, screen, state, rect, map_id, accent):
+        preview_fn = getattr(state, "get_map_preview_surface", None)
+        if preview_fn is not None:
+            preview = preview_fn(map_id, rect.size)
+            if preview is not None:
+                pygame.draw.rect(screen, (7, 9, 13), rect, border_radius=6)
+                clipped = screen.get_clip()
+                screen.set_clip(rect)
+                screen.blit(preview, rect)
+                screen.set_clip(clipped)
+                pygame.draw.rect(screen, accent, rect, 2, border_radius=6)
+                self._draw_map_preview_legend(screen, state, rect, accent)
+                return
+
         theme = getattr(state, "map_themes", {}).get(map_id, {})
         rows = getattr(state, "map_rows_by_id", {}).get(map_id)
         pygame.draw.rect(screen, theme.get("bg", (15, 18, 22)), rect, border_radius=6)
@@ -621,6 +634,25 @@ class UIManager:
                 )
                 pygame.draw.rect(screen, color, tile)
         pygame.draw.rect(screen, accent, rect, 1, border_radius=6)
+
+    def _draw_map_preview_legend(self, screen, state, rect, accent):
+        scale = getattr(state, "ui_scale", 1.0)
+        legend_h = max(20, int(24 * scale))
+        legend = pygame.Rect(rect.x + 6, rect.bottom - legend_h - 6, rect.w - 12, legend_h)
+        veil = pygame.Surface(legend.size, pygame.SRCALPHA)
+        veil.fill((6, 8, 11, 172))
+        screen.blit(veil, legend)
+        items = [
+            ((42, 235, 125), "P"),
+            ((255, 142, 56), "Z"),
+            ((190, 104, 255), "B"),
+        ]
+        x = legend.x + int(8 * scale)
+        for color, label in items:
+            pygame.draw.circle(screen, color, (x + int(7 * scale), legend.centery), max(3, int(4 * scale)))
+            self.draw_text(screen, label, x + int(16 * scale), legend.y + int(3 * scale), (226, 232, 224), state.tiny_font)
+            x += int(42 * scale)
+        pygame.draw.line(screen, accent, (legend.x, legend.y), (legend.right, legend.y), 1)
 
     def draw_hud(self, screen, game_state):
         state = game_state
@@ -704,23 +736,6 @@ class UIManager:
         gate_cost = state.structure_cost("gate")
         turret_full = state.turret_count() >= state.turret_limit()
         nearby_gate = getattr(state, "nearby_gate", lambda: None)()
-        def build_slot(kind, shortcut, icon, accent):
-            cost = state.structure_cost(kind)
-            is_turret = getattr(state, "structure_stats")(kind).get("turret_type") is not None
-            disabled = (is_turret and turret_full) or not can_afford(cost)
-            value = state.t("free") if state.dev_mode else f"{cost}g"
-            if is_turret:
-                value += f" {state.turret_count()}/{state.turret_limit()}"
-            return {
-                "key": f"hotbar_{kind}",
-                "shortcut": shortcut,
-                "label": state.t(kind),
-                "value": value,
-                "accent": accent,
-                "icon": icon,
-                "active": state.build_mode == kind,
-                "disabled": disabled,
-            }
         slots = [
             {
                 "key": "hotbar_upgrade",
@@ -762,22 +777,6 @@ class UIManager:
                 "active": state.build_mode == "gate",
                 "disabled": not can_afford(gate_cost),
             },
-            {
-                "key": "gate_toggle",
-                "shortcut": "G",
-                "label": state.t("gate"),
-                "value": state.t("on") if getattr(nearby_gate, "open", False) else state.t("off"),
-                "accent": colors["green"],
-                "icon": "gate",
-                "active": bool(getattr(nearby_gate, "open", False)),
-                "disabled": nearby_gate is None,
-            },
-            build_slot("spike_trap", "5", "spike", colors["orange"]),
-            build_slot("mine", "6", "mine", colors["red"]),
-            build_slot("steel_wall", "7", "steel", (155, 165, 170)),
-            build_slot("machine_turret", "8", "machine", colors["orange"]),
-            build_slot("laser_turret", "9", "laser", colors["cyan"]),
-            build_slot("slow_turret", "0", "slow", colors["blue"]),
             {
                 "key": "hotbar_reload",
                 "shortcut": "R",
@@ -831,6 +830,20 @@ class UIManager:
                 "disabled": False,
             },
         ]
+        if nearby_gate is not None:
+            slots.insert(
+                4,
+                {
+                    "key": "gate_toggle",
+                    "shortcut": "G",
+                    "label": state.t("gate"),
+                    "value": state.t("on") if getattr(nearby_gate, "open", False) else state.t("off"),
+                    "accent": colors["green"],
+                    "icon": "gate",
+                    "active": bool(getattr(nearby_gate, "open", False)),
+                    "disabled": False,
+                },
+            )
         slot_count = len(slots)
         slot_w = min(int(108 * scale), max(58, (sw - getattr(state, "margin", 16) * 2 - gap * (slot_count - 1)) // slot_count))
         total_w = slot_w * slot_count + gap * (slot_count - 1)

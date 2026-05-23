@@ -4346,6 +4346,7 @@ class Game:
         self.map_themes = MAP_THEMES
         self.map_rows_by_id = MAPS
         self.map_manager = MapManager(MAPS, MAP_THEMES, self.map_id, TILE)
+        self.map_preview_cache = {}
         self.refresh_world_layout()
         self.options_return_state = "menu"
         self.options_return_paused = False
@@ -5136,28 +5137,59 @@ class Game:
         inner = pygame.Rect(rect.x + 16, rect.y + 14 + label_h, rect.w - 32, rect.h - 28 - label_h)
         if title:
             self.draw_text_center(self.map_name(map_id), pygame.Rect(rect.x + 12, rect.y + 8, rect.w - 24, label_h - 4), theme["accent"], self.font)
-        rows = self.map_manager.maps.get(map_id, MAP_ROWS)
-        grid_w = max(1, len(rows[0]))
-        grid_h = max(1, len(rows))
-        cell = max(2, int(min(inner.w / grid_w, inner.h / grid_h)))
-        map_w, map_h = grid_w * cell, grid_h * cell
-        ox = inner.centerx - map_w // 2
-        oy = inner.centery - map_h // 2
-        preview_rect = pygame.Rect(ox, oy, map_w, map_h)
-        pygame.draw.rect(self.screen, theme["bg"], preview_rect)
-        for y, row in enumerate(rows):
-            for x, value in enumerate(row):
-                tile = pygame.Rect(ox + x * cell, oy + y * cell, cell, cell)
-                if value == "#":
-                    pygame.draw.rect(self.screen, theme["wall"], tile)
-                    if cell >= 5:
-                        pygame.draw.rect(self.screen, theme["wall_light"], tile.inflate(-cell // 2, -cell // 2))
-                else:
-                    color = theme["floor_a"] if (x + y) % 2 == 0 else theme["floor_b"]
-                    pygame.draw.rect(self.screen, color, tile)
-                    if cell >= 5 and tile_noise(x, y, 5) % 19 == 0:
-                        pygame.draw.rect(self.screen, theme["prop_a"], tile.inflate(-cell // 2, -cell // 2))
-        pygame.draw.rect(self.screen, theme["grid"], preview_rect, 1)
+        preview = self.get_map_preview_surface(map_id, inner.size)
+        if preview is not None:
+            self.screen.blit(preview, inner)
+        else:
+            pygame.draw.rect(self.screen, theme["bg"], inner)
+        pygame.draw.rect(self.screen, theme["accent"], inner, 1)
+
+    def get_map_preview_surface(self, map_id, size, markers=True):
+        width, height = max(1, int(size[0])), max(1, int(size[1]))
+        cache_key = (map_id, width, height, bool(markers))
+        cached = self.map_preview_cache.get(cache_key)
+        if cached is not None:
+            return cached
+        manager = MapManager(MAPS, MAP_THEMES, map_id, TILE)
+        native = pygame.Surface((manager.world_w, manager.world_h)).convert()
+        manager.render(native)
+        if markers:
+            self.draw_map_preview_markers(native, manager)
+
+        preview = pygame.Surface((width, height), pygame.SRCALPHA)
+        theme = MAP_THEMES.get(map_id, MAP_THEMES["warehouse"])
+        preview.fill((8, 10, 14, 255))
+        scale = min(width / max(1, manager.world_w), height / max(1, manager.world_h))
+        scaled_size = (max(1, int(manager.world_w * scale)), max(1, int(manager.world_h * scale)))
+        scaled = pygame.transform.scale(native, scaled_size)
+        dest = scaled.get_rect(center=(width // 2, height // 2))
+        preview.blit(scaled, dest)
+        pygame.draw.rect(preview, (*theme.get("accent", COLORS["gold"]), 130), dest, 1)
+        vignette = pygame.Surface((width, height), pygame.SRCALPHA)
+        for i in range(14):
+            pct = i / 13
+            alpha = int(68 * pct * pct)
+            pygame.draw.rect(vignette, (0, 0, 0, alpha), preview.get_rect().inflate(-i * 3, -i * 3), 2, border_radius=6)
+        preview.blit(vignette, (0, 0))
+        self.map_preview_cache[cache_key] = preview
+        return preview
+
+    def draw_map_preview_markers(self, surface, manager):
+        def center(cell):
+            return manager.cell_center(cell)
+
+        player_cell = manager.get_player_spawn(radius=13)
+        if player_cell is not None:
+            pos = center(player_cell)
+            pygame.draw.circle(surface, (42, 235, 125), (round(pos.x), round(pos.y)), 12, 3)
+            pygame.draw.circle(surface, (226, 255, 226), (round(pos.x), round(pos.y)), 4)
+        for cell in manager.get_zombie_spawns()[:: max(1, len(manager.get_zombie_spawns()) // 12 or 1)]:
+            pos = center(cell)
+            pygame.draw.circle(surface, (255, 142, 56), (round(pos.x), round(pos.y)), 8, 2)
+        boss_spawns = manager.get_boss_spawns(radius=34)
+        for cell in boss_spawns[:: max(1, len(boss_spawns) // 6 or 1)]:
+            pos = center(cell)
+            pygame.draw.circle(surface, (190, 104, 255), (round(pos.x), round(pos.y)), 10, 2)
 
     def draw_character_preview(self, rect, character_id):
         pygame.draw.rect(self.screen, (19, 22, 27), rect, border_radius=8)
@@ -5209,6 +5241,7 @@ class Game:
         else:
             cell = (int(position[0]), int(position[1]))
         center = self.tile_map.cell_center(cell)
+        freeform_barrier = building_type in ("fence", "gate", "steel_wall")
         if STRUCTURE_TYPES[building_type].get("turret_type") is not None and self.turret_count() >= self.turret_limit():
             return False, "turret_limit"
         self.map_manager.update_dynamic_obstacles(self.structures)
@@ -5219,28 +5252,14 @@ class Game:
             return False, "build_spawn_blocked"
         if any(structure.alive and structure.cell == cell for structure in self.structures):
             return False, "build_cannot_place"
-        if not self.map_manager.is_buildable(cell[0], cell[1]):
+        if not freeform_barrier and not self.map_manager.is_buildable(cell[0], cell[1]):
             return False, "build_cannot_place"
         if any(zombie.alive and zombie.pos.distance_to(center) < TILE * 0.85 for zombie in self.zombies):
             return False, "build_zombie_blocked"
-        if center.distance_to(self.player.pos) < 40:
+        if self.tile_map.world_to_cell(self.player.pos) == cell:
             return False, "build_cannot_place"
         if not self.can_afford(self.structure_cost(building_type)):
             return False, "not_enough_gold"
-        # Gates are passable for the player, so self-trap checks ignore them.
-        if building_type in ("fence", "gate", "steel_wall"):
-            player_cell = self.tile_map.world_to_cell(self.player.pos)
-            spawn_goals = self.spawn_cells or self.build_spawn_cells()
-            blocked = {structure.cell for structure in self.structures if structure.alive and structure.kind != "gate"}
-            if building_type in ("fence", "steel_wall"):
-                blocked.add(cell)
-            path_ok = False
-            for goal in (spawn_goals or []):
-                if find_path(self.tile_map, player_cell, goal, blocked=blocked, allow_diagonal=True, weight=1.05, radius=int(self.player.radius)):
-                    path_ok = True
-                    break
-            if not path_ok:
-                return False, "would_trap_player"
         return True, ""
 
     def building_block_reason_text(self, reason):
@@ -6704,16 +6723,15 @@ class Game:
 
     def draw_light_overlay(self, world):
         glow = pygame.Surface(world.get_size(), pygame.SRCALPHA)
-        self.draw_radial_glow(glow, self.player.pos, 135, (130, 205, 255, 34))
+        has_glow = False
         for structure in self.structures:
             if not structure.alive:
                 continue
-            if structure.stats.get("turret_type") is not None:
-                color = (100, 240, 255, 26) if structure.stats.get("turret_type") == "laser" else (255, 200, 95, 20)
-                self.draw_radial_glow(glow, Vec2(structure.rect.center), 95, color)
-            elif structure.kind == "gate" and structure.open:
+            if structure.kind == "gate" and structure.open:
                 self.draw_radial_glow(glow, Vec2(structure.rect.center), 54, (105, 235, 130, 22))
-        world.blit(glow, (0, 0), special_flags=pygame.BLEND_RGBA_ADD)
+                has_glow = True
+        if has_glow:
+            world.blit(glow, (0, 0), special_flags=pygame.BLEND_RGBA_ADD)
 
     def draw_radial_glow(self, surface, pos, radius, color):
         pos = Vec2(pos)
@@ -6739,8 +6757,7 @@ class Game:
             radius = stats["range"]
             diameter = int(radius * 2 + 8)
             ring = pygame.Surface((diameter, diameter), pygame.SRCALPHA)
-            pygame.draw.circle(ring, (*accent, 28), (diameter // 2, diameter // 2), int(radius))
-            pygame.draw.circle(ring, (*accent, 135), (diameter // 2, diameter // 2), int(radius), 2)
+            pygame.draw.circle(ring, (*accent, 96), (diameter // 2, diameter // 2), int(radius), 2)
             self.world_surface.blit(ring, (center.x - diameter // 2, center.y - diameter // 2))
 
         overlay = pygame.Surface((TILE, TILE), pygame.SRCALPHA)
