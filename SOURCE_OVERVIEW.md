@@ -1,76 +1,116 @@
-# Pixel Zombie Siege - Source Code Overview
+# Pixel Zombie Siege - Mô Tả Mã Nguồn
 
-Tai lieu nay mo ta cau truc ma nguon cua project Pixel Zombie Siege, giup doc code nhanh hon va co the dung trong README hoac bao cao mon hoc.
+Tài liệu này mô tả cấu trúc mã nguồn của project Pixel Zombie Siege. Nội dung được viết để hỗ trợ đọc code, bảo trì project, viết README hoặc dùng trong báo cáo môn học.
 
-## 1. Tong Quan Kien Truc
+## 1. Tổng Quan Project
 
-Pixel Zombie Siege la game top-down 2D zombie survival viet bang Python va Pygame. Project hien duoc to chuc theo huong "mot core gameplay lon + cac manager tach rieng" de giu game chay on dinh trong khi van de mo rong UI, map, save, pathfinding va build EXE.
+Pixel Zombie Siege là game top-down 2D zombie survival viết bằng Python và Pygame. Người chơi sinh tồn theo từng đợt zombie, bắn quái, nhặt vàng, lên cấp, chọn perk, nâng cấp vũ khí và xây công trình phòng thủ như trụ súng, hàng rào, cổng, bẫy.
 
-Luồng chính:
+Project hiện được tổ chức theo hướng:
+
+- `main.py` giữ vai trò lõi gameplay và vòng lặp chính.
+- `UIManager` quản lý phần giao diện.
+- `MapManager` quản lý map, collision, spawn point và dữ liệu Tiled.
+- `SaveManager` quản lý save, setting, high score và meta progression.
+- Các file hướng dẫn riêng mô tả map, build EXE, cân bằng và demo thuật toán.
+
+Luồng chạy tổng quát:
 
 ```text
 main.py
-  -> khoi tao pygame, Game, Player, MapManager, UIManager, SaveManager
-  -> xu ly input/menu/prepare/gameplay
-  -> update player, zombie, bullet, structure, effect, wave
-  -> render map, entity, effect, HUD, hotbar, panel
+  -> khởi tạo Pygame và Game
+  -> load asset, audio, save, map
+  -> vào menu chính
+  -> chọn độ khó, map, nhân vật
+  -> bắt đầu trận
+  -> update gameplay theo từng frame
+  -> render map, nhân vật, zombie, hiệu ứng và UI
 ```
 
-Các manager phụ:
+## 2. Cấu Trúc File Chính
 
 ```text
-UIManager      -> ve menu, prepare screen, HUD, hotbar, stats panel
-MapManager     -> load/render map, collision grid, spawn point, buildable grid
-SaveManager    -> save setting, high score, meta progression
-path_utils     -> xu ly duong dan asset/save khi chay source hoac EXE
+main.py                  File gameplay chính
+ui_manager.py            Quản lý UI, HUD, menu, hotbar
+map_manager.py           Quản lý map, Tiled JSON, collision, spawn
+save_manager.py          Quản lý save file, high score, progression
+path_utils.py            Helper xử lý đường dẫn asset/save khi chạy source hoặc EXE
+test_gate_and_fence.py   Test nhanh hệ thống hàng rào/cổng
+requirements.txt         Thư viện cần cài
+build_exe.ps1            Script build EXE bằng PowerShell
+build_exe.bat            Script build EXE bằng batch
 ```
 
-## 2. File Chinh
-
-### `main.py`
-
-Day la file trung tam cua game. File nay chua phan lon logic gameplay:
-
-- Khoi tao cua so, fullscreen/adaptive resolution.
-- Vong lap chinh cua game.
-- State menu, option, prepare screen, gameplay, game over.
-- Player movement, shooting, reload, dash, auto-fire.
-- Weapon progression, bullet, laser, shotgun pellet, railgun.
-- Zombie AI: Walker, Runner, Spitter, Boomer, Stalker, Titan.
-- Wave system, spawn queue, difficulty scaling.
-- Building system: turret, fence, gate, trap, mine, steel wall.
-- Collision, dynamic obstacle, pathfinding cache.
-- Effect: damage number, gold number, muzzle flash, blood decal, shockwave, warning circle.
-- Audio: load sound/music, mixer channel theo nhom.
-
-Các class quan trọng trong `main.py`:
+Các tài liệu phụ:
 
 ```text
-Game        -> dieu phoi toan bo game
-Player      -> nguoi choi, weapon, stat, level, perk
-Weapon      -> thong so sung, ammo, reload, fire rate
-Bullet      -> dan thuong va projectile
-Zombie      -> AI, pathfinding, tan cong, skill tung loai zombie
-Structure   -> cong trinh phong thu: turret/fence/gate/trap
-FloatingText, Particle, Shockwave, WarningCircle -> effect nhe
+README.md                Giới thiệu tổng quan project
+SOURCE_OVERVIEW.md       Tài liệu mô tả mã nguồn
+MAP_GUIDE.md             Quy chuẩn tạo map bằng Tiled
+BUILD_EXE.md             Hướng dẫn build EXE
+BALANCE_NOTES.md         Ghi chú cân bằng vũ khí/zombie/economy
+ALGORITHM_DEMO_GUIDE.md  Hướng dẫn demo thuật toán AI/pathfinding
 ```
 
-### `ui_manager.py`
+## 3. File `main.py`
 
-Quan ly phan ve UI de giam viec ve truc tiep trong `main.py`.
+`main.py` là file trung tâm của project. File này chứa phần lớn logic gameplay và điều phối các hệ thống khác.
 
-Nhiem vu:
+Các nhóm chức năng chính trong `main.py`:
 
-- Ve main menu.
-- Ve option menu.
-- Ve prepare screen.
-- Ve HUD trong tran.
-- Ve hotbar.
-- Ve stats panel.
-- Ve button, panel, progress bar, icon placeholder.
-- Scale UI theo kich thuoc man hinh.
+- Khởi tạo cửa sổ game, fullscreen và adaptive resolution.
+- Quản lý state: menu chính, option, prepare screen, gameplay, pause, game over.
+- Xử lý input bàn phím, chuột và hotbar.
+- Quản lý player, súng, đạn, reload, dash, auto-fire.
+- Quản lý zombie, AI, skill, pathfinding và Titan Boss.
+- Quản lý wave, spawn queue và độ khó.
+- Quản lý công trình: turret, hàng rào, cổng, bẫy gai, mìn, tường thép.
+- Quản lý score, vàng, XP, level, perk và power-up.
+- Quản lý hiệu ứng: muzzle flash, floating text, blood decal, shockwave, warning circle.
+- Load và phát âm thanh, nhạc nền, SFX.
 
-Các method đáng chú ý:
+Các class quan trọng:
+
+```text
+Game
+  Điều phối toàn bộ game, vòng lặp update/draw, state, input và kết nối các manager.
+
+Player
+  Quản lý người chơi: vị trí, máu, tốc độ, level, XP, weapon, dash, perk.
+
+Weapon
+  Quản lý vũ khí: tier, damage, fire rate, magazine, reload, spread, pierce.
+
+Bullet
+  Projectile của súng thường, shotgun, rifle, machine gun.
+
+Zombie
+  Quản lý từng loại zombie, bao gồm Walker, Runner, Spitter, Boomer, Stalker, Titan.
+
+Structure
+  Quản lý công trình phòng thủ như turret, fence, gate, trap, mine.
+
+FloatingText, Particle, BulletTrail, Shockwave, WarningCircle
+  Các hiệu ứng hình ảnh nhẹ để game có cảm giác bắn đã tay hơn.
+```
+
+## 4. File `ui_manager.py`
+
+`ui_manager.py` gom phần vẽ UI ra khỏi `main.py`, giúp code dễ đọc hơn.
+
+Nhiệm vụ chính:
+
+- Vẽ Main Menu.
+- Vẽ Option Menu.
+- Vẽ màn chuẩn bị trận.
+- Vẽ màn chọn độ khó, map, nhân vật.
+- Vẽ HUD trong trận.
+- Vẽ hotbar.
+- Vẽ bảng chỉ số bằng phím `I`.
+- Vẽ nút, panel, progress bar, card, icon placeholder.
+- Tự scale theo độ phân giải màn hình.
+
+Các method tiêu biểu:
 
 ```text
 draw_main_menu(...)
@@ -84,19 +124,33 @@ draw_panel(...)
 draw_progress_bar(...)
 ```
 
-### `map_manager.py`
+Hotbar hiện ưu tiên các nút dùng thường xuyên:
 
-Quan ly map va chuan bi cho Tiled Map Editor.
+- `1`: nâng cấp vũ khí.
+- `2`: đặt trụ súng.
+- `3`: đặt hàng rào.
+- `4`: đặt cổng.
+- `R`: nạp đạn.
+- `E`: sửa công trình.
+- `Shift`: lướt.
+- `F`: bật/tắt tự động bắn.
+- `I`: mở bảng chỉ số.
 
-Nhiem vu:
+Các nút ít dùng hoặc nâng cao có thể vẫn giữ logic/phím trong `main.py`, nhưng không luôn hiển thị trên hotbar để tránh rối màn hình.
 
-- Load map builtin neu khong co JSON.
-- Load Tiled JSON trong `assets/maps/`.
-- Render cac layer theo thu tu.
-- Quan ly collision grid.
-- Quan ly buildable grid.
-- Quan ly player spawn, zombie spawn, boss spawn.
-- Cap nhat dynamic obstacle tu cong trinh.
+## 5. File `map_manager.py`
+
+`MapManager` quản lý toàn bộ dữ liệu map và chuẩn bị cho việc import map từ Tiled Map Editor.
+
+Nhiệm vụ chính:
+
+- Load map builtin nếu không có file JSON.
+- Load map từ Tiled JSON trong `assets/maps/`.
+- Render map theo layer.
+- Quản lý collision grid.
+- Quản lý buildable grid.
+- Quản lý player spawn, zombie spawn, boss spawn.
+- Cập nhật dynamic obstacles từ hàng rào, cổng, turret, tường thép.
 
 Các method quan trọng:
 
@@ -114,47 +168,55 @@ tile_to_world(tile_x, tile_y)
 update_dynamic_obstacles(buildings)
 ```
 
-### `save_manager.py`
+Nếu thiếu file map JSON hoặc tileset image, `MapManager` dùng fallback hoặc placeholder để game không bị crash.
 
-Quan ly save file va high score.
+## 6. File `save_manager.py`
 
-Nhiem vu:
+`SaveManager` quản lý dữ liệu lưu game dưới dạng JSON.
 
-- Tao save mac dinh khi chua co file.
-- Load/save JSON.
-- Backup save bi loi/corrupt.
-- Luu settings, high score, progression, achievement.
-- Ho tro duong dan save an toan khi build EXE.
+Dữ liệu lưu gồm:
 
-### `path_utils.py`
+- Cài đặt ngôn ngữ.
+- Âm lượng nhạc và SFX.
+- Auto-fire.
+- Developer Mode nếu cần.
+- High score.
+- Wave cao nhất.
+- Điểm cao nhất.
+- Tổng số zombie đã hạ.
+- Tổng vàng đã kiếm.
+- Meta progression.
+- Achievement và unlock.
 
-Chua helper duong dan:
+Yêu cầu an toàn:
 
-- `resource_path(relative_path)`: lay dung duong dan asset khi chay source hoac PyInstaller.
-- `get_base_path()`: xac dinh thu muc goc.
-- `user_data_path(filename)`: luu file nguoi dung vao AppData khi chay EXE.
+- Nếu chưa có save file thì tự tạo save mặc định.
+- Nếu save bị lỗi hoặc corrupt thì backup file cũ và tạo save mới.
+- Khi chạy EXE, save không nên lưu trong thư mục tạm của PyInstaller.
 
-### `tools/balance_audit.py`
+## 7. File `path_utils.py`
 
-Cong cu ho tro can bang gameplay:
+File này hỗ trợ đường dẫn để game chạy ổn định ở cả hai chế độ:
 
-- Tinh DPS uoc luong tung vu khi.
-- In bang weapon progression.
-- Ho tro tao/cap nhat `BALANCE_NOTES.md`.
+- Chạy source bằng `py main.py`.
+- Chạy bản build EXE bằng PyInstaller.
 
-### `tools/generate_synth_audio.py`
+Các helper chính:
 
-Tao audio placeholder/synth cho sung, zombie, music va cac hieu ung co ban neu thieu asset that.
+```text
+resource_path(relative_path)
+  Lấy đúng đường dẫn asset khi chạy source hoặc EXE.
 
-### `test_gate_and_fence.py`
+get_base_path()
+  Xác định thư mục gốc của game.
 
-Test nho cho he thong fence/gate:
+user_data_path(filename)
+  Lấy đường dẫn lưu dữ liệu người dùng, ưu tiên AppData trên Windows.
+```
 
-- Gate co trang thai mo/dong.
-- Fence/gate co tac dong den pathfinding.
-- Dam bao logic phong thu khong bi crash.
+## 8. Thư Mục Asset
 
-## 3. Thu Muc Asset
+Cấu trúc asset chính:
 
 ```text
 assets/
@@ -174,81 +236,84 @@ assets/
     opengameart/
 ```
 
-Map JSON duoc load boi `MapManager`. Neu file map hoac tileset bi thieu, game dung fallback/placeholder de khong crash.
+Ý nghĩa:
 
-## 4. Luong Gameplay
+- `assets/maps/`: chứa map JSON export từ Tiled.
+- `assets/tilesets/`: chứa tileset image.
+- `assets/audio/`: chứa nhạc nền và SFX.
+- `assets/menu_background.png`: ảnh nền menu chính.
 
-### Khoi dong game
+## 9. Luồng Gameplay Trong Trận
 
-```text
-py main.py
-  -> Game.__init__()
-  -> load settings/save
-  -> load assets/audio/map
-  -> vao main menu
-```
-
-### Chon tran
-
-```text
-Main Menu
-  -> Start
-  -> chon difficulty
-  -> chon map
-  -> chon character
-  -> init run
-```
-
-### Trong tran
+Mỗi frame, game chạy theo luồng:
 
 ```text
 handle_events()
+  -> đọc input bàn phím/chuột
+  -> xử lý click UI, hotbar, xây dựng, pause
+
 update(dt)
-  -> update_player
-  -> update_wave
-  -> update_zombies
-  -> update_structures
-  -> update_bullets/effects
+  -> update player
+  -> update weapon/reload
+  -> update wave/spawn
+  -> update zombie AI
+  -> update bullet/projectile
+  -> update structure/turret
+  -> update effect
+  -> kiểm tra game over
+
 draw()
   -> render map
-  -> render entity/effect
-  -> render HUD/UI
+  -> render blood decal/effect
+  -> render item, bullet, zombie, player, structure
+  -> render build preview
+  -> render HUD/hotbar/panel
 ```
 
-## 5. AI Va Pathfinding
+## 10. AI Và Pathfinding
 
-Project dung nhieu cach tim duong theo tung loai zombie:
+Game dùng nhiều chiến thuật tìm đường khác nhau tùy loại zombie:
 
-- Walker: flow-field BFS dung chung de toi uu so luong lon.
-- Runner: A* va flank de gay ap luc.
-- Spitter: giu khoang cach, uu tien vi tri co the ban acid.
-- Boomer: dash vao player hoac cum cong trinh, co explosion AOE.
-- Stalker: flank va ne line-of-fire neu co the.
-- Titan: clearance A*, phase theo HP, charge, stomp, summon, leap khi bi ket.
+- Walker dùng flow-field BFS để tối ưu khi có số lượng lớn.
+- Runner dùng A* và flank để tạo áp lực.
+- Spitter giữ khoảng cách và tìm vị trí bắn acid.
+- Boomer dash vào player hoặc cụm công trình, chết sẽ nổ AOE.
+- Stalker flank và né đường bắn nếu có thể.
+- Titan dùng clearance A*, có phase theo HP, charge, stomp, summon và leap khi bị kẹt.
 
-Collision/pathfinding lay du lieu tu:
+Nguồn dữ liệu collision:
 
 ```text
 MapManager collision grid
-  + dynamic obstacles tu fence/gate/turret/steel wall
+  + dynamic obstacles từ fence/gate/turret/steel wall
   + path cache trong Game
 ```
 
-## 6. He Thong Xay Dung
+Dynamic obstacles giúp zombie không đi xuyên:
 
-Cong trinh chinh:
+- Tường.
+- Container.
+- Xe hỏng.
+- Hàng rào.
+- Cổng đóng.
+- Trụ súng nếu trụ đang chặn đường.
+- Tường thép.
 
-- Turret co ban.
-- Fence.
-- Gate.
-- Spike trap.
-- Mine.
-- Steel wall.
+## 11. Hệ Thống Xây Dựng
+
+Các công trình hiện có:
+
+- Turret cơ bản.
 - Machine turret.
 - Laser turret.
 - Slow turret.
+- Hàng rào.
+- Cổng mở/đóng bằng `G`.
+- Bẫy gai.
+- Mìn.
+- Tường thép.
 
-Logic dat cong trinh nam trong:
+Các hàm quan trọng:
 
 ```text
 Game.can_place_building(...)
@@ -258,17 +323,17 @@ Structure.draw(...)
 MapManager.update_dynamic_obstacles(...)
 ```
 
-Hien tai fence/gate/steel wall duoc dat tu do hon, nhung van khong cho dat len:
+Luật đặt hàng rào/cổng/tường thép hiện đã được nới để người chơi xây tự do hơn. Tuy nhiên game vẫn không cho đặt lên:
 
-- Tuong/collision map.
-- Spawn point quan trong.
-- Player dang dung.
-- Zombie dang chiem o.
-- Cong trinh khac.
+- Tường hoặc collision map.
+- Spawn point quan trọng.
+- Ô người chơi đang đứng.
+- Zombie đang chiếm ô.
+- Công trình khác.
 
-## 7. Weapon Progression
+## 12. Hệ Thống Vũ Khí
 
-Weapon stat duoc gom theo tier trong `WEAPON_DEFS` cua `main.py`.
+Thông số vũ khí được gom trong bảng `WEAPON_DEFS` trong `main.py`.
 
 Các chỉ số chính:
 
@@ -284,57 +349,206 @@ Các chỉ số chính:
 - `spin_up`
 - `cost`
 
-HUD va upgrade UI doc tu weapon hien tai cua player, nen khi them weapon moi can cap nhat bang weapon definition va sound/effect fallback neu can.
+Danh sách progression hiện có:
 
-## 8. UI/HUD
+```text
+1. Glock 17
+2. Dual Beretta 92FS
+3. HK MP5
+4. Mossberg 500
+5. M4A1 Carbine
+6. AK-47
+7. Benelli M4
+8. RPK
+9. XM-LAS Prototype
+10. M134 Minigun
+11. Barrett M82A1
+12. XM-Railbreaker
+```
 
-UI hien tai chia thanh:
+Mỗi nhóm súng có vai trò riêng:
 
-- Main menu.
-- Option menu.
-- Prepare screen.
-- HUD gameplay.
-- Hotbar.
-- Stats panel.
-- Algorithm demo overlay.
-- Game over/high score.
+- Pistol: ổn định đầu game.
+- SMG: dọn zombie thường.
+- Shotgun: mạnh ở tầm gần.
+- Rifle: cân bằng tầm trung.
+- LMG/Minigun: crowd control.
+- Laser/Railgun: xuyên mục tiêu, mạnh về late game.
+- Sniper/Barrett: sát thương cao, hợp đánh Elite/Titan.
 
-Hotbar dang uu tien cac hanh dong hay dung:
+## 13. Hệ Thống Level, Perk Và Meta Progression
 
-- Upgrade.
-- Turret.
-- Fence.
-- Gate.
-- Reload.
-- Repair.
-- Dash.
-- Auto fire.
-- Info.
+Trong trận:
 
-Các nút ít dùng hoặc nâng cao có thể vẫn giữ logic/phím trong `main.py`, nhưng không nhất thiết luôn hien tren hotbar.
+- Người chơi nhận XP khi hạ zombie.
+- Khi lên level, chọn 1 trong 3 perk.
+- Perk có thể tăng máu, tốc độ, sát thương, hút vàng, giảm reload hoặc buff turret.
 
-## 9. Build EXE
+Sau mỗi run:
 
-Project co script build:
+- SaveManager cập nhật high score.
+- Có thể lưu tổng kill, tổng vàng, điểm cao nhất.
+- Meta progression cho phép mở rộng nâng cấp vĩnh viễn nhẹ.
+
+## 14. UI Và HUD
+
+HUD hiện gồm:
+
+- HP bar.
+- XP bar.
+- Level.
+- Vàng.
+- Wave.
+- Số zombie còn lại.
+- Countdown giữa wave nếu có.
+- Hotbar dưới màn hình.
+- Bảng chỉ số bằng phím `I`.
+- Minimap.
+- Developer/debug info nếu bật Developer Mode.
+
+Các hiệu ứng UI:
+
+- Cảnh báo HP thấp bằng viền đỏ nhẹ.
+- Banner khi wave bắt đầu.
+- Cảnh báo Titan.
+- Floating text khi nhận vàng, gây sát thương, lên level hoặc nâng cấp.
+
+## 15. Map Và Tiled
+
+Game có 3 map chính:
+
+- Warehouse / Nhà kho.
+- Crossfire Yard / Sân giao tranh.
+- Split Ruins / Tàn tích chia cắt.
+
+Map có thể được import từ Tiled JSON nếu đặt đúng trong:
+
+```text
+assets/maps/
+```
+
+Tileset đặt trong:
+
+```text
+assets/tilesets/
+```
+
+Quy chuẩn layer xem tại:
+
+```text
+MAP_GUIDE.md
+```
+
+Các layer Tiled được hỗ trợ:
+
+- `ground`
+- `decals`
+- `obstacles`
+- `props`
+- `collision`
+- `lighting`
+- `gameplay_objects`
+
+Object gameplay được hỗ trợ:
+
+- `player_spawn`
+- `zombie_spawn`
+- `boss_spawn`
+- `build_zone`
+- `no_build_zone`
+- `safe_zone`
+- `choke_point_marker`
+
+## 16. Hiệu Ứng Và Âm Thanh
+
+Hiệu ứng hình ảnh:
+
+- Floating damage number.
+- Floating gold number.
+- Muzzle flash.
+- Hit flash.
+- Blood decal có giới hạn.
+- Poison pool của Spitter.
+- Shockwave của Boomer/Titan.
+- Warning circle trước stomp/leap.
+- Camera shake nhẹ.
+- Vignette và viền đỏ khi thấp máu.
+
+Âm thanh:
+
+- SFX theo nhóm súng.
+- SFX zombie.
+- SFX UI.
+- SFX reload, coin, hit, explosion.
+- Nhạc menu, nhạc combat, nhạc boss.
+
+Nếu thiếu asset âm thanh, game dùng fallback hoặc bỏ qua an toàn để không crash.
+
+## 17. Build EXE
+
+Project có script build EXE:
 
 ```powershell
 .\build_exe.ps1
 ```
 
-hoac:
+Hoặc:
 
 ```bat
 build_exe.bat
 ```
 
-Huong dan chi tiet nam trong `BUILD_EXE.md`.
+Hướng dẫn chi tiết nằm trong:
 
-## 10. Cach Test Nhanh
+```text
+BUILD_EXE.md
+```
 
-Compile:
+Mục tiêu build:
+
+- Dùng PyInstaller.
+- Ưu tiên `onedir` để dễ debug asset.
+- Bundle `assets/`, `maps/`, `tilesets/`, `audio/`.
+- Save file lưu ở AppData hoặc thư mục user data, không lưu trong thư mục tạm.
+
+## 18. Công Cụ Cân Bằng Và Demo
+
+### `tools/balance_audit.py`
+
+Dùng để:
+
+- Tính DPS ước lượng từng súng.
+- Kiểm tra progression vũ khí.
+- Hỗ trợ cân bằng giá nâng cấp, damage, reload, fire rate.
+
+### `ALGORITHM_DEMO_GUIDE.md`
+
+Hướng dẫn bật overlay demo thuật toán:
+
+- `F1`: bật/tắt Algorithm Demo.
+- `F2`: đổi layer hiển thị.
+- `F3`: bật/tắt panel giải thích.
+
+Các lớp demo:
+
+- Collision.
+- Spawn point.
+- Flow-field.
+- A* path.
+- AI role.
+
+## 19. Cách Chạy Và Test
+
+Cài thư viện:
 
 ```powershell
-py -m py_compile main.py ui_manager.py map_manager.py save_manager.py path_utils.py tools\balance_audit.py test_gate_and_fence.py
+py -m pip install -r requirements.txt
+```
+
+Chạy game:
+
+```powershell
+py main.py
 ```
 
 Smoke test:
@@ -343,25 +557,40 @@ Smoke test:
 py main.py --smoke
 ```
 
-Test gameplay thu cong:
+Compile nhanh:
 
-1. Mo game bang `py main.py`.
-2. Vao Start.
-3. Chon difficulty, map, character.
-4. Vao tran.
-5. Test ban, reload, nhat vang, upgrade.
-6. Test dat turret/fence/gate.
-7. Bat Algorithm Demo bang `F1` neu can demo pathfinding.
+```powershell
+py -m py_compile main.py ui_manager.py map_manager.py save_manager.py path_utils.py tools\balance_audit.py test_gate_and_fence.py
+```
 
-## 11. Diem Nen Tach Tiep
+Test thủ công:
 
-Neu tiep tuc refactor, nen tach dan cac he sau khoi `main.py`:
+1. Mở game.
+2. Vào Start.
+3. Chọn độ khó.
+4. Chọn map.
+5. Chọn nhân vật.
+6. Vào trận.
+7. Test bắn, reload, nhặt vàng, nâng cấp súng.
+8. Test đặt trụ, hàng rào, cổng.
+9. Test zombie không xuyên tường/hàng rào.
+10. Bật `F1` để demo thuật toán nếu cần.
 
-- `weapon_system.py`: weapon definition, ammo, reload, shooting.
-- `zombie_system.py`: zombie stats, AI, skill.
-- `building_system.py`: structure stats, build validation, repair.
-- `effect_manager.py`: particle, floating text, shockwave, decal.
-- `audio_manager.py`: load/play sound, music switching.
-- `wave_manager.py`: spawn queue, wave reward, difficulty scaling.
+## 20. Hướng Refactor Tiếp Theo
 
-Muc tieu la giu `main.py` chi con vai tro dieu phoi vong lap va ket noi cac manager.
+Hiện `main.py` vẫn khá lớn. Nếu tiếp tục refactor, nên tách dần:
+
+```text
+weapon_system.py     Vũ khí, đạn, reload, upgrade
+zombie_system.py     Zombie stats, AI, skill, Titan phase
+building_system.py   Công trình, build validation, repair
+effect_manager.py    Particle, floating text, shockwave, decal
+audio_manager.py     Load/play sound, music switching
+wave_manager.py      Spawn queue, wave reward, difficulty scaling
+```
+
+Mục tiêu dài hạn:
+
+- `main.py` chỉ còn điều phối vòng lặp chính.
+- Mỗi hệ thống có file riêng, dễ test và dễ mở rộng.
+- Asset/config tách khỏi code để dễ chỉnh gameplay.
